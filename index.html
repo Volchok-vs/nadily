@@ -2,171 +2,238 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Карта ділянок з фіксацією ярликів</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css"/>
+    <title>Карта дільниць для вісників</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        #map { height: 80vh; width: 100%; }
-        #output {
-            height: 15vh;
-            padding: 10px;
-            font-family: monospace;
-            background: #111;
-            color: #0f0;
-            overflow: auto;
-            white-space: pre;
-            font-size: 11px;
+        body { margin: 0; padding: 0; font-family: sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        
+        /* Модальне вікно */
+        .modal {
+            display: none; position: fixed; z-index: 2000;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.3); width: 280px;
         }
-        .controls { padding: 10px; background: #f4f4f4; display: flex; gap: 10px; }
-        button { padding: 8px 15px; cursor: pointer; border-radius: 4px; border: none; color: white; font-weight: bold; }
-        .btn-save { background: #28a745; }
-        .btn-clear { background: #dc3545; }
-        /* Стиль ярлика */
+        .modal h3 { margin-top: 0; color: #333; }
+        .modal input, .modal select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn-confirm { background: #28a745; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-close { background: none; border: none; color: #888; width: 100%; margin-top: 10px; cursor: pointer; }
+        
+        /* Легенда */
+        .legend { position: absolute; bottom: 20px; right: 20px; background: white; padding: 10px; z-index: 1000; border-radius: 5px; font-size: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .legend-item { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+
+        /* Піднімаємо всі тултіпи над шарами карти */
+        .leaflet-tooltip-pane {
+            z-index: 650 !important;
+        }
+
+        /* Налаштування самого ярлика, щоб він був чітким */
         .leaflet-tooltip {
             background: rgba(255, 255, 255, 0.9);
             border: 1px solid #333;
+            border-radius: 4px;
+            padding: 2px 5px;
             font-weight: bold;
-            color: #000;
+            font-size: 12px;
+            pointer-events: none; /* Щоб ярлик не заважав клікати по ділянці */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .parcel-label {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: white !important;
+            font-weight: bold !important;
+            font-size: 14px !important;
+            text-shadow: 1px 1px 2px black, -1px -1px 2px black;
         }
     </style>
 </head>
 <body>
 
-<div class="controls">
-    <button class="btn-save" onclick="downloadGeoJSON()">💾 Зберегти у файл .geojson</button>
-    <button class="btn-clear" onclick="clearMap()">🗑 Очистити все</button>
-    <span style="font-size: 12px; align-self: center;">💡 Клікніть на ділянку, щоб ПЕРЕМІСТИТИ номер</span>
+<div id="map"></div>
+
+<div class="legend">
+    <div class="legend-item"><div class="dot" style="background:#2ecc71"></div> Вільна</div>
+    <div class="legend-item"><div class="dot" style="background:#e74c3c"></div> Зайнята</div>
 </div>
 
-<div id="map"></div>
-<div id="output">Код GeoJSON...</div>
+<div id="takeModal" class="modal">
+    <h3>Дільниця <span id="p-name"></span></h3>
+    <p style="font-size: 13px; color: #666;">Введіть ваше прізвище, щоб взяти дільницю:</p>
+    <input type="text" id="v-name" placeholder="Прізвище та ім'я">
+    
+    <select id="v-campaign">
+        <option value="">— Звичайна проповідь —</option>
+        <option value="Спомин">Кампанія до Спомину</option>
+        <option value="Конгрес">Запрошення на Конгрес</option>
+        <option value="Спеціальна">Спеціальна кампанія</option>
+    </select>
+    
+    <button class="btn-confirm" onclick="confirmTake()">ОФОРМИТИ</button>
+    <button class="btn-close" onclick="closeModal()">Скасувати</button>
+</div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script>
-   var map = L.map('map').setView([49.2321, 29.0577], 15);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles © Esri'
-    }).addTo(map);
+<script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    var drawnItems = new L.FeatureGroup();
-    map.addLayer(drawnItems);
+    const supabase = createClient("https://modsgjjtwxbdnlycvifp.supabase.co", "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D");
 
-    // --- ФУНКЦІЯ ЗБЕРЕЖЕННЯ ---
-    function updateAndSave() {
-        var data = drawnItems.toGeoJSON();
-        var jsonString = JSON.stringify(data, null, 2);
-        document.getElementById('output').innerText = jsonString;
+    async function initMap() {
+        if (typeof L === 'undefined') return;
+
+        // 1. Створюємо карту
+        const map = L.map('map').setView([49.2321, 29.0577], 15);
         
-        localStorage.setItem('mapData_v3', jsonString); // Новий ключ для чистоти
-        console.log("Дані синхронізовано з пам'яттю");
-        // 💾 отправка на сервер
-        fetch(API + '/save', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: jsonString
-        }).catch(err => console.log("Не удалось сохранить на сервер:", err));
+        // 2. Створюємо окремий шар (Pane) для фарби, щоб вона не перекривала ярлики
+        map.createPane('parcelsPane');
+        map.getPane('parcelsPane').style.zIndex = 400; 
+        map.getPane('parcelsPane').style.pointerEvents = 'none'; 
+
+        // 3. Додаємо підкладку (супутник)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+
+        // 4. Завантажуємо дані з Supabase
+        const { data, error } = await supabase.from('parcels').select('*');
+        if (error || !data) return;
+
+        renderParcels(data, map);
     }
 
-    // --- ФУНКЦІЯ ПРИВ'ЯЗКИ КЛІКУ ТА ЯРЛИКА ---
-    function setupLayer(layer, feature) {
-        var props = feature.properties || {};
-        var name = props.name || "Без назви";
-        
-        // Визначаємо позицію: або збережена, або центр
-        var labelPos = props.labelPos ? L.latLng(props.labelPos) : layer.getBounds().getCenter();
-        
-        // Створюємо ярлик
-        layer.bindTooltip(name, { permanent: true, direction: 'center' }).openTooltip(labelPos);
+    function renderParcels(data, map) {
+    // 1. ПЕРЕВІРКА АВТОРИЗАЦІЇ: Шукаємо слово ?admin в адресному рядку
+    // Наприклад: mysite.com/index.html?admin
+    const isAuthorized = new URLSearchParams(window.location.search).has('admin');
 
-        // ОБРОБКА КЛІКУ ДЛЯ ПЕРЕМІЩЕННЯ
-        layer.on('click', function (e) {
-            L.DomEvent.stopPropagation(e); // Щоб клік не провалився крізь шари
-            
-            var newPos = e.latlng;
-            layer.unbindTooltip();
-            layer.bindTooltip(name, { permanent: true, direction: 'center' }).openTooltip(newPos);
-            
-            // Записуємо нову позицію прямо в дані об'єкта
-            if (!layer.feature) layer.feature = { type: "Feature", properties: {} };
-            layer.feature.properties.name = name;
-            layer.feature.properties.labelPos = [newPos.lat, newPos.lng];
-            
-            updateAndSave();
-            console.log("Ярлик " + name + " переміщено в: ", newPos);
-        });
-    }
+    data.forEach(pData => {
+        if (!pData.geom) return;
 
-    // --- ЗАВАНТАЖЕННЯ ---
-    var saved = localStorage.getItem('mapData_v3') || localStorage.getItem('mapData_v2') || localStorage.getItem('myMapData');
-    if (saved) {
-        var geojson = JSON.parse(saved);
-        L.geoJSON(geojson, {
-            onEachFeature: function (feature, layer) {
-                layer.feature = feature; 
-                drawnItems.addLayer(layer);
-                setupLayer(layer, feature);
+        L.geoJSON(pData.geom, {
+            pane: 'parcelsPane', 
+            style: function() {
+                return {
+                    ...getParcelStyle(pData.category, pData.last_returned, pData.status),
+                    color: 'white', 
+                    weight: 2
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                const name = pData.name || "№?";
+                let labelPos = pData.label_pos ? L.latLng(pData.label_pos[0], pData.label_pos[1]) : layer.getBounds().getCenter();
+
+                layer.bindTooltip(name, { permanent: true, direction: 'center', className: 'parcel-label', opacity: 1.0 }).openTooltip(labelPos);
+
+                layer.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    
+                    const statusText = pData.status === 'taken' ? "🔴 ЗАЙНЯТА" : "🟢 ВІЛЬНА";
+                    const lastDate = pData.last_returned ? new Date(pData.last_returned).toLocaleDateString() : "немає даних";
+                    
+                    // 2. ФОРМУЄМО ВМІСТ ПОПАПУ З УМОВОЮ
+                    const popupContent = `
+                        <div style="font-family: sans-serif; min-width: 180px;">
+                            <h3 style="margin: 0 0 10px 0;">Дільниця ${name}</h3>
+                            <p style="margin: 5px 0;"><b>Статус:</b> ${statusText}</p>
+                            <p style="margin: 5px 0;"><b>Здана:</b> ${lastDate}</p>
+                            ${pData.status === 'taken' ? `<p style="margin: 5px 0;"><b>Вісник:</b> ${pData.taken_by || '—'}</p>` : ''}
+                            
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+                            
+                            <button onclick="window.buildRoute(${labelPos.lat}, ${labelPos.lng})" 
+                                style="background: #007bff; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 8px;">
+                                📍 Побудувати маршрут
+                            </button>
+
+                            ${(isAuthorized && pData.status !== 'taken') ? `
+                            <button onclick="window.showModal(${pData.id}, '${name}')" 
+                                style="background: #28a745; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                ✋ Взяти дільницю
+                            </button>` : ''}
+                        </div>
+                    `;
+
+                    layer.bindPopup(popupContent).openPopup();
+                });
             }
-        });
-        updateAndSave();
-    }
-
-    // --- ПАНЕЛЬ МАЛЮВАННЯ ---
-    var drawControl = new L.Control.Draw({
-        draw: { polygon: true, rectangle: true, circle: false, marker: false, polyline: false, circlemarker: false },
-        edit: { featureGroup: drawnItems }
+        }).addTo(map);
     });
-    map.addControl(drawControl);
+}
 
-    // 🔥 ПОДКЛЮЧЕНИЕ К СЕРВЕРУ
-    const API = "https://nadily.onrender.com"; // ← сюда свой URL
+    // Функція розрахунку кольорів (Ваша логіка)
+    function getParcelStyle(category, lastReturnDate, status) {
+        if (status === 'taken') return { fillColor: '#e74c3c', fillOpacity: 0.8 };
 
-    // 📥 загрузка с сервера
-    fetch(API + '/parcels')
-        .then(res => res.json())
-        .then(data => {
-            L.geoJSON(data, {
-                onEachFeature: function (feature, layer) {
-                    layer.feature = feature;
-                    drawnItems.addLayer(layer);
-                    setupLayer(layer, feature);
-                }
-            });
-            console.log("Дані завантажені з сервера");
-        })
-        .catch(err => console.log("Сервер недоступний:", err));
+        const now = new Date();
+        const returnDate = lastReturnDate ? new Date(lastReturnDate) : new Date();
         
-    map.on('draw:created', function (e) {
-        var layer = e.layer;
-        var name = prompt("Номер ділянки:", "№" + (drawnItems.getLayers().length + 1));
-        if (name) {
-            var feature = { type: "Feature", properties: { name: name } };
-            layer.feature = feature;
-            drawnItems.addLayer(layer);
-            setupLayer(layer, feature);
-            updateAndSave();
+        const diffTime = Math.abs(now - returnDate);
+        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30.44);
+
+        if (diffMonths < 3) return { fillColor: '#808080', fillOpacity: 0.8 }; // Сірий
+
+        let baseColor = '#008000'; // Зелений
+        if (category === 'Ділова') baseColor = '#0000FF';
+        if (category === 'Багатоповерхівки') baseColor = '#FFA500';
+
+        if (diffMonths >= 3 && diffMonths < 6) {
+            return { fillColor: baseColor, fillOpacity: 1.0 };
+        } 
+        else if (diffMonths >= 6 && diffMonths < 11) {
+            return { fillColor: '#FF0000', fillOpacity: 0.5 }; // Червоний 50%
+        } 
+        else if (diffMonths >= 11) {
+            return { fillColor: '#FF0000', fillOpacity: 1.0 }; // Червоний 100%
         }
-    });
 
-    map.on('draw:edited', updateAndSave);
-    map.on('draw:deleted', updateAndSave);
-
-    function downloadGeoJSON() {
-        var data = drawnItems.toGeoJSON();
-        var blob = new Blob([JSON.stringify(data)], {type: "application/json"});
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url; a.download = "plots_fixed.geojson"; a.click();
+        return { fillColor: baseColor, fillOpacity: 1.0 };
     }
 
-    function clearMap() {
-        if(confirm("Очистити все?")) {
-            drawnItems.clearLayers();
-            localStorage.clear();
-            updateAndSave();
+    // Глобальні функції для модального вікна
+    window.showModal = (id, name) => {
+        window.currentParcelId = id;
+        document.getElementById('p-name').innerText = name;
+        document.getElementById('takeModal').style.display = 'block';
+    };
+
+    window.closeModal = () => {
+        document.getElementById('takeModal').style.display = 'none';
+    };
+
+    window.confirmTake = async () => {
+        const vName = document.getElementById('v-name').value;
+        const vCamp = document.getElementById('v-campaign').value;
+        if (!vName) return alert("Введіть прізвище!");
+
+        const { error } = await supabase.from('parcels')
+            .update({ 
+                status: 'taken', 
+                taken_by: vName, 
+                taken_at: new Date().toISOString(),
+                campaign: vCamp 
+            })
+            .eq('id', window.currentParcelId);
+
+        if (!error) {
+            alert("Дільницю успішно оформлено!");
+            location.reload();
+        } else {
+            alert("Помилка: " + error.message);
         }
-    }
+    };
+
+    // Функція для відкриття Google Maps
+    window.buildRoute = (lat, lng) => {
+        // Формуємо посилання для Google Maps: від поточного місця до координат дільниці
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
+        window.open(url, '_blank');
+    };
+    document.addEventListener('DOMContentLoaded', initMap);
 </script>
 </body>
 </html>

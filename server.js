@@ -33,5 +33,9 @@ app.post('/save', (req, res) => {
     res.json({status: 'ok'});
 });
 
+app.get('/', (req, res) => {
+    res.send("Сервер працює 🚀");
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server started"));

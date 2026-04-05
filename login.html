@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вхід у систему територій</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-card h2 {
+            margin-bottom: 25px;
+            color: #333;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .btn-login {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn-login:hover {
+            background-color: #0056b3;
+        }
+        .error-msg {
+            color: #dc3545;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+        .back-link {
+            display: block;
+            margin-top: 20px;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>Вхід для вісників</h2>
+    
+    <div class="input-group">
+        <label for="name">Прізвище та Ім'я</label>
+        <input type="text" id="name" placeholder="Наприклад: Петренко Іван" required>
+    </div>
+
+    <div class="input-group">
+        <label for="password">Пароль (Секретний ключ)</label>
+        <input type="password" id="password" placeholder="Введіть ваш ключ" required>
+    </div>
+
+    <button class="btn-login" onclick="handleLogin()">УВІЙТИ</button>
+    
+    <div id="error" class="error-msg">Невірне ім'я або пароль.</div>
+    
+    <a href="index.html" class="back-link">← Повернутися до карти</a>
+</div>
+
+<script type="module">
+    // Імпортуємо клієнт (якщо ви використовуєте ES модулі, інакше використовуйте вікно)
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const supabase = createClient("https://modsgjjtwxbdnlycvifp.supabase.co", "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D");
+
+    async function handleLogin() {
+        const name = document.getElementById('name').value.trim();
+        const key = document.getElementById('password').value.trim();
+        const errorDiv = document.getElementById('error');
+
+        if (!name || !key) {
+            alert("Заповніть усі поля");
+            return;
+        }
+
+        try {
+            // Шукаємо користувача в таблиці publishers
+            const { data, error } = await supabase
+                .from('publishers')
+                .select('id, name, role, secret_key')
+                .eq('name', name)
+                .eq('secret_key', key)
+                .single();
+
+            if (error || !data) {
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Якщо успішно — зберігаємо дані в пам'ять браузера (localStorage)
+            localStorage.setItem('userId', data.id);
+            localStorage.setItem('userName', data.name);
+            localStorage.setItem('userRole', data.role);
+            localStorage.setItem('userKey', data.secret_key);
+
+            // Перенаправляємо в кабінет або на головну карту з ключем
+            window.location.href = `index.html?key=${data.secret_key}`;
+
+        } catch (err) {
+            console.error(err);
+            alert("Сталася помилка при вході");
+        }
+    }
+
+    // Дозволяємо вхід натисканням Enter
+    document.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+
+    // Робимо функцію доступною для кнопки
+    window.handleLogin = handleLogin;
+</script>
+
+</body>
+</html>

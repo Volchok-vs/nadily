@@ -54,7 +54,9 @@
     </style>
 </head>
 <body>
-
+<a href="login.html" id="loginBtn" style="position:fixed; top:20px; left: 60px; z-index:1001; background:white; padding:10px 20px; border-radius:5px; text-decoration:none; color:black; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+    🔐 Увійти
+</a>
 <div id="map"></div>
 
 <div class="legend">
@@ -91,12 +93,12 @@
         // 1. Створюємо карту
         const map = L.map('map').setView([49.2321, 29.0577], 15);
         
-        // 2. Створюємо окремий шар (Pane) для фарби, щоб вона не перекривала ярлики
+        // 2. Створюємо окремий шар (Pane) для фарби
         map.createPane('parcelsPane');
         map.getPane('parcelsPane').style.zIndex = 400; 
         map.getPane('parcelsPane').style.pointerEvents = 'none'; 
 
-        // 3. Додаємо підкладку (супутник)
+        // 3. Додаємо підкладку
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
         // 4. Завантажуємо дані з Supabase
@@ -107,97 +109,112 @@
     }
 
     function renderParcels(data, map) {
-    // 1. ПЕРЕВІРКА АВТОРИЗАЦІЇ: Шукаємо слово ?admin в адресному рядку
-    // Наприклад: mysite.com/index.html?admin
-    const isAuthorized = new URLSearchParams(window.location.search).has('admin');
+        const userId = localStorage.getItem('userId');
+        const userRole = localStorage.getItem('userRole');
+        const currentUser = userId ? { id: userId, role: userRole } : null;
 
-    data.forEach(pData => {
-        if (!pData.geom) return;
+        data.forEach(pData => {
+            if (!pData.geom) return;
 
-        L.geoJSON(pData.geom, {
-            pane: 'parcelsPane', 
-            style: function() {
-                return {
-                    ...getParcelStyle(pData.category, pData.last_returned, pData.status),
-                    color: 'white', 
-                    weight: 2
-                };
-            },
-            onEachFeature: function(feature, layer) {
-                const name = pData.name || "№?";
-                let labelPos = pData.label_pos ? L.latLng(pData.label_pos[0], pData.label_pos[1]) : layer.getBounds().getCenter();
+            L.geoJSON(pData.geom, {
+                pane: 'parcelsPane', 
+                style: function() {
+                    return {
+                        ...getParcelStyle(pData.category, pData.last_returned, pData.status),
+                        color: 'white', 
+                        weight: 2
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    const name = pData.name || "№?";
+                    let labelPos = pData.label_pos ? L.latLng(pData.label_pos[0], pData.label_pos[1]) : layer.getBounds().getCenter();
 
-                layer.bindTooltip(name, { permanent: true, direction: 'center', className: 'parcel-label', opacity: 1.0 }).openTooltip(labelPos);
+                    layer.bindTooltip(name, { permanent: true, direction: 'center', className: 'parcel-label', opacity: 1.0 }).openTooltip(labelPos);
 
-                layer.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    
-                    const statusText = pData.status === 'taken' ? "🔴 ЗАЙНЯТА" : "🟢 ВІЛЬНА";
-                    const lastDate = pData.last_returned ? new Date(pData.last_returned).toLocaleDateString() : "немає даних";
-                    
-                    // 2. ФОРМУЄМО ВМІСТ ПОПАПУ З УМОВОЮ
-                    const popupContent = `
-                        <div style="font-family: sans-serif; min-width: 180px;">
-                            <h3 style="margin: 0 0 10px 0;">Дільниця ${name}</h3>
-                            <p style="margin: 5px 0;"><b>Статус:</b> ${statusText}</p>
-                            <p style="margin: 5px 0;"><b>Здана:</b> ${lastDate}</p>
-                            ${pData.status === 'taken' ? `<p style="margin: 5px 0;"><b>Вісник:</b> ${pData.taken_by || '—'}</p>` : ''}
-                            
-                            <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-                            
-                            <button onclick="window.buildRoute(${labelPos.lat}, ${labelPos.lng})" 
-                                style="background: #007bff; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; margin-bottom: 8px;">
-                                📍 Побудувати маршрут
-                            </button>
+                    layer.on('click', (e) => {
+                        L.DomEvent.stopPropagation(e);
+                        
+                        // --- РОЗРАХУНОК ЛОГІКИ ТУТ (Всередині кліку) ---
+                        const now = new Date();
+                        const returnDate = pData.last_returned ? new Date(pData.last_returned) : new Date(0);
+                        const diffMonths = (now - returnDate) / (1000 * 60 * 60 * 24 * 30.44);
 
-                            ${(isAuthorized && pData.status !== 'taken') ? `
-                            <button onclick="window.showModal(${pData.id}, '${name}')" 
-                                style="background: #28a745; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                                ✋ Взяти дільницю
-                            </button>` : ''}
-                        </div>
-                    `;
+                        let canTake = false;
+                        let lockMessage = '';
 
-                    layer.bindPopup(popupContent).openPopup();
-                });
-            }
-        }).addTo(map);
-    });
-}
+                        if (currentUser) {
+                            if (currentUser.role === 'super_admin' || currentUser.role === 'admin') {
+                                canTake = (pData.status === 'free');
+                            } 
+                            else if (currentUser.role === 'user' && pData.status === 'free') {
+                                if (diffMonths >= 3) {
+                                    canTake = true;
+                                } else {
+                                    const availableDate = new Date(returnDate);
+                                    availableDate.setMonth(availableDate.getMonth() + 3);
+                                    lockMessage = `<p style="color:orange; font-size:12px; margin-top:10px;">⚠️ Доступна з: ${availableDate.toLocaleDateString()}</p>`;
+                                }
+                            }
+                        } else {
+                            lockMessage = `<p style="color:gray; font-size:12px; margin-top:10px;">ℹ️ Увійдіть, щоб взяти дільницю</p>`;
+                        }
 
-    // Функція розрахунку кольорів (Ваша логіка)
+                        const popupContent = `
+                            <div style="font-family: sans-serif; min-width: 180px;">
+                                <h3 style="margin:0 0 5px 0;">Дільниця ${name}</h3>
+                                <p style="margin:3px 0;">Статус: ${pData.status === 'taken' ? '🔴 Зайнята' : '🟢 Вільна'}</p>
+                                ${pData.notes ? `<p style="font-size:12px; color:#007bff; margin:5px 0;"><b>Прим:</b> ${pData.notes}</p>` : ''}
+                                <hr style="border:0; border-top:1px solid #eee;">
+                                <button onclick="window.buildRoute(${labelPos.lat}, ${labelPos.lng})" style="width:100%; margin-bottom:5px; cursor:pointer;">📍 Маршрут</button>
+                                ${canTake ? `<button onclick="window.showModal(${pData.id}, '${name}')" style="background:#28a745; color:white; width:100%; padding:10px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">✋ Взяти</button>` : lockMessage}
+                            </div>
+                        `;
+
+                        layer.bindPopup(popupContent).openPopup();
+                    });
+                }
+            }).addTo(map);
+        });
+    }
+
     function getParcelStyle(category, lastReturnDate, status) {
         if (status === 'taken') return { fillColor: '#e74c3c', fillOpacity: 0.8 };
 
         const now = new Date();
-        const returnDate = lastReturnDate ? new Date(lastReturnDate) : new Date();
-        
-        const diffTime = Math.abs(now - returnDate);
-        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30.44);
+        const returnDate = lastReturnDate ? new Date(lastReturnDate) : new Date(0);
+        const diffMonths = (now - returnDate) / (1000 * 60 * 60 * 24 * 30.44);
 
-        if (diffMonths < 3) return { fillColor: '#808080', fillOpacity: 0.8 }; // Сірий
+        if (diffMonths < 3) return { fillColor: '#808080', fillOpacity: 0.8 }; 
 
-        let baseColor = '#008000'; // Зелений
+        let baseColor = '#008000';
         if (category === 'Ділова') baseColor = '#0000FF';
         if (category === 'Багатоповерхівки') baseColor = '#FFA500';
 
-        if (diffMonths >= 3 && diffMonths < 6) {
-            return { fillColor: baseColor, fillOpacity: 1.0 };
-        } 
-        else if (diffMonths >= 6 && diffMonths < 11) {
-            return { fillColor: '#FF0000', fillOpacity: 0.5 }; // Червоний 50%
-        } 
-        else if (diffMonths >= 11) {
-            return { fillColor: '#FF0000', fillOpacity: 1.0 }; // Червоний 100%
-        }
+        if (diffMonths >= 6) return { fillColor: '#FF0000', fillOpacity: diffMonths >= 11 ? 1.0 : 0.5 };
 
         return { fillColor: baseColor, fillOpacity: 1.0 };
     }
 
-    // Глобальні функції для модального вікна
+    // Робота з інтерфейсом при завантаженні
+    document.addEventListener('DOMContentLoaded', () => {
+        initMap();
+        const userName = localStorage.getItem('userName');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        if (userName && loginBtn) {
+            loginBtn.innerHTML = `👤 ${userName}`;
+            loginBtn.href = "profile.html";
+            loginBtn.style.background = "#e3f2fd";
+        }
+    });
+
+    // Глобальні функції
     window.showModal = (id, name) => {
         window.currentParcelId = id;
         document.getElementById('p-name').innerText = name;
+        // Автозаповнення імені з профілю, якщо є
+        const savedName = localStorage.getItem('userName');
+        if(savedName) document.getElementById('v-name').value = savedName;
         document.getElementById('takeModal').style.display = 'block';
     };
 
@@ -208,12 +225,14 @@
     window.confirmTake = async () => {
         const vName = document.getElementById('v-name').value;
         const vCamp = document.getElementById('v-campaign').value;
-        if (!vName) return alert("Введіть прізвище!");
+        const userId = localStorage.getItem('userId');
+        if (!vName) return alert("Введіть ім'я!");
 
         const { error } = await supabase.from('parcels')
             .update({ 
                 status: 'taken', 
                 taken_by: vName, 
+                taken_by_id: userId, // Зберігаємо ID для кабінету
                 taken_at: new Date().toISOString(),
                 campaign: vCamp 
             })
@@ -227,13 +246,10 @@
         }
     };
 
-    // Функція для відкриття Google Maps
     window.buildRoute = (lat, lng) => {
-        // Формуємо посилання для Google Maps: від поточного місця до координат дільниці
         const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
         window.open(url, '_blank');
     };
-    document.addEventListener('DOMContentLoaded', initMap);
 </script>
 </body>
 </html>

@@ -61,6 +61,12 @@
         
         localStorage.setItem('mapData_v3', jsonString); // Новий ключ для чистоти
         console.log("Дані синхронізовано з пам'яттю");
+        // 💾 отправка на сервер
+        fetch(API + '/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: jsonString
+        }).catch(err => console.log("Не удалось сохранить на сервер:", err));
     }
 
     // --- ФУНКЦІЯ ПРИВ'ЯЗКИ КЛІКУ ТА ЯРЛИКА ---
@@ -113,6 +119,24 @@
     });
     map.addControl(drawControl);
 
+    // 🔥 ПОДКЛЮЧЕНИЕ К СЕРВЕРУ
+    const API = "https://map-project.onrender.com"; // ← сюда свой URL
+
+    // 📥 загрузка с сервера
+    fetch(API + '/parcels')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                onEachFeature: function (feature, layer) {
+                    layer.feature = feature;
+                    drawnItems.addLayer(layer);
+                    setupLayer(layer, feature);
+                }
+            });
+            console.log("Дані завантажені з сервера");
+        })
+        .catch(err => console.log("Сервер недоступний:", err));
+        
     map.on('draw:created', function (e) {
         var layer = e.layer;
         var name = prompt("Номер ділянки:", "№" + (drawnItems.getLayers().length + 1));

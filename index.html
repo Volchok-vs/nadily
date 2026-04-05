@@ -134,39 +134,60 @@
                     layer.on('click', (e) => {
                         L.DomEvent.stopPropagation(e);
                         
-                        // --- РОЗРАХУНОК ЛОГІКИ ТУТ (Всередині кліку) ---
+                        // Читаємо дані з пам'яті браузера
+                        const rawRole = localStorage.getItem('userRole');
+                        const role = rawRole ? rawRole.trim().toLowerCase() : null;
+                        
+                        // Відлагодження в консоль (натисніть F12 щоб побачити)
+                        console.log("--- ПЕРЕВІРКА КЛІКУ ---");
+                        console.log("Ваша роль у localStorage:", role);
+                        console.log("Статус дільниці:", pData.status);
+                        console.log("Останній раз здана:", pData.last_returned);
+
                         const now = new Date();
                         const returnDate = pData.last_returned ? new Date(pData.last_returned) : new Date(0);
                         const diffMonths = (now - returnDate) / (1000 * 60 * 60 * 24 * 30.44);
-
+                        
                         let canTake = false;
                         let lockMessage = '';
 
-                        if (currentUser) {
-                            if (currentUser.role === 'super_admin' || currentUser.role === 'admin') {
-                                canTake = (pData.status === 'free');
-                            } 
-                            else if (currentUser.role === 'user' && pData.status === 'free') {
+                        // Логіка визначення кнопки
+                        const isFree = !pData.status || pData.status === 'free' || pData.status === '';
+
+                        if (role && isFree) {
+                            if (role === 'admin' || role === 'super_admin') {
+                                canTake = true;
+                            } else if (role === 'user') {
+                                // Перевірка на 3 місяці
                                 if (diffMonths >= 3) {
                                     canTake = true;
                                 } else {
                                     const availableDate = new Date(returnDate);
                                     availableDate.setMonth(availableDate.getMonth() + 3);
-                                    lockMessage = `<p style="color:orange; font-size:12px; margin-top:10px;">⚠️ Доступна з: ${availableDate.toLocaleDateString()}</p>`;
+                                    lockMessage = `<p style="color:#d35400; font-size:12px; margin-top:10px;">⌛ Відпочиває до: <b>${availableDate.toLocaleDateString()}</b></p>`;
                                 }
                             }
-                        } else {
-                            lockMessage = `<p style="color:gray; font-size:12px; margin-top:10px;">ℹ️ Увійдіть, щоб взяти дільницю</p>`;
+                        } else if (!role) {
+                            lockMessage = `<p style="color:gray; font-size:12px; margin-top:10px;">ℹ️ Ви не авторизовані. <a href="login.html" style="color:#007bff;">Увійти</a></p>`;
+                        } else if (!isFree) {
+                            lockMessage = `<p style="color:#c0392b; font-size:12px; margin-top:10px;">🔴 Зайнята: <b>${pData.taken_by || 'іншим вісником'}</b></p>`;
                         }
 
                         const popupContent = `
-                            <div style="font-family: sans-serif; min-width: 180px;">
+                            <div style="font-family: sans-serif; min-width: 200px;">
                                 <h3 style="margin:0 0 5px 0;">Дільниця ${name}</h3>
-                                <p style="margin:3px 0;">Статус: ${pData.status === 'taken' ? '🔴 Зайнята' : '🟢 Вільна'}</p>
-                                ${pData.notes ? `<p style="font-size:12px; color:#007bff; margin:5px 0;"><b>Прим:</b> ${pData.notes}</p>` : ''}
-                                <hr style="border:0; border-top:1px solid #eee;">
-                                <button onclick="window.buildRoute(${labelPos.lat}, ${labelPos.lng})" style="width:100%; margin-bottom:5px; cursor:pointer;">📍 Маршрут</button>
-                                ${canTake ? `<button onclick="window.showModal(${pData.id}, '${name}')" style="background:#28a745; color:white; width:100%; padding:10px; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">✋ Взяти</button>` : lockMessage}
+                                <p style="margin:3px 0; font-size:13px;">Статус: <b>${pData.status === 'taken' ? '🔴 Зайнята' : '🟢 Вільна'}</b></p>
+                                <p style="margin:3px 0; font-size:13px;">Здана: ${pData.last_returned ? new Date(pData.last_returned).toLocaleDateString() : 'давно'}</p>
+                                ${pData.notes ? `<p style="font-size:12px; color:#007bff; background:#e3f2fd; padding:5px; border-radius:4px;"><b>Прим:</b> ${pData.notes}</p>` : ''}
+                                <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+                                
+                                <button onclick="window.buildRoute(${labelPos.lat}, ${labelPos.lng})" style="width:100%; margin-bottom:8px; padding:8px; cursor:pointer; background:#f8f9fa; border:1px solid #ddd; border-radius:4px;">📍 Маршрут</button>
+                                
+                                ${canTake ? `
+                                    <button onclick="window.showModal(${pData.id}, '${name}')" style="background:#28a745; color:white; width:100%; padding:12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px;">
+                                        ✋ Взяти дільницю
+                                    </button>
+                                ` : lockMessage}
                             </div>
                         `;
 

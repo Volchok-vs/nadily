@@ -2,96 +2,343 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Мій кабінет вісника</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кабінет Адміністратора</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .parcel-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; position: relative; }
-        .parcel-card h4 { margin: 0 0 10px 0; color: #007bff; }
-        .time-badge { font-size: 12px; background: #eee; padding: 3px 8px; border-radius: 10px; color: #555; }
-        textarea { width: 100%; height: 60px; margin-top: 10px; border: 1px solid #ddd; border-radius: 5px; padding: 8px; box-sizing: border-box; }
-        .btn { border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .btn-save { background: #28a745; color: white; margin-right: 5px; }
-        .btn-return { background: #dc3545; color: white; }
-        .logout { color: #888; text-decoration: none; font-size: 14px; }
+        :root { --sidebar-width: 250px; --primary: #007bff; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Бокове меню */
+        .sidebar { width: var(--sidebar-width); background: #2c3e50; color: white; display: flex; flex-direction: column; padding: 20px 0; }
+        .sidebar h2 { padding: 0 20px; font-size: 1.2rem; margin-bottom: 30px; color: #ecf0f1; }
+        .nav-item { padding: 15px 20px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; text-decoration: none; color: #bdc3c7; }
+        .nav-item:hover, .nav-item.active { background: #34495e; color: white; }
+        .nav-item i { margin-right: 10px; }
+        .logout-btn { margin-top: auto; color: #e74c3c; border-top: 1px solid #34495e; }
+
+        /* Контентна область */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* Таблиці та списки */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; cursor: pointer; }
+        .badge { background: #eee; padding: 4px 8px; border-radius: 12px; font-size: 0.85rem; }
+        
+        .hidden { display: none; }
+        .btn-back { margin-bottom: 15px; cursor: pointer; color: var(--primary); display: inline-block; }
+
+        .territory-grid { border: 2px solid #333; width: auto; min-width: 100%; }
+        .territory-grid th, .territory-grid td { 
+            border: 1px solid #444; 
+            text-align: center; 
+            padding: 5px; 
+            font-size: 0.85rem;
+        }
+        .territory-grid thead th { background: #e9ecef; font-weight: bold; }
+        .cell-date { font-size: 0.75rem; width: 80px; }
+        .parcel-num { font-weight: bold; font-size: 1.1rem; background: #f8f9fa; }
+
+        #territoryTable th, #territoryTable td {
+        border: 1px solid #444;
+        padding: 8px;
+        text-align: center;
+        font-family: sans-serif;
+        }
+        #territoryTable thead th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        .num-col { background: #eee; font-weight: bold; width: 50px; font-size: 16px; }
+        .name-row { background: #fff; font-weight: bold; color: #2c3e50; height: 30px; }
+        .date-row { background: #fafafa; height: 25px; }
+        .date-cell { font-size: 11px; width: 90px; color: #555; }
+
+        .last-done-col { background: #f0f0f0; width: 100px; font-size: 11px; color: #d32f2f; font-weight: bold; }
+    .current-year-cell { background: #e8f5e9; } /* Підсвітка поточного року */
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div>
-            <h2 style="margin:0" id="userName">Завантаження...</h2>
-            <span id="userRole" style="font-size:12px; color:gray; text-transform:uppercase;"></span>
+    <div class="sidebar">
+        <h2 id="displayRole">Кабінет</h2>
+        <div class="nav-item active" onclick="switchTab('my-card')">👤 Моя картка</div>
+        <div id="adminMenu" class="hidden">
+            <div class="nav-item" onclick="switchTab('group-cards')">👥 Картки групи</div>
+            <div class="nav-item" onclick="switchTab('all-territories')">📋 Список територій</div>
         </div>
-        <a href="#" class="logout" onclick="logout()">Вийти</a>
+        <a href="index.html" class="nav-item">🗺️ Повернутись до карти</a>
+        <div class="nav-item logout-btn" onclick="logout()">🏃 Вийти</div>
     </div>
 
-    <h3>Мої дільниці на руках:</h3>
-    <div id="parcelList">Завантаження списку...</div>
-    
-    <a href="index.html" style="display:block; text-align:center; margin-top:20px; color:#007bff; text-decoration:none;">← Повернутися до карти</a>
+    <div class="main-content">
+        <div id="tab-my-card" class="tab-content">
+            <h1 id="userName">Завантаження...</h1>
+            <div class="card">
+                <h3>Дільниці у мене на руках</h3>
+                <div id="myParcels">Пошук дільниць...</div>
+            </div>
+        </div>
+
+        <div id="tab-group-cards" class="tab-content hidden">
+            <h1>Вісники групи</h1>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Прізвище та ім'я</th>
+                            <th>Кількість дільниць</th>
+                        </tr>
+                    </thead>
+                    <tbody id="publishersList">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-user-details" class="tab-content hidden">
+            <div class="btn-back" onclick="switchTab('group-cards')">← Назад до списку</div>
+            <h1 id="detailUserName">Ім'я вісника</h1>
+            <div class="card">
+                <h3>Активні дільниці вісника</h3>
+                <div id="detailUserParcels"></div>
+            </div>
+        </div>
+
+        <div id="tab-all-territories" class="tab-content hidden">
+    <h1>📋 Реєстр обліку дільниць (${getTheocraticYearRange()})</h1>
+    <div class="card" style="overflow-x: auto;">
+        <table id="territoryTable">
+            <thead id="tHead"></thead>
+            <tbody id="tBody"></tbody>
+        </table>
+    </div>
 </div>
+
+        <style>
+            /* Стилі для друкованого вигляду таблиці */
+            #territoryTable th, #territoryTable td {
+                border: 1px solid #000 !important; /* Чіткі межі як у журналі */
+                padding: 6px;
+                text-align: center;
+                vertical-align: middle;
+            }
+            .num-col { background: #eee; font-weight: bold; width: 60px; font-size: 18px; }
+            .name-cell { background: #fff; font-weight: bold; height: 35px; font-size: 14px; }
+            .date-cell { font-size: 11px; width: 100px; color: #333; height: 25px; }
+        </style>
+    </div>
 
 <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
     const supabase = createClient("https://modsgjjtwxbdnlycvifp.supabase.co", "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D");
 
     const userId = localStorage.getItem('userId');
+    const userRole = localStorage.getItem('userRole');
+
     if (!userId) window.location.href = 'login.html';
 
-    async function loadData() {
-        // 1. Дані користувача
+    // Ініціалізація
+    async function init() {
         document.getElementById('userName').innerText = localStorage.getItem('userName');
-        document.getElementById('userRole').innerText = localStorage.getItem('userRole');
+        document.getElementById('displayRole').innerText = userRole === 'super_admin' ? 'Супер Адмін' : (userRole === 'admin' ? 'Адміністратор' : 'Вісник');
 
-        // 2. Отримуємо дільниці користувача
+        // Показуємо меню адміна, якщо роль дозволяє
+        if (userRole === 'admin' || userRole === 'super_admin') {
+            document.getElementById('adminMenu').classList.remove('hidden');
+            loadGroupStats();
+        }
+
+        loadMyParcels();
+    }
+
+    
+    // Функція для отримання тексту теократичного року (напр. 2025-2026)
+    function getTheocraticYearText() {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        if (now.getMonth() >= 8) { // Вересень-Грудень
+            return `${currentYear}-${currentYear + 1}`;
+        } else { // Січень-Серпень
+            return `${currentYear - 1}-${currentYear}`;
+        }
+    }
+
+    // Функція для визначення дати початку поточного року (1 вересня)
+    function getTheocraticStart() {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        return (now.getMonth() >= 8) ? new Date(currentYear, 8, 1) : new Date(currentYear - 1, 8, 1);
+    }
+
+    async function loadAllTerritoriesGrid() {
+        const tHead = document.getElementById('tHead');
+        const tBody = document.getElementById('tBody');
+        const rangeStart = getTheocraticStart();
+
+        // Оновлюємо заголовок на сторінці текстом
+        const titleElement = document.querySelector('#tab-all-territories h1');
+        if (titleElement) {
+            titleElement.innerText = `📋 Реєстр обліку дільниць (${getTheocraticYearText()})`;
+        }
+
+        // Завантажуємо дані
         const { data: parcels, error } = await supabase
             .from('parcels')
-            .select('*')
-            .eq('taken_by_id', userId)
-            .eq('status', 'taken');
+            .select('*');
 
-        const listDiv = document.getElementById('parcelList');
+        if (error) return;
+
+        // ПРАВИЛЬНЕ СОРТУВАННЯ: перетворюємо номери на числа перед сортуванням
+        parcels.sort((a, b) => {
+            const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+            return numA - numB;
+        });
+
+        // 1. Формуємо заголовок (залишаємо 1 колонку, вона буде розширюватись за потреби)
+        let maxCols = 1; 
+        tHead.innerHTML = `
+            <tr>
+                <th rowspan="2" class="num-col">№</th>
+                <th rowspan="2" class="last-done-col">Останнє<br>опрацювання<br>(до 1 вересня)</th>
+                ${'<th colspan="2">Прізвище вісника</th>'.repeat(maxCols)}
+            </tr>
+            <tr>
+                ${'<th>Отримано</th><th>Здано</th>'.repeat(maxCols)}
+            </tr>
+        `;
+
+        tBody.innerHTML = '';
+
+        parcels.forEach(p => {
+            const lastReturn = p.last_returned ? new Date(p.last_returned) : null;
+            
+            // Визначаємо дату для "Останнє опрацювання" (якщо здано до 1 вересня поточного року)
+            let lastDoneDate = "-";
+            if (lastReturn && lastReturn < rangeStart) {
+                lastDoneDate = lastReturn.toLocaleDateString('uk-UA');
+            }
+
+            // РЯДОК 1 (Номер + Останнє + Прізвище)
+            const tr1 = document.createElement('tr');
+            const isCurrentYear = p.taken_at && new Date(p.taken_at) >= rangeStart;
+            const currentName = (p.status === 'taken' && isCurrentYear) ? (p.taken_by || '—') : '';
+            
+            tr1.innerHTML = `
+                <td rowspan="2" class="num-col">${p.name}</td>
+                <td rowspan="2" class="last-done-col" style="background:#f5f5f5; color:#777;">${lastDoneDate}</td>
+                <td colspan="2" class="name-cell" style="font-weight:bold;">${currentName}</td>
+            `;
+
+            // РЯДОК 2 (Дати)
+            const tr2 = document.createElement('tr');
+            const dIn = (p.taken_at && isCurrentYear) ? new Date(p.taken_at).toLocaleDateString('uk-UA') : '';
+            const dOut = (p.last_returned && lastReturn >= rangeStart) ? lastReturn.toLocaleDateString('uk-UA') : '';
+            
+            tr2.innerHTML = `
+                <td class="date-cell" style="background:#e8f5e9;">${dIn}</td>
+                <td class="date-cell" style="background:#fff3e0;">${dOut}</td>
+            `;
+
+            tBody.appendChild(tr1);
+            tBody.appendChild(tr2);
+        });
+    }
+
+    // Оновіть функцію switchTab, щоб вона завантажувала таблицю при переході
+    const originalSwitchTab = window.switchTab;
+    window.switchTab = (tabName) => {
+        originalSwitchTab(tabName);
+        if (tabName === 'all-territories') {
+            loadAllTerritoriesGrid();
+        }
+    };
+
+    // Перемикання вкладок
+    window.switchTab = (tabName) => {
+    // 1. Ховаємо всі вкладки
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+    
+    // 2. Знімаємо активність з усіх пунктів меню
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    // 3. Показуємо потрібну вкладку
+    const activeTab = document.getElementById('tab-' + tabName);
+    if (activeTab) {
+        activeTab.classList.remove('hidden');
+        
+        // 4. ЯКЩО ЦЕ ТАБЛИЦЯ — ЗАПУСКАЄМО ЗАВАНТАЖЕННЯ ДАНИХ
+        if (tabName === 'all-territories') {
+            loadAllTerritoriesGrid();
+        }
+    }
+};
+
+    // Завантаження власних дільниць
+    async function loadMyParcels() {
+        const { data } = await supabase.from('parcels').select('*').eq('taken_by_id', userId).eq('status', 'taken');
+        renderParcelList(data, 'myParcels', true);
+    }
+
+    // Завантаження статистики групи (Список вісників)
+    async function loadGroupStats() {
+        // Отримуємо всіх користувачів
+        const { data: users } = await supabase.from('publishers').select('id, name');
+        // Отримуємо всі зайняті дільниці
+        const { data: parcels } = await supabase.from('parcels').select('taken_by_id').eq('status', 'taken');
+
+        const listBody = document.getElementById('publishersList');
+        listBody.innerHTML = '';
+
+        users.forEach(user => {
+            const count = parcels.filter(p => p.taken_by_id === user.id).length;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${user.name}</td><td><span class="badge">${count}</span></td>`;
+            tr.onclick = () => showUserDetails(user.id, user.name);
+            listBody.appendChild(tr);
+        });
+    }
+
+    // Детальна інформація про вісника
+    async function showUserDetails(uId, uName) {
+        switchTab('user-details');
+        document.getElementById('detailUserName').innerText = uName;
+        const { data } = await supabase.from('parcels').select('*').eq('taken_by_id', uId).eq('status', 'taken');
+        renderParcelList(data, 'detailUserParcels', false);
+    }
+
+    // Універсальна функція рендеру списку дільниць
+    function renderParcelList(parcels, containerId, canReturn) {
+        const container = document.getElementById(containerId);
         if (!parcels || parcels.length === 0) {
-            listDiv.innerHTML = "<p>У вас зараз немає активних дільниць.</p>";
+            container.innerHTML = '<p style="color:gray;">Немає активних дільниць.</p>';
             return;
         }
 
-        listDiv.innerHTML = parcels.map(p => {
-            const takenDate = new Date(p.taken_at);
-            const days = Math.floor((new Date() - takenDate) / (1000 * 60 * 60 * 24));
+        container.innerHTML = parcels.map(p => {
+            const days = Math.floor((new Date() - new Date(p.taken_at)) / (1000 * 60 * 60 * 24));
             return `
-                <div class="parcel-card">
-                    <h4>Дільниця №${p.name}</h4>
-                    <span class="time-badge">На руках: ${days} дн. (з ${takenDate.toLocaleDateString()})</span>
-                    <textarea id="note-${p.id}" placeholder="Примітка (напр. злий пес, не заходити...)">${p.notes || ''}</textarea>
-                    <button class="btn btn-save" onclick="saveNote('${p.id}')">Зберегти примітку</button>
-                    <button class="btn btn-return" onclick="returnParcel('${p.id}', '${p.name}')">Здати дільницю</button>
+                <div style="border:1px solid #eee; padding:15px; margin-bottom:10px; border-radius:8px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>Дільниця №${p.name}</strong>
+                        <span class="badge">${days} дн. на руках</span>
+                    </div>
+                    <p style="font-size:0.9rem; color:#666; margin:10px 0;">Примітка: ${p.notes || '—'}</p>
+                    ${canReturn ? `<button onclick="returnParcel('${p.id}')" style="background:#ff4757; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Здати</button>` : ''}
                 </div>
             `;
         }).join('');
     }
 
-    window.saveNote = async (id) => {
-        const noteText = document.getElementById(`note-${id}`).value;
-        const { error } = await supabase.from('parcels').update({ notes: noteText }).eq('id', id);
-        if (!error) alert("Примітку збережено!");
-    };
-
-    window.returnParcel = async (id, name) => {
-        if (!confirm(`Ви точно хочете здати дільницю №${name}?`)) return;
-        
-        const { error } = await supabase.from('parcels').update({ 
-            status: 'free', 
-            taken_by_id: null, 
-            taken_by: null,
-            last_returned: new Date().toISOString() 
-        }).eq('id', id);
-
-        if (!error) location.reload();
+    window.returnParcel = async (id) => {
+        if (!confirm('Здати дільницю?')) return;
+        await supabase.from('parcels').update({ status: 'free', taken_by_id: null, taken_by: null, last_returned: new Date() }).eq('id', id);
+        location.reload();
     };
 
     window.logout = () => {
@@ -99,7 +346,7 @@
         window.location.href = 'login.html';
     };
 
-    loadData();
+    init();
 </script>
 </body>
 </html>

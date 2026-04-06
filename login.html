@@ -74,6 +74,23 @@
             text-decoration: none;
             font-size: 14px;
         }
+
+        .password-wrapper {
+            width: 100%;
+        }
+
+        .password-wrapper input {
+            box-sizing: border-box; /* Щоб padding не розширював поле */
+        }
+
+        #togglePassword:hover {
+            color: #007bff; /* Колір при наведенні */
+        }
+
+        /* Прибираємо стандартну синю рамку при натисканні на кнопку */
+        #togglePassword:focus {
+            outline: none;
+        }
     </style>
 </head>
 <body>
@@ -157,6 +174,24 @@
 
     // Робимо функцію доступною для кнопки
     window.handleLogin = handleLogin;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = document.getElementById('togglePassword');
+
+        if (toggleBtn && passwordInput) {
+            toggleBtn.addEventListener('click', () => {
+                // Перевіряємо поточний тип
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                
+                // Змінюємо тип
+                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                
+                // Змінюємо іконку (Око -> Перекреслене око або замок)
+                toggleBtn.textContent = isPassword ? '🔒' : '👁️';
+            });
+        }
+    });
 </script>
 
 </body>

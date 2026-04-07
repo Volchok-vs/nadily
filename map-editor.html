@@ -109,12 +109,68 @@
             font-weight: bold; 
             color: #000; 
         }
+
+        /* Робимо контейнер гнучким, щоб кнопки були в ряд */
+.menu-container {
+    position: absolute;
+    top: 10px;
+    left: 50px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column; /* Меню випадає вниз */
+    gap: 8px;
+}
+
+        /* Стиль для кнопки виходу */
+        .btn-exit {
+            background: #6c757d; /* Спокійний сірий колір */
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .btn-exit:hover {
+            background: #5a6268;
+            transform: translateY(-1px); /* Легкий ефект натискання */
+        }
+
+        /* Переконайтеся, що гамбургер має таку ж висоту */
+        .hamburger {
+            background: #333;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .hamburger:hover {
+            background: #444;
+        }
+
+        /* Щоб панель керування не зміщувалася */
+        .controls {
+            margin-top: 0; /* Оскільки ми додали gap у контейнер */
+        }
     </style>
 </head>
 <body>
 
 <div class="menu-container">
-    <button class="hamburger" onclick="toggleMenu()">☰ Меню</button>
+    <div style="display: flex; gap: 8px;">
+        <button class="hamburger" onclick="toggleMenu()">☰ Меню</button>
+        <button class="btn-exit" onclick="window.location.href='index.html'">🏠 На головну</button>
+    </div>
+
     <div class="controls" id="menuControls">
         <button class="btn-save" onclick="window.downloadGeoJSON()">💾 Скачати .geojson</button>
         
@@ -166,17 +222,29 @@
     window.setupLayer = function(layer, feature) {
         var props = feature.properties || {};
         var name = props.name || "Без назви";
-        var labelPos = props.labelPos ? L.latLng(props.labelPos) : layer.getBounds().getCenter();
         
-        layer.bindTooltip(name, { permanent: true, direction: 'center' }).openTooltip(labelPos);
+        // Перевірка формату координат (масив чи об'єкт)
+        var labelPos;
+        if (props.labelPos) {
+            labelPos = L.latLng(props.labelPos);
+        } else {
+            labelPos = layer.getBounds().getCenter();
+        }
+        
+        layer.bindTooltip(name, { 
+            permanent: true, 
+            direction: 'center' 
+        });
+        layer.openTooltip(labelPos); // Примусове відкриття в точці
 
         layer.on('click', function (e) {
             L.DomEvent.stopPropagation(e);
             if (!document.getElementById('enableLabelMove').checked) return;
 
             var newPos = e.latlng;
-            layer.unbindTooltip();
-            layer.bindTooltip(name, { permanent: true, direction: 'center' }).openTooltip(newPos);
+            // Оновлюємо тултіп на нову позицію
+            layer.setTooltipContent(name); 
+            layer.openTooltip(newPos);
             
             if (!layer.feature) layer.feature = { type: "Feature", properties: {} };
             layer.feature.properties.name = name;

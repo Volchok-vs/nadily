@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Деталі дільниці</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        
+        #staticMap { 
+            height: 300px; width: 100%; border-radius: 8px; margin: 20px 0; 
+            border: 1px solid #ddd; z-index: 1;
+        }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .card { border: 1px solid #eee; padding: 15px; border-radius: 8px; background: #fff; }
+        
+        label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
+        input[type="date"], input[type="text"], textarea { 
+            width: 100%; padding: 10px; box-sizing: border-box; 
+            border-radius: 5px; border: 1px solid #ccc; margin-bottom: 15px;
+        }
+        
+        button { cursor: pointer; padding: 10px 20px; border-radius: 5px; border: none; font-weight: bold; transition: 0.3s; }
+        .btn-save { background: #28a745; color: white; width: 100%; }
+        .btn-save:hover { background: #218838; }
+        .btn-save:disabled { background: #ccc; cursor: not-allowed; }
+        
+        #backBtn { background: #6c757d; color: white; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: left; font-size: 13px; }
+        th { background: #f8f9fa; }
+        .badge { background: #e3f2fd; color: #0d47a1; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+
+        .hidden { display: none !important; }
+
+        #manualLogModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: flex;
+            align-items: center; justify-content: center; z-index: 1000;
+        }
+
+        .modal-content {
+            background: white; padding: 25px; border-radius: 12px;
+            width: 90%; max-width: 400px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .comment-item {
+        word-wrap: break-word;      /* Переносити довгі слова */
+        overflow-wrap: break-word;
+        white-space: pre-wrap;     /* Зберігати переноси рядків (Enter) при відображенні */
+        padding-right: 60px !important; /* Місце для кнопок у верхньому правому куті */
+    }
+
+        .comment-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 10px;
+            background: rgba(249, 249, 249, 0.9); /* Легкий фон, щоб кнопки не зливалися з текстом */
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+
+        /* Модальне вікно коментаря */
+        #commentModal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        #commentModal.hidden { display: none; }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        #newCommentText {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical; /* Дозволити розтягувати вікно вводу */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1 id="parcelTitle">Дільниця №...</h1>
+        <button id="backBtn">⬅️ Назад</button>
+    </div>
+
+    <div id="staticMap"></div>
+
+    <div class="grid">
+        <div class="card" id="editCard">
+            <h3>📝 Редагування</h3>
+            <div id="adminOnlyFields">
+                <label>Дата останнього опрацювання (тільки адмін):</label>
+                <input type="date" id="lastProcessedDate">
+            </div>
+            
+            <button id="mainSaveBtn" onclick="saveGeneralChanges()" class="btn-save">
+                Зберегти зміни
+            </button>
+        </div>
+
+        <div class="card" id="statusCard">
+            <h3>Статус</h3>
+            <p id="currentStatus">Завантаження...</p>
+            <hr>
+            <h4>📝 Коментарі</h4>
+            <div id="commentsList" style="margin-bottom: 15px;">
+                </div>
+            <div id="addCommentContainer">
+                </div>
+        </div>
+    </div>
+
+    <div id="commentModal" class="hidden">
+        <div class="modal-content">
+            <h3 id="commentModalTitle">Додати коментар</h3>
+            <textarea id="newCommentText" rows="4" placeholder="Ваш коментар..."></textarea>
+            <div style="margin: 10px 0;">
+                <label style="display: inline; font-weight: normal;">
+                    <input type="checkbox" id="hideAuthorCheckbox"> Сховати автора (анонімно)
+                </label>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveComment()" style="flex: 1; background: #28a745; color: white;">Зберегти</button>
+                <button onclick="closeCommentModal()" style="flex: 1; background: #6c757d; color: white;">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0;">📜 Історія опрацювання</h3>
+            <button id="addManualBtn" onclick="showManualLogModal()" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">
+                ➕ Додати запис вручну
+            </button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Вісник</th>
+                    <th>Отримано</th>
+                    <th>Здано</th>
+                    <th>Час</th>
+                    <th>⚙️</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="manualLogModal" class="hidden">
+    <div class="modal-content">
+        <h3 style="margin-top: 0;">Додати запис (архів)</h3>
+        <label>Прізвище вісника:</label>
+        <input type="text" id="manualName" placeholder="Прізвище">
+        
+        <label>Дата отримання:</label>
+        <input type="date" id="manualDateIn">
+        
+        <label>Дата здачі:</label>
+        <input type="date" id="manualDateOut">
+        
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button onclick="saveManualLog()" style="flex: 1; background: #28a745; color: white;">Зберегти</button>
+            <button onclick="hideManualLogModal()" style="flex: 1; background: #6c757d; color: white;">Скасувати</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    
+    const supabase = createClient("https://modsgjjtwxbdnlycvifp.supabase.co", "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D");
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const parcelId = urlParams.get('id');
+
+    const userRole = localStorage.getItem('userRole');
+    const currentUserId = localStorage.getItem('userId');
+    const isAdmin = (userRole === 'admin' || userRole === 'super_admin');
+
+    let editingCommentId = null; 
+
+    if (!parcelId) {
+        alert("Дільницю не знайдено!");
+        window.location.href = 'profile.html';
+    }
+
+    async function init() {
+        await loadParcelInfo();
+        await loadHistory();
+        await loadComments();
+    }
+
+    // Кнопка назад
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('backBtn');
+        if (btn) {
+            btn.onclick = () => {
+                const params = new URLSearchParams(window.location.search);
+                const fromSource = params.get('from');
+                if (fromSource === 'map') window.location.href = 'index.html';
+                else if (fromSource === 'all') window.location.href = 'profile.html?tab=all-territories';
+                else if (fromSource === 'my') window.location.href = 'profile.html?tab=my-card';
+                else window.location.href = 'profile.html';
+            };
+        }
+    });
+
+    // 1. ЗАВАНТАЖЕННЯ ІНФОРМАЦІЇ
+    async function loadParcelInfo() {
+        const { data: p, error } = await supabase.from('parcels').select('*').eq('id', parcelId).single();
+        if (error || !p) return console.error("Помилка:", error);
+
+        document.getElementById('parcelTitle').innerText = `Дільниця №${p.name}`;
+        
+        const dateInput = document.getElementById('lastProcessedDate');
+        const saveBtn = document.getElementById('mainSaveBtn');
+        const currentStatusEl = document.getElementById('currentStatus');
+
+        if (dateInput) {
+            dateInput.value = p.last_processed || '';
+            dateInput.disabled = !isAdmin;
+        }
+
+        if (currentStatusEl) {
+            currentStatusEl.innerHTML = p.status === 'taken' 
+                ? `🔴 На руках у: <b>${p.taken_by}</b>` 
+                : `🟢 Вільна`;
+        }
+
+        const isHolder = (p.taken_by_id === currentUserId);
+        if (saveBtn) saveBtn.disabled = !isAdmin; // Тепер тут тільки адмінські зміни дати
+    }
+
+    // 2. КОМЕНТАРІ (НОВА ЛОГІКА)
+    async function loadComments() {
+        const { data: comments, error } = await supabase
+            .from('parcel_comments')
+            .select('*')
+            .eq('parcel_id', parcelId)
+            .order('created_at', { ascending: true });
+
+        const list = document.getElementById('commentsList');
+        const addBtnContainer = document.getElementById('addCommentContainer');
+        
+        // Перевірка чи дільниця на руках у юзера
+        const { data: p } = await supabase.from('parcels').select('taken_by_id').eq('id', parcelId).single();
+        const isHolder = (p && p.taken_by_id === currentUserId);
+
+        if (!comments || comments.length === 0) {
+            list.innerHTML = '<p style="color:gray; font-style:italic; text-align:center;">Коментарів немає</p>';
+        } else {
+            list.innerHTML = comments.map(c => {
+                const isOwner = (c.user_id === currentUserId);
+                const canManage = isAdmin || isOwner;
+                
+                let authorDisplay = c.author_name;
+                if (c.is_anonymous) {
+                    authorDisplay = isAdmin ? `🕵️ ${c.author_name} (Приховано)` : "👤 Анонімно";
+                }
+
+                return `
+                    <div class="comment-item" style="background:#f9f9f9; border:1px solid #eee; padding:12px; border-radius:10px; margin-bottom:10px; position:relative;">
+                        ${canManage ? `
+                            <div class="comment-actions">
+                                <button onclick="prepareEditComment(${c.id})" title="Редагувати">✏️</button>
+                                <button onclick="deleteComment(${c.id})" title="Видалити">❌</button>
+                            </div>
+                        ` : ''}
+                        <p style="margin: 0 0 12px 0; font-size:14px; line-height:1.5; color:#333; white-space: pre-wrap;">${c.content}</p>
+                        <div style="font-size:11px; color:#888; display:flex; justify-content:space-between; border-top: 1px solid #f0f0f0; padding-top:8px;">
+                            <span><b>${authorDisplay}</b></span>
+                            <span>${new Date(c.created_at).toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        if (isAdmin || isHolder) {
+            addBtnContainer.innerHTML = `
+                <button onclick="openCommentModal()" style="background:none; border:1px dashed #28a745; color:#28a745; width:100%; padding:10px; border-radius:8px; cursor:pointer; font-weight:500;">
+                    + Додати коментар
+                </button>
+            `;
+        } else {
+            addBtnContainer.innerHTML = '';
+        }
+    }
+
+    window.openCommentModal = () => {
+        editingCommentId = null;
+        document.getElementById('commentModalTitle').innerText = "Додати коментар";
+        document.getElementById('newCommentText').value = "";
+        document.getElementById('hideAuthorCheckbox').checked = false;
+        document.getElementById('commentModal').classList.remove('hidden');
+    };
+
+    // Додайте це до вашого <script>
+    window.prepareEditComment = async (id) => {
+        // Знаходимо потрібний коментар у базі за ID, щоб отримати чистий текст без помилок екранування
+        const { data: c, error } = await supabase
+            .from('parcel_comments')
+            .select('content, is_anonymous')
+            .eq('id', id)
+            .single();
+
+        if (c) {
+            editingCommentId = id;
+            document.getElementById('commentModalTitle').innerText = "Редагувати коментар";
+            document.getElementById('newCommentText').value = c.content;
+            document.getElementById('hideAuthorCheckbox').checked = c.is_anonymous;
+            document.getElementById('commentModal').classList.remove('hidden');
+        }
+    };
+
+    window.closeCommentModal = () => document.getElementById('commentModal').classList.add('hidden');
+
+    window.saveComment = async () => {
+    const content = document.getElementById('newCommentText').value;
+    const isAnon = document.getElementById('hideAuthorCheckbox').checked;
+    const authorName = localStorage.getItem('userFullName') || localStorage.getItem('userName');
+
+    if (!content.trim()) return alert("Введіть текст!");
+
+    const payload = {
+        parcel_id: Number(parcelId),
+        user_id: currentUserId,
+        author_name: authorName,
+        content: content,
+        is_anonymous: isAnon
+    };
+
+    let result;
+    if (editingCommentId) {
+        result = await supabase.from('parcel_comments').update({
+            content: content,
+            is_anonymous: isAnon
+        }).eq('id', editingCommentId);
+    } else {
+        result = await supabase.from('parcel_comments').insert([payload]);
+    }
+
+    if (result.error) {
+        console.error("ДЕТАЛІ ПОМИЛКИ:", result.error);
+        // Якщо це конфлікт, ми побачимо на якому саме полі
+        alert(`Помилка: ${result.error.message} (${result.error.details})`);
+    } else {
+        closeCommentModal();
+        loadComments();
+    }
+};
+
+    window.deleteComment = async (id) => {
+        if (!confirm("Ви точно хочете видалити цей коментар?")) return;
+        const { error } = await supabase.from('parcel_comments').delete().eq('id', id);
+        if (!error) loadComments();
+    };
+
+    // 3. ЗБЕРЕЖЕННЯ ЗАГАЛЬНИХ ЗМІН (АДМІН)
+    window.saveGeneralChanges = async () => {
+        if (!isAdmin) return;
+        const dateVal = document.getElementById('lastProcessedDate').value;
+        
+        const { error } = await supabase
+            .from('parcels')
+            .update({ 
+                last_processed: dateVal || null,
+                last_returned: dateVal || null
+            })
+            .eq('id', parcelId);
+
+        if (error) alert("Помилка оновлення");
+        else {
+            alert("Дані збережено");
+            loadParcelInfo();
+        }
+    };
+
+    // 4. ІСТОРІЯ ТА АРХІВ
+    async function loadHistory() {
+        const { data: logs } = await supabase.from('territory_logs').select('*').eq('parcel_id', parcelId).order('returned_at', { ascending: false });
+        const body = document.getElementById('historyBody');
+
+        if (!logs || logs.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:gray; padding:15px;">Історія порожня</td></tr>';
+            return;
+        }
+
+        body.innerHTML = logs.map(log => `
+            <tr>
+                <td><b>${log.publisher_name}</b></td>
+                <td>${new Date(log.taken_at).toLocaleDateString('uk-UA')}</td>
+                <td>${new Date(log.returned_at).toLocaleDateString('uk-UA')}</td>
+                <td><span class="badge">${log.duration_text || '-'}</span></td>
+                <td>
+                    ${isAdmin ? `<button onclick="deleteLogRecord(${log.id})" style="background:none; color:red; font-size:16px;">🗑️</button>` : '—'}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    window.deleteLogRecord = async (logId) => {
+        if (!confirm("Видалити цей запис з історії?")) return;
+        const { error } = await supabase.from('territory_logs').delete().eq('id', logId);
+        if (!error) loadHistory();
+    };
+
+    window.saveManualLog = async () => {
+        const name = document.getElementById('manualName').value;
+        const dIn = document.getElementById('manualDateIn').value;
+        const dOut = document.getElementById('manualDateOut').value;
+        if (!name || !dIn || !dOut) return alert("Заповніть всі поля!");
+
+        const start = new Date(dIn);
+        const end = new Date(dOut);
+        const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+        const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+        let duration = months > 0 ? `${months} міс. ` : "";
+        duration += `${diffDays % 30} дн.`;
+
+        const { error } = await supabase.from('territory_logs').insert([{
+            parcel_id: parcelId,
+            publisher_name: name,
+            taken_at: dIn,
+            returned_at: dOut,
+            duration_text: duration
+        }]);
+
+        if (!error) {
+            window.hideManualLogModal();
+            loadHistory();
+        }
+    };
+
+    window.showManualLogModal = () => document.getElementById('manualLogModal').classList.remove('hidden');
+    window.hideManualLogModal = () => document.getElementById('manualLogModal').classList.add('hidden');
+
+    init();
+</script>
+</body>
+</html>

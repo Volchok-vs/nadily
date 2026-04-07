@@ -110,7 +110,7 @@
                 style="width: 100%; padding-right: 45px;"> 
             <button type="button" id="togglePassword" 
                     style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; font-size: 20px; line-height: 1; padding: 5px; color: #666; user-select: none;">
-                👁️
+                🔒
             </button>
         </div>
     </div>
@@ -188,7 +188,7 @@
                 passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
                 
                 // Змінюємо іконку (Око -> Перекреслене око або замок)
-                toggleBtn.textContent = isPassword ? '🔒' : '👁️';
+                toggleBtn.textContent = isPassword ? '👁️' : '🔒';
             });
         }
     });

@@ -51,11 +51,61 @@
             font-size: 14px !important;
             text-shadow: 1px 1px 2px black, -1px -1px 2px black;
         }
+
+        /* Загальні стилі для кнопок управління (Профіль та Редактор) */
+        .control-btn {
+            position: fixed;
+            top: 20px;
+            z-index: 1001;
+            padding: 10px 20px;
+            border-radius: 8px; /* Робимо кути трохи м'якшими */
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Додаємо легку тінь для об'єму */
+            transition: all 0.3s ease; /* Плавний перехід кольорів за 0.3 секунди */
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Відступ між іконкою та текстом */
+        }
+
+        /* Специфічні стилі для кнопки Профілю */
+        .profile-btn {
+            left: 60px;
+            background-color: white;
+            color: black;
+            border: 1px solid #ddd;
+        }
+
+        /* --- СТИЛІ ДЛЯ КНОПКИ РЕДАКТОРА (ЗГІДНО З ПРОПОЗИЦІЄЮ) --- */
+        .editor-btn {
+            left: 210px; /* Позиція поряд з профілем */
+            
+            /* Стан спокою (нейтральний сірий) */
+            background-color: #f1f1f1; /* Світло-сірий фон */
+            color: #555; /* Темно-сірий текст та іконка */
+            border: 1px solid #ccc;
+        }
+
+        /* Стан при наведенні курсору (:hover) */
+        .editor-btn:hover {
+            /* "Оживає": стає помаранчевою */
+            background-color: #ff8800; /* Насичений помаранчевий */
+            color: white; /* Білий текст та іконка */
+            border-color: #ff8800; /* Прибираємо сіру рамку */
+            
+            transform: translateY(-2px); /* Легке підняття для візуального відгуку */
+            box-shadow: 0 6px 12px rgba(255, 136, 0, 0.3); /* Помаранчева тінь */
+        }
     </style>
 </head>
 <body>
 <a href="login.html" id="loginBtn" style="position:fixed; top:20px; left: 60px; z-index:1001; background:white; padding:10px 20px; border-radius:5px; text-decoration:none; color:black; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
     🔐 Увійти
+</a>
+
+
+<a href="map-editor.html" id="adminEditBtn" class="control-btn editor-btn" style="display: none;">
+    ✏️
 </a>
 <div id="map"></div>
 
@@ -109,94 +159,99 @@
     }
 
     function renderParcels(data, map) {
-        const userId = localStorage.getItem('userId');
-        const userRole = localStorage.getItem('userRole');
-        const currentUser = userId ? { id: userId, role: userRole } : null;
+    data.forEach(pData => {
+        if (!pData.geom) return;
 
-        data.forEach(pData => {
-            if (!pData.geom) return;
-
-            L.geoJSON(pData.geom, {
-                pane: 'parcelsPane', 
-                style: function() {
-                    return {
-                        ...getParcelStyle(pData.category, pData.last_returned, pData.status),
-                        color: 'white', 
-                        weight: 2
-                    };
-                },
-                onEachFeature: function(feature, layer) {
-                    const name = pData.name || "№?";
-                    let labelPos = pData.label_pos ? L.latLng(pData.label_pos[0], pData.label_pos[1]) : layer.getBounds().getCenter();
-
-                    layer.bindTooltip(name, { permanent: true, direction: 'center', className: 'parcel-label', opacity: 1.0 }).openTooltip(labelPos);
-
-                    layer.on('click', (e) => {
-                        L.DomEvent.stopPropagation(e);
-                        
-                        // Читаємо дані з пам'яті браузера
-                        const rawRole = localStorage.getItem('userRole');
-                        const role = rawRole ? rawRole.trim().toLowerCase() : null;
-                        
-                        // Відлагодження в консоль (натисніть F12 щоб побачити)
-                        console.log("--- ПЕРЕВІРКА КЛІКУ ---");
-                        console.log("Ваша роль у localStorage:", role);
-                        console.log("Статус дільниці:", pData.status);
-                        console.log("Останній раз здана:", pData.last_returned);
-
-                        const now = new Date();
-                        const returnDate = pData.last_returned ? new Date(pData.last_returned) : new Date(0);
-                        const diffMonths = (now - returnDate) / (1000 * 60 * 60 * 24 * 30.44);
-                        
-                        let canTake = false;
-                        let lockMessage = '';
-
-                        // Логіка визначення кнопки
-                        const isFree = !pData.status || pData.status === 'free' || pData.status === '';
-
-                        if (role && isFree) {
-                            if (role === 'admin' || role === 'super_admin') {
-                                canTake = true;
-                            } else if (role === 'user') {
-                                // Перевірка на 3 місяці
-                                if (diffMonths >= 3) {
-                                    canTake = true;
-                                } else {
-                                    const availableDate = new Date(returnDate);
-                                    availableDate.setMonth(availableDate.getMonth() + 3);
-                                    lockMessage = `<p style="color:#d35400; font-size:12px; margin-top:10px;">⌛ Відпочиває до: <b>${availableDate.toLocaleDateString()}</b></p>`;
-                                }
-                            }
-                        } else if (!role) {
-                            lockMessage = `<p style="color:gray; font-size:12px; margin-top:10px;">ℹ️ Ви не авторизовані. <a href="login.html" style="color:#007bff;">Увійти</a></p>`;
-                        } else if (!isFree) {
-                            lockMessage = `<p style="color:#c0392b; font-size:12px; margin-top:10px;">🔴 Зайнята: <b>${pData.taken_by || 'іншим вісником'}</b></p>`;
-                        }
-
-                        const popupContent = `
-                            <div style="font-family: sans-serif; min-width: 200px;">
-                                <h3 style="margin:0 0 5px 0;">Дільниця ${name}</h3>
-                                <p style="margin:3px 0; font-size:13px;">Статус: <b>${pData.status === 'taken' ? '🔴 Зайнята' : '🟢 Вільна'}</b></p>
-                                <p style="margin:3px 0; font-size:13px;">Здана: ${pData.last_returned ? new Date(pData.last_returned).toLocaleDateString() : 'давно'}</p>
-                                ${pData.notes ? `<p style="font-size:12px; color:#007bff; background:#e3f2fd; padding:5px; border-radius:4px;"><b>Прим:</b> ${pData.notes}</p>` : ''}
-                                <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
-                                
-                                <button onclick="window.buildRoute(${labelPos.lat}, ${labelPos.lng})" style="width:100%; margin-bottom:8px; padding:8px; cursor:pointer; background:#f8f9fa; border:1px solid #ddd; border-radius:4px;">📍 Маршрут</button>
-                                
-                                ${canTake ? `
-                                    <button onclick="window.showModal(${pData.id}, '${name}')" style="background:#28a745; color:white; width:100%; padding:12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px;">
-                                        ✋ Взяти дільницю
-                                    </button>
-                                ` : lockMessage}
-                            </div>
-                        `;
-
-                        layer.bindPopup(popupContent).openPopup();
-                    });
+        const parcelLayer = L.geoJSON(pData.geom, {
+            pane: 'parcelsPane', 
+            style: function() {
+                return {
+                    ...getParcelStyle(pData.category, pData.last_returned, pData.status),
+                    color: 'white', 
+                    weight: 2
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                const name = pData.name || "№?";
+                
+                // 1. Визначаємо позицію (пріоритет - label_pos з бази)
+                let labelPos;
+                if (pData.label_pos && Array.isArray(pData.label_pos)) {
+                    labelPos = L.latLng(pData.label_pos[0], pData.label_pos[1]);
+                } else {
+                    labelPos = layer.getBounds().getCenter();
                 }
-            }).addTo(map);
-        });
-    }
+
+                // 2. Створюємо "незалежний" тултіп і додаємо його на карту
+                const label = L.tooltip({
+                    permanent: true,
+                    direction: 'center',
+                    className: 'parcel-label',
+                    opacity: 1.0
+                })
+                .setContent(name)
+                .setLatLng(labelPos)
+                .addTo(map);
+
+                // 3. Обробка кліку (ваша логіка)
+                layer.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    
+                    const rawRole = localStorage.getItem('userRole');
+                    const role = rawRole ? rawRole.trim().toLowerCase() : null;
+                    const now = new Date();
+                    const returnDate = pData.last_returned ? new Date(pData.last_returned) : new Date(0);
+                    const diffMonths = (now - returnDate) / (1000 * 60 * 60 * 24 * 30.44);
+                    
+                    let canTake = false;
+                    let lockMessage = '';
+                    const isFree = !pData.status || pData.status === 'free' || pData.status === '';
+                    const isAdmin = (role === 'admin' || role === 'super_admin');
+
+                    if (role && isFree) {
+                        if (isAdmin) canTake = true;
+                        else if (role === 'user') {
+                            if (diffMonths >= 3) canTake = true;
+                            else {
+                                const availableDate = new Date(returnDate);
+                                availableDate.setMonth(availableDate.getMonth() + 3);
+                                lockMessage = `<p style="color:#d35400; font-size:12px; margin-top:10px;">⌛ Відпочиває до: <b>${availableDate.toLocaleDateString()}</b></p>`;
+                            }
+                        }
+                    } else if (!role) {
+                        lockMessage = `<p style="color:gray; font-size:12px; margin-top:10px;">ℹ️ Ви не авторизовані. <a href="login.html" style="color:#007bff;">Увійдіть</a></p>`;
+                    } else if (!isFree) {
+                        lockMessage = `<p style="color:#c0392b; font-size:12px; margin-top:10px;">🔴 Зайнята: <b>${pData.taken_by || 'іншим вісником'}</b></p>`;
+                    }
+
+                    let popupContent = `
+                        <div style="font-family: sans-serif; min-width: 200px;">
+                            <h3 style="margin:0 0 5px 0;">Дільниця ${name}</h3>
+                            <p style="margin:3px 0; font-size:13px;">Статус: <b>${pData.status === 'taken' ? '🔴 Зайнята' : '🟢 Вільна'}</b></p>
+                            <p style="margin:3px 0; font-size:13px;">Здана: ${pData.last_returned ? new Date(pData.last_returned).toLocaleDateString() : 'давно'}</p>
+                            ${pData.notes ? `<p style="font-size:12px; color:#007bff; background:#e3f2fd; padding:5px; border-radius:4px;"><b>Прим:</b> ${pData.notes}</p>` : ''}
+                            <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+                            <button onclick="window.buildRoute(${labelPos.lat}, ${labelPos.lng})" style="width:100%; margin-bottom:8px; padding:8px; cursor:pointer; background:#f8f9fa; border:1px solid #ddd; border-radius:4px;">📍 Маршрут</button>
+                    `;
+
+                    if (canTake) {
+                        popupContent += `<button onclick="window.showModal(${parseInt(pData.id)}, '${name}')" style="background:#28a745; color:white; width:100%; padding:12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px;">✋ Взяти дільницю</button>`;
+                    } else {
+                        popupContent += lockMessage;
+                    }
+
+                    if (role) {
+                        // ПРАВИЛЬНИЙ ВАРІАНТ:
+                        popupContent += `<button onclick="window.location.href='parcel-details.html?id=${pData.id}&from=map'" ...>⚙️ Деталі</button>`;
+                    }
+
+                    popupContent += `</div>`;
+                    layer.bindPopup(popupContent).openPopup();
+                });
+            }
+        }).addTo(map);
+    });
+}
 
     function getParcelStyle(category, lastReturnDate, status) {
         if (status === 'taken') return { fillColor: '#e74c3c', fillOpacity: 0.8 };
@@ -217,17 +272,26 @@
     }
 
     // Робота з інтерфейсом при завантаженні
-    document.addEventListener('DOMContentLoaded', () => {
-        initMap();
-        const userName = localStorage.getItem('userName');
-        const loginBtn = document.getElementById('loginBtn');
-        
-        if (userName && loginBtn) {
-            loginBtn.innerHTML = `👤 ${userName}`;
-            loginBtn.href = "profile.html";
-            loginBtn.style.background = "#e3f2fd";
-        }
-    });
+document.addEventListener('DOMContentLoaded', () => {
+    initMap();
+    
+    const userName = localStorage.getItem('userName');
+    const userRole = localStorage.getItem('userRole'); // Отримуємо роль
+    const loginBtn = document.getElementById('loginBtn');
+    const adminEditBtn = document.getElementById('adminEditBtn'); // Наша нова кнопка
+    
+    // 1. Логіка для кнопки профілю
+    if (userName && loginBtn) {
+        loginBtn.innerHTML = `👤 ${userName}`;
+        loginBtn.href = "profile.html";
+        loginBtn.style.background = "#e3f2fd";
+    }
+
+    // 2. Логіка для кнопки редактора (тільки для super_admin)
+    if (userRole === 'super_admin' && adminEditBtn) {
+        adminEditBtn.style.display = 'block';
+    }
+});
 
     // Глобальні функції
     // Функція відкриття модального вікна

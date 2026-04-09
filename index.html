@@ -248,9 +248,13 @@ let popupHtml = `
     <div class="popup-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
             <span class="popup-title" style="margin:0;">Дільниця ${p.name}</span>
-            <button onclick="window.copyShareLink('${shareLink}')" 
-                    style="border:none; background:none; cursor:pointer; font-size:16px; padding:0;" 
-                    title="Скопіювати посилання">🔗</button>
+           
+            
+<button onclick="window.shareParcel('${p.name}', '${shareLink}')" 
+        style="border:none; background:none; cursor:pointer; font-size:18px; padding:0;" 
+        title="Поділитися">
+    📤
+</button>
         </div>
 
         <div class="popup-status">Статус: 
@@ -316,6 +320,26 @@ window.copyShareLink = (link) => {
         }
     };
 
+    window.shareParcel = async (name, link) => {
+    const shareData = {
+        title: `Дільниця ${name}`,
+        text: `Ось посилання на дільницю ${name} в карті:`,
+        url: link,
+    };
+
+    try {
+        // Перевірка чи підтримує браузер системне меню "Поділитися" (iOS/Android/Safari)
+        if (navigator.share) {
+            await navigator.share(shareData);
+        } else {
+            // Якщо це ПК або браузер без підтримки Share API
+            await navigator.clipboard.writeText(link);
+            alert("Посилання копійовано! Тепер надішліть його віснику.");
+        }
+    } catch (err) {
+        console.log("Користувач скасував або виникла помилка:", err);
+    }
+};
 
     // Пошук
     document.getElementById('searchNumber').oninput = (e) => {

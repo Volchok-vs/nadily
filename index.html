@@ -300,47 +300,58 @@
         });
 
         // --- БЛОК ФОКУСУВАННЯ НА КОНКРЕТНІЙ ДІЛЬНИЦІ ---
-        // --- БЛОК ФОКУСУВАННЯ ТА ВІДКРИТТЯ ПОПАПУ ---
+        
         const urlParams = new URLSearchParams(window.location.search);
         const targetParcel = urlParams.get('parcel');
 
         if (targetParcel) {
-            const targetName = targetParcel.toLowerCase();
+            const targetName = targetParcel.toLowerCase().trim();
             
-            // Використовуємо невелику затримку, щоб Leaflet встиг обробити всі шари
+            // Збільшуємо затримку до 800мс, щоб база даних і Leaflet точно все підготували
             setTimeout(() => {
                 let foundItem = null;
 
                 allParcelLayers.forEach(item => {
-                    if (item.name === targetName) {
+                    // Очищуємо назву з бази від зайвих пробілів для точного порівняння
+                    const currentName = item.name.toString().toLowerCase().trim();
+                    
+                    if (currentName === targetName) {
                         foundItem = item;
-                        // Підсвічуємо обрану дільницю
                         item.layer.setStyle({
                             color: '#ffeb3b', 
-                            weight: 7,
+                            weight: 8,
                             fillOpacity: 0.7
                         });
+                        item.layer.addTo(map); // Про всяк випадок переконуємось, що він на карті
                     } else {
-                        // Приховуємо решту
                         map.removeLayer(item.layer);
                         map.removeLayer(item.label);
                     }
                 });
 
                 if (foundItem) {
-                    // 1. Центруємо карту
+                    // 1. Спочатку летимо до об'єкта
                     map.fitBounds(foundItem.layer.getBounds(), { padding: [50, 50], maxZoom: 17 });
 
-                    // 2. ВАЖЛИВО: Перевіряємо чи прив'язаний попап, і відкриваємо його
-                    // Використовуємо метод вогню: спочатку відкриваємо на шарі
-                    foundItem.layer.openPopup();
-                    
-                    // Якщо раптом не спрацювало через особливості Leaflet, пробуємо через координати центру
-                    if (!map.hasLayer(foundItem.layer.getPopup())) {
-                        foundItem.layer.fire('click'); 
-                    }
+                    // 2. Чекаємо завершення анімації польоту карти (flyTo/fitBounds)
+                    map.once('moveend', () => {
+                        // 3. Імітуємо реальний клік по дільниці
+                        foundItem.layer.fire('click');
+                        
+                        // 4. Якщо клік не допоміг (буває в деяких версіях), відкриваємо примусово за координатами
+                        setTimeout(() => {
+                            if (!foundItem.layer.getPopup() || !foundItem.layer.isPopupOpen()) {
+                                foundItem.layer.openPopup();
+                            }
+                        }, 100);
+                    });
+
+                    // Якщо анімація не запустилася (ми вже на місці), просто тиснемо
+                    foundItem.layer.fire('click');
+                } else {
+                    console.error("Дільницю з назвою '" + targetName + "' не знайдено серед завантажених.");
                 }
-            }, 500); // Затримка 500мс для надійності
+            }, 800); 
         }
     }
 

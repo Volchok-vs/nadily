@@ -242,6 +242,7 @@ const shareLink = `${window.location.origin}${window.location.pathname}?parcel=$
 
 // Отримуємо координати центру для Google Maps
 const center = layer.getBounds().getCenter();
+// Правильне посилання для Google Maps
 const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${center.lat},${center.lng}`;
 
 let popupHtml = `

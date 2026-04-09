@@ -299,34 +299,40 @@
             allParcelLayers.push({ layer, label, name: p.name.toLowerCase() });
         });
 
-        // --- НОВИЙ БЛОК ДЛЯ ОБРОБКИ ПОСИЛАННЯ ---
+        // --- БЛОК ФОКУСУВАННЯ НА КОНКРЕТНІЙ ДІЛЬНИЦІ ---
         const urlParams = new URLSearchParams(window.location.search);
         const targetParcel = urlParams.get('parcel');
 
         if (targetParcel) {
-            // Шукаємо шар у масиві (приводимо до рядка для надійності)
-            const found = allParcelLayers.find(item => item.name === targetParcel.toLowerCase());
+            const targetName = targetParcel.toLowerCase();
             
-            if (found) {
-                // 1. Центруємо карту на дільниці
-                map.fitBounds(found.layer.getBounds(), { padding: [100, 100], maxZoom: 18 });
-                
-                // 2. Відкриваємо попап
-                found.layer.openPopup();
+            // Чекаємо мить, щоб шари встигли ініціалізуватися
+            setTimeout(() => {
+                let foundLayer = null;
 
-                // 3. Додаткове виділення (тимчасово робимо яскравішим)
-                const originalStyle = { ...getStyle(found) };
-                found.layer.setStyle({
-                    color: '#ffeb3b', // Жовта обводка
-                    weight: 5,
-                    fillOpacity: 0.8
+                allParcelLayers.forEach(item => {
+                    if (item.name === targetName) {
+                        foundLayer = item;
+                        // Підсвічуємо обрану дільницю
+                        item.layer.setStyle({
+                            color: '#ffeb3b', 
+                            weight: 5,
+                            fillOpacity: 0.6
+                        });
+                    } else {
+                        // ПРИХОВУЄМО всі інші дільниці та їхні підписи
+                        map.removeLayer(item.layer);
+                        map.removeLayer(item.label);
+                    }
                 });
 
-                // Повертаємо стиль назад при закритті попапа
-                found.layer.on('popupclose', () => {
-                    found.layer.setStyle(getStyle(found));
-                });
-            }
+                if (foundLayer) {
+                    // Масштабуємо карту суто під цю дільницю
+                    map.fitBounds(foundLayer.layer.getBounds(), { padding: [50, 50], maxZoom: 18 });
+                    // Автоматично відкриваємо вікно з кнопкою "Маршрут"
+                    foundLayer.layer.openPopup();
+                }
+            }, 300);
         }
     }
 
@@ -353,25 +359,25 @@
     };
 
     window.shareParcel = async (name, link) => {
-    const shareData = {
-        title: `Дільниця ${name}`,
-        text: `Ось посилання на дільницю ${name} в карті:`,
-        url: link,
-    };
+        const shareData = {
+            title: `Дільниця ${name}`,
+            text: `Ось посилання на дільницю ${name} в карті:`,
+            url: link,
+        };
 
-    try {
-        // Перевірка чи підтримує браузер системне меню "Поділитися" (iOS/Android/Safari)
-        if (navigator.share) {
-            await navigator.share(shareData);
-        } else {
-            // Якщо це ПК або браузер без підтримки Share API
-            await navigator.clipboard.writeText(link);
-            alert("Посилання копійовано! Тепер надішліть його віснику.");
+        try {
+            // Перевірка чи підтримує браузер системне меню "Поділитися" (iOS/Android/Safari)
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                // Якщо це ПК або браузер без підтримки Share API
+                await navigator.clipboard.writeText(link);
+                alert("Посилання копійовано! Тепер надішліть його віснику.");
+            }
+        } catch (err) {
+            console.log("Користувач скасував або виникла помилка:", err);
         }
-    } catch (err) {
-        console.log("Користувач скасував або виникла помилка:", err);
-    }
-};
+    };
 
     // Пошук
     document.getElementById('searchNumber').oninput = (e) => {

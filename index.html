@@ -238,67 +238,98 @@
                 // (Він адмін АБО це його дільниця)
                 const canReturn = isAdmin || (isAuth && String(p.taken_by_id) === String(currentUserId));
                  // Формуємо посилання на дільницю (використовуємо назву дільниці як унікальний параметр)
-const shareLink = `${window.location.origin}${window.location.pathname}?parcel=${p.name}`;
+                const shareLink = `${window.location.origin}${window.location.pathname}?parcel=${p.name}`;
 
-// Отримуємо координати центру для Google Maps
-const center = layer.getBounds().getCenter();
-// Правильне посилання для Google Maps
-const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${center.lat},${center.lng}`;
+                // Отримуємо координати центру для Google Maps
+                const center = layer.getBounds().getCenter();
+                // Правильне посилання для Google Maps
+                const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${center.lat},${center.lng}`;
 
-let popupHtml = `
-    <div class="popup-container">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
-            <span class="popup-title" style="margin:0;">Дільниця ${p.name}</span>
-           
-            
-<button onclick="window.shareParcel('${p.name}', '${shareLink}')" 
-        style="border:none; background:none; cursor:pointer; font-size:18px; padding:0;" 
-        title="Поділитися">
-    📤
-</button>
-        </div>
+                let popupHtml = `
+                    <div class="popup-container">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                            <span class="popup-title" style="margin:0;">Дільниця ${p.name}</span>
+                        
+                            
+                        <button onclick="window.shareParcel('${p.name}', '${shareLink}')" 
+                        style="border:none; background:none; cursor:pointer; font-size:18px; padding:0;" 
+                        title="Поділитися">
+                    📤
+                        </button>
+                    </div>
 
-        <div class="popup-status">Статус: 
-            <span style="color:${isTaken ? '#e74c3c' : '#28a745'}">● ${isTaken ? 'Зайнята' : 'Вільна'}</span>
-        </div>
-        
-        <div class="popup-btn-row">
-            <button class="popup-btn" onclick="window.open('${googleMapsUrl}', '_blank')">📍 Маршрут</button>
-            ${isAdmin ? `<a href="parcel-details.html?id=${p.id}" class="popup-btn popup-btn-sh">⚙️ Картка</a>` : ''}
-        </div>
-
-        ${!isTaken ? `
-            ${isAuth ? 
-                `<button class="popup-btn primary" onclick="window.showTakeModal(${p.id}, '${p.name}')">✋ Взяти дільницю</button>` 
-                : `<p style="font-size:11px; color:orange; text-align:center; margin: 10px 0 0 0;">Увійдіть, щоб взяти дільницю</p>`
-            }
-        ` : `
-            ${canReturn ? 
-                `<button class="popup-btn" style="background:#f8f9fa; border:1px solid #dc3545; color:#dc3545; margin-bottom:8px; font-weight:bold;" 
-                        onclick="window.returnParcel(${p.id})">🔙 Здати дільницю</button>` 
-                : ''
-            }
-            
-            ${isAdmin ? `
-                <div style="text-align:center; font-size:12px; color:#666;">
-                    Взяв: <b>${p.taken_by || 'Невідомо'}</b>
+                <div class="popup-status">Статус: 
+                    <span style="color:${isTaken ? '#e74c3c' : '#28a745'}">● ${isTaken ? 'Зайнята' : 'Вільна'}</span>
                 </div>
-            ` : ''}
-        `}
-    </div>
-`;
+                
+                <div class="popup-btn-row">
+                    <button class="popup-btn" onclick="window.open('${googleMapsUrl}', '_blank')">📍 Маршрут</button>
+                    ${isAdmin ? `<a href="parcel-details.html?id=${p.id}" class="popup-btn popup-btn-sh">⚙️ Картка</a>` : ''}
+                </div>
 
-// Не забудь додати цю допоміжну функцію для копіювання десь у скрипті:
-window.copyShareLink = (link) => {
-    navigator.clipboard.writeText(link).then(() => {
-        alert("Посилання на дільницю скопійовано!");
-    });
-};
+                ${!isTaken ? `
+                    ${isAuth ? 
+                        `<button class="popup-btn primary" onclick="window.showTakeModal(${p.id}, '${p.name}')">✋ Взяти дільницю</button>` 
+                        : `<p style="font-size:11px; color:orange; text-align:center; margin: 10px 0 0 0;">Увійдіть, щоб взяти дільницю</p>`
+                    }
+                ` : `
+                    ${canReturn ? 
+                        `<button class="popup-btn" style="background:#f8f9fa; border:1px solid #dc3545; color:#dc3545; margin-bottom:8px; font-weight:bold;" 
+                                onclick="window.returnParcel(${p.id})">🔙 Здати дільницю</button>` 
+                        : ''
+                    }
+                    
+                    ${isAdmin ? `
+                        <div style="text-align:center; font-size:12px; color:#666;">
+                            Взяв: <b>${p.taken_by || 'Невідомо'}</b>
+                        </div>
+                    ` : ''}
+                `}
+            </div>
+        `;
+
+        // Не забудь додати цю допоміжну функцію для копіювання десь у скрипті:
+        window.copyShareLink = (link) => {
+            navigator.clipboard.writeText(link).then(() => {
+                alert("Посилання на дільницю скопійовано!");
+            });
+        };
                 layer.bindPopup(popupHtml, { minWidth: 200 }).openPopup();
             });
             allParcelLayers.push({ layer, label, name: p.name.toLowerCase() });
         });
+
+        // --- НОВИЙ БЛОК ДЛЯ ОБРОБКИ ПОСИЛАННЯ ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetParcel = urlParams.get('parcel');
+
+        if (targetParcel) {
+            // Шукаємо шар у масиві (приводимо до рядка для надійності)
+            const found = allParcelLayers.find(item => item.name === targetParcel.toLowerCase());
+            
+            if (found) {
+                // 1. Центруємо карту на дільниці
+                map.fitBounds(found.layer.getBounds(), { padding: [100, 100], maxZoom: 18 });
+                
+                // 2. Відкриваємо попап
+                found.layer.openPopup();
+
+                // 3. Додаткове виділення (тимчасово робимо яскравішим)
+                const originalStyle = { ...getStyle(found) };
+                found.layer.setStyle({
+                    color: '#ffeb3b', // Жовта обводка
+                    weight: 5,
+                    fillOpacity: 0.8
+                });
+
+                // Повертаємо стиль назад при закритті попапа
+                found.layer.on('popupclose', () => {
+                    found.layer.setStyle(getStyle(found));
+                });
+            }
+        }
     }
+
 
     // Функція для здачі дільниці (повернення)
     window.returnParcel = async (id) => {

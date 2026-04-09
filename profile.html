@@ -244,8 +244,11 @@
     };
 
     window.logout = () => {
+        // 1. Очищуємо всі дані користувача
         localStorage.clear();
-        window.location.href = 'login.html';
+        // 2. Перенаправляємо на карту (index.html)
+        // Тепер після виходу користувач побачить карту як звичайний відвідувач
+        window.location.href = 'index.html';
     };
 
     window.returnParcel = async (id, parcelName) => {

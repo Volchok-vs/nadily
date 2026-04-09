@@ -2,84 +2,101 @@
 <html lang="uk">
 <head>
     <meta charset="utf-8" />
-    <title>Карта дільниць для вісників</title>
+    <title>Карта дільниць</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         #map { height: 100vh; width: 100%; }
+
+        /* --- СТИЛІЗАЦІЯ ПОПАПА (з макета) --- */
+        .leaflet-popup-content-wrapper {
+            background: #ffff !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+        }
+        .leaflet-popup-tip { background: #fdfaf0 !important; }
+        .popup-container {  min-width: 200px; }
+        .popup-title { font-size: 17px; font-weight: bold; margin-bottom: 5px; display: block; text-align: center; }
+        .popup-status { font-size: 16px; font-weight: bold; margin-bottom: 12px; }
         
-        /* Кнопки керування зверху */
-        .control-btn {
-            position: fixed; top: 20px; z-index: 1001;
-            padding: 10px 20px; border-radius: 8px;
-            text-decoration: none; font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;
+        /* Ряд для кнопок Маршрут + Деталі */
+        .popup-btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        
+        .popup-btn {
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #ccc;
+            background: white; cursor: pointer; font-size: 13px; text-decoration: none; color: #333;
         }
-        .login-btn { left: 20px; background: white; color: black; border: 1px solid #ddd; }
-        .editor-btn { left: 180px; background-color: #f1f1f1; color: #555; border: 1px solid #ccc; }
-        .editor-btn:hover { background-color: #ff8800; color: white; border-color: #ff8800; transform: translateY(-2px); }
-
-        /* Стиль кастомної кнопки на карті (під зумом) */
-        .leaflet-bar button {
-            background-color: #fff;
-            width: 30px;
-            height: 30px;
-            line-height: 30px;
-            display: block;
-            text-align: center;
-            text-decoration: none;
-            color: black;
-            border: none;
-            border-bottom: 1px solid #ccc;
-            cursor: pointer;
-            font-size: 16px;
+        a.popup-btn.popup-btn-sh {
+            width: 128px;
         }
-        .leaflet-bar button:hover { background-color: #f4f4f4; }
-        .leaflet-bar button:last-child { border-bottom: none; border-radius: 0 0 2px 2px; }
-
-        /* Віконце палітри */
-        #superadmin-palette {
-            display: none; position: fixed; right: 20px; top: 80px; 
-            background: white; padding: 15px; border-radius: 10px; 
-            z-index: 2000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 240px;
+        .popup-btn.primary {
+            background: #179133; color: white; border: none; font-weight: bold; padding: 10px;
         }
 
-        .modal {
-            display: none; position: fixed; z-index: 2000;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: white; padding: 25px; border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 320px; box-sizing: border-box;
+        /* --- КНОПКИ КЕРУВАННЯ --- */
+        .leaflet-custom-btn {
+            background-color: #fff; width: 34px; height: 34px; line-height: 34px;
+            display: block; text-align: center; text-decoration: none; color: black;
+            border-bottom: 1px solid #ccc; cursor: pointer; font-size: 18px;
         }
+        .user-control-panel { display: flex; gap: 10px; }
+        .auth-btn {
+            background: white; padding: 6px 14px; border: 2px solid rgba(0,0,0,0.2);
+            border-radius: 6px; text-decoration: none; color: #333; font-weight: bold; font-size: 14px;
+        }
+        .edit-btn { background: #ff8800; color: white; border: none; }
+
+        /* --- ЛЕГЕНДА --- */
+        .legend { 
+            background: white; padding: 12px; border-radius: 8px; 
+            font-size: 13px; box-shadow: 0 0 15px rgba(0,0,0,0.2); 
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+        .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
+        .info-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 18px; height: 18px; background: #1565C0; color: white;
+            border-radius: 50%; font-size: 11px; cursor: pointer; margin-left: 10px;
+        }
+
+        /* Підписи на карті */
         .parcel-label {
             background: transparent !important; border: none !important; box-shadow: none !important;
-            color: white !important; font-weight: bold !important; font-size: 14px !important;
-            text-shadow: 1px 1px 2px black, -1px -1px 2px black;
+            color: white !important; font-weight: bold; text-shadow: 1px 1px 2px black;
         }
+
+        /* Модалки */
+        #filterMenu, #superadmin-palette, .modal, .logic-modal {
+            display: none; position: fixed; background: white; z-index: 3000;
+            padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        #filterMenu { top: 70px; left: 60px; width: 220px; }
+        #superadmin-palette { top: 110px; left: 60px; width: 250px; }
+        .modal { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; }
+        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2500; }
     </style>
 </head>
 <body>
 
-<a href="login.html" id="loginBtn" class="control-btn login-btn">🔐 Увійти</a>
-<a href="map-editor.html" id="adminEditBtn" class="control-btn editor-btn" style="display: none;">✏️ Редактор</a>
-
 <div id="map"></div>
+<div id="modalOverlay" onclick="window.closeAllModals()"></div>
 
-<div id="superadmin-palette">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h4 style="margin:0;">🎨 Кольори</h4>
-        <span onclick="window.togglePalette()" style="cursor:pointer; font-size:20px;">×</span>
-    </div>
-    <div id="palette-inputs"></div>
-    <button onclick="window.saveColorsToDB()" style="width:100%; margin-top:10px; background:#2ecc71; border:none; color:white; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">💾 Зберегти для всіх</button>
+<div id="filterMenu">
+    <h4 style="margin:0 0 10px 0;">🔍 Пошук дільниці</h4>
+    <input type="text" id="searchNumber" placeholder="Введіть номер..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; box-sizing: border-box;">
 </div>
 
-<div id="modalOverlay" onclick="window.closeModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999;"></div>
+<div id="superadmin-palette">
+    <h4 style="margin:0 0 10px 0;">🎨 Налаштування кольорів</h4>
+    <div id="palette-inputs"></div>
+    <button onclick="window.saveColorsToDB()" style="width:100%; background:#179133; color:white; border:none; padding:10px; border-radius:6px; margin-top:10px; cursor:pointer;">Зберегти</button>
+</div>
+
 <div id="takeModal" class="modal">
-    <span onclick="window.closeModal()" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px; color:#aaa; font-weight:bold;">×</span>
-    <h3>Призначити дільницю <span id="p-name" style="color:#007bff;"></span></h3>
-    <select id="v-name-select"></select>
-    <button onclick="window.confirmTake()" class="btn-confirm">ПІДТВЕРДИТИ</button>
+    <h3 style="margin-top:0;">Дільниця <span id="p-name"></span></h3>
+    <select id="v-name-select" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px;"></select>
+    <button onclick="window.confirmTake()" style="width:100%; background:#179133; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;">ПІДТВЕРДИТИ</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -88,167 +105,252 @@
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
     const supabase = createClient("https://modsgjjtwxbdnlycvifp.supabase.co", "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D");
 
+    const map = L.map('map').setView([49.2321, 29.0577], 15);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+
+    let allParcelLayers = [];
     window.mapSettings = { colors: {} };
 
-    // Функція відкриття/закриття палітри
-    window.togglePalette = () => {
-        const p = document.getElementById('superadmin-palette');
-        p.style.display = (p.style.display === 'none' || p.style.display === '') ? 'block' : 'none';
-    };
+    // --- 1. КЕРУВАННЯ (КНОПКИ ТА РОЛІ) ---
+    const role = localStorage.getItem('userRole');
+    const isAdmin = (role === 'admin' || role === 'super_admin');
 
+    const AuthControl = L.Control.extend({
+        options: { position: 'topright' },
+        onAdd: function() {
+            const container = L.DomUtil.create('div', 'user-control-panel');
+            const name = localStorage.getItem('userName');
+            container.innerHTML = `
+                <a href="${name ? 'profile.html' : 'login.html'}" class="auth-btn">${name ? '👤 ' + name : '🔐 Увійти'}</a>
+                ${isAdmin ? '<a href="map-editor.html" class="auth-btn edit-btn">✏️ Редактор</a>' : ''}
+            `;
+            return container;
+        }
+    });
+
+    const ToolControl = L.Control.extend({
+        options: { position: 'topleft' },
+        onAdd: function() {
+            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            
+            // Кнопка Де я?
+            const btnLocate = L.DomUtil.create('button', 'leaflet-custom-btn', container);
+            btnLocate.innerHTML = '🎯'; 
+            btnLocate.onclick = () => map.locate({setView: true, maxZoom: 17});
+
+            // Кнопка Фільтр
+            const btnFilter = L.DomUtil.create('button', 'leaflet-custom-btn', container);
+            btnFilter.innerHTML = '🔍'; 
+            btnFilter.onclick = () => {
+                const m = document.getElementById('filterMenu');
+                m.style.display = m.style.display === 'none' ? 'block' : 'none';
+            };
+
+            // Кнопка Палітра (Тільки Супер Адмін)
+            if (role === 'super_admin') {
+                const btnPal = L.DomUtil.create('button', 'leaflet-custom-btn', container);
+                btnPal.innerHTML = '🎨'; 
+                btnPal.onclick = () => {
+                    const p = document.getElementById('superadmin-palette');
+                    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+                };
+            }
+            return container;
+        }
+    });
+
+    const LegendControl = L.Control.extend({
+        options: { position: 'bottomright' },
+        onAdd: function() {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <div style="margin-bottom:8px;"><b>Легенда</b></div>
+                <div class="legend-item"><div class="dot" style="background:#008000"></div> Вільна</div>
+                <div class="legend-item"><div class="dot" style="background:#e74c3c"></div> Зайнята</div>
+            `;
+            return div;
+        }
+    });
+
+    map.addControl(new AuthControl());
+    map.addControl(new ToolControl());
+    map.addControl(new LegendControl());
+
+    // --- 2. ЛОГІКА ДАНИХ ТА ПАЛІТРИ ---
     async function loadSettings() {
-        const { data } = await supabase.from('settings').select('data').eq('id', 'map_palette').single();
+        const { data } = await supabase.from('settings').select('data').eq('id', 'map_palette').maybeSingle();
         if (data) {
             window.mapSettings.colors = data.data;
-            const container = document.getElementById('palette-inputs');
-            container.innerHTML = '';
-            const labels = {
-                private: "Приватний", business: "Бізнес", highrise: "Поверхівки",
-                quarantine: "Карантин", taken: "Зайнята", warning: "Прострочена"
-            };
-            Object.keys(labels).forEach(key => {
-                const config = window.mapSettings.colors[key] || { color: "#ffffff", opacity: 0.5 };
-                container.innerHTML += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; font-size:12px;">
-                        <span>${labels[key]}:</span>
-                        <input type="color" value="${config.color}" onchange="window.updateColorValue('${key}', 'color', this.value)">
-                        <input type="number" value="${config.opacity}" step="0.1" min="0" max="1" style="width:40px;" onchange="window.updateColorValue('${key}', 'opacity', this.value)">
-                    </div>`;
-            });
+            renderPaletteEditor();
         }
     }
 
-    function getParcelStyle(pData) {
-        const defaultColors = {
-            private: { color: "#008000", opacity: 0.5 }, business: { color: "#0000FF", opacity: 0.5 },
-            highrise: { color: "#FFA500", opacity: 0.5 }, quarantine: { color: "#808080", opacity: 0.5 },
-            taken: { color: "#9b59b6", opacity: 0.7 }, warning: { color: "#e74c3c", opacity: 0.5 },
-            border: { color: "#ffffff", width: 2 }
-        };
-        const s = { ...defaultColors, ...(window.mapSettings.colors || {}) };
-        const now = new Date();
-        const returnDate = new Date(pData.last_returned || 0);
-        const diffMonths = (now - returnDate) / (1000 * 60 * 60 * 24 * 30.44);
-        let style = { color: s.border.color, weight: s.border.width, fillOpacity: 0.5, fillColor: '#ffffff' };
-        if (pData.status === 'taken') { style.fillColor = s.taken.color; style.fillOpacity = s.taken.opacity; return style; }
-        if (diffMonths < 3) { style.fillColor = s.quarantine.color; style.fillOpacity = s.quarantine.opacity; return style; }
-        let baseColor = s.private.color;
-        const cat = pData.category || "";
-        if (cat === 'Ділова') baseColor = s.business.color;
-        else if (cat === 'Багатоповерхівки') baseColor = s.highrise.color;
-        if (cat.includes('Приватний') && cat.includes('Багатоповерхівки')) { baseColor = s.highrise.color; style.dashArray = "5, 5"; }
-        if (diffMonths >= 6) { style.fillColor = s.warning.color; style.fillOpacity = 0.7; } 
-        else { style.fillColor = baseColor; style.fillOpacity = s.private.opacity; }
-        return style;
+    function renderPaletteEditor() {
+        const container = document.getElementById('palette-inputs');
+        const labels = { private: "Вільна", taken: "Зайнята", business: "Бізнес", highrise: "Поверхи" };
+        container.innerHTML = Object.keys(labels).map(key => {
+            const conf = window.mapSettings.colors[key] || { color: "#ffffff", opacity: 0.5 };
+            return `<div style="display:flex; justify-content:space-between; margin-bottom:5px; align-items:center;">
+                <span style="font-size:12px;">${labels[key]}</span>
+                <input type="color" value="${conf.color}" onchange="window.updateColorValue('${key}', 'color', this.value)">
+            </div>`;
+        }).join('');
     }
 
-    window.updateColorValue = (key, field, value) => {
+    window.updateColorValue = (key, field, val) => {
         if(!window.mapSettings.colors[key]) window.mapSettings.colors[key] = {};
-        window.mapSettings.colors[key][field] = field === 'opacity' ? parseFloat(value) : value;
+        window.mapSettings.colors[key][field] = val;
     };
 
     window.saveColorsToDB = async () => {
-        const { error } = await supabase.from('settings').upsert({ id: 'map_palette', data: window.mapSettings.colors });
-        if (!error) { alert("Збережено!"); location.reload(); }
-    };
-
-    async function initMap() {
-        const map = L.map('map').setView([49.2321, 29.0577], 15);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
-
-        // Додаємо кнопку палітри для Super Admin
-        const role = localStorage.getItem('userRole');
-        if (role === 'super_admin') {
-            const PaletteControl = L.Control.extend({
-                options: { position: 'topleft' },
-                onAdd: function() {
-                    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                    const button = L.DomUtil.create('button', '', container);
-                    button.innerHTML = '🎨';
-                    button.title = 'Налаштування кольорів';
-                    button.onclick = function(e) {
-                        L.DomEvent.stopPropagation(e);
-                        window.togglePalette();
-                    };
-                    return container;
-                }
-            });
-            map.addControl(new PaletteControl());
-        }
-
-        const { data } = await supabase.from('parcels').select('*');
-        if (data) renderParcels(data, map);
-    }
-
-    function renderParcels(data, map) {
-        data.forEach(pData => {
-            if (!pData.geom) return;
-            const parcelLayer = L.geoJSON(pData.geom, { style: getParcelStyle(pData) }).addTo(map);
-            const labelPos = (pData.label_pos) ? L.latLng(pData.label_pos[0], pData.label_pos[1]) : parcelLayer.getBounds().getCenter();
-            L.tooltip({ permanent: true, direction: 'center', className: 'parcel-label' }).setContent(pData.name || "").setLatLng(labelPos).addTo(map);
-            parcelLayer.on('click', (e) => {
-                L.DomEvent.stopPropagation(e);
-                const role = localStorage.getItem('userRole');
-                const now = new Date();
-                const diffMonths = (now - new Date(pData.last_returned || 0)) / (1000 * 60 * 60 * 24 * 30.44);
-                const isAdmin = (role === 'admin' || role === 'super_admin');
-                let popup = `<div style="min-width:180px;"><h3>Дільниця ${pData.name}</h3>`;
-                if (pData.status === 'taken') popup += `<p>🔴 Зайнята: ${pData.taken_by}</p>`;
-                else if (diffMonths < 3) popup += `<p style="color:gray;">⌛ Карантин</p>`;
-                else if (role) popup += `<button onclick="window.showModal(${pData.id}, '${pData.name}')" style="background:#28a745; color:white; width:100%; padding:10px; border:none; border-radius:4px; cursor:pointer;">✋ Взяти</button>`;
-                popup += `<button onclick="window.location.href='parcel-details.html?id=${pData.id}'" style="width:100%; margin-top:8px; background:none; border:1px solid #ccc; padding:5px; border-radius:4px; cursor:pointer;">⚙️ Деталі</button></div>`;
-                parcelLayer.bindPopup(popup).openPopup();
-            });
-        });
-    }
-
-    // Модалки та авторизація
-    window.showModal = async (id, name) => {
-        window.currentParcelId = id;
-        document.getElementById('p-name').innerText = name;
-        document.getElementById('modalOverlay').style.display = 'block';
-        document.getElementById('takeModal').style.display = 'block';
-        const select = document.getElementById('v-name-select');
-        const { data: users } = await supabase.from('publishers').select('id, last_name, name').order('last_name', { ascending: true });
-        if (users) {
-            select.innerHTML = '';
-            users.forEach(user => {
-                const opt = document.createElement('option');
-                opt.value = user.id;
-                opt.text = `${user.last_name || ''} ${user.name || ''}`.trim();
-                if (user.id === localStorage.getItem('userId')) opt.selected = true;
-                select.appendChild(opt);
-            });
-        }
-    };
-
-    window.confirmTake = async () => {
-        const select = document.getElementById('v-name-select');
-        await supabase.from('parcels').update({
-            status: 'taken', taken_by: select.options[select.selectedIndex].text,
-            taken_by_id: select.value, taken_at: new Date().toISOString()
-        }).eq('id', window.currentParcelId);
+        await supabase.from('settings').upsert({ id: 'map_palette', data: window.mapSettings.colors });
         location.reload();
     };
 
-    window.closeModal = () => {
-        document.getElementById('modalOverlay').style.display = 'none';
-        document.getElementById('takeModal').style.display = 'none';
+    function getStyle(p) {
+        const s = window.mapSettings.colors;
+        let fill = s.private?.color || '#008000';
+        if (p.status === 'taken') fill = s.taken?.color || '#e74c3c';
+        return { color: "white", weight: 2, fillColor: fill, fillOpacity: 0.5 };
+    }
+
+    // Модальне віконце на карті
+    async function loadParcels() {
+        const { data } = await supabase.from('parcels').select('*');
+        
+        // Отримуємо дані поточного користувача
+        const role = localStorage.getItem('userRole');
+        const currentUserId = localStorage.getItem('userId'); // ID авторизованого юзера
+        const isAdmin = (role === 'admin' || role === 'super_admin');
+        const isAuth = !!currentUserId; // Перевірка чи залогінений
+
+        data?.forEach(p => {
+            if (!p.geom) return;
+            const layer = L.geoJSON(p.geom, { style: getStyle(p) }).addTo(map);
+            const label = L.tooltip({ permanent: true, direction: 'center', className: 'parcel-label' })
+                .setContent(p.name || "").setLatLng(layer.getBounds().getCenter()).addTo(map);
+
+            layer.on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+                const isTaken = p.status === 'taken';
+                
+                // Чи має право цей юзер здати цю конкретну дільницю?
+                // (Він адмін АБО це його дільниця)
+                const canReturn = isAdmin || (isAuth && String(p.taken_by_id) === String(currentUserId));
+                 // Формуємо посилання на дільницю (використовуємо назву дільниці як унікальний параметр)
+const shareLink = `${window.location.origin}${window.location.pathname}?parcel=${p.name}`;
+
+// Отримуємо координати центру для Google Maps
+const center = layer.getBounds().getCenter();
+const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${center.lat},${center.lng}`;
+
+let popupHtml = `
+    <div class="popup-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+            <span class="popup-title" style="margin:0;">Дільниця ${p.name}</span>
+            <button onclick="window.copyShareLink('${shareLink}')" 
+                    style="border:none; background:none; cursor:pointer; font-size:16px; padding:0;" 
+                    title="Скопіювати посилання">🔗</button>
+        </div>
+
+        <div class="popup-status">Статус: 
+            <span style="color:${isTaken ? '#e74c3c' : '#28a745'}">● ${isTaken ? 'Зайнята' : 'Вільна'}</span>
+        </div>
+        
+        <div class="popup-btn-row">
+            <button class="popup-btn" onclick="window.open('${googleMapsUrl}', '_blank')">📍 Маршрут</button>
+            ${isAdmin ? `<a href="parcel-details.html?id=${p.id}" class="popup-btn popup-btn-sh">⚙️ Картка</a>` : ''}
+        </div>
+
+        ${!isTaken ? `
+            ${isAuth ? 
+                `<button class="popup-btn primary" onclick="window.showTakeModal(${p.id}, '${p.name}')">✋ Взяти дільницю</button>` 
+                : `<p style="font-size:11px; color:orange; text-align:center; margin: 10px 0 0 0;">Увійдіть, щоб взяти дільницю</p>`
+            }
+        ` : `
+            ${canReturn ? 
+                `<button class="popup-btn" style="background:#f8f9fa; border:1px solid #dc3545; color:#dc3545; margin-bottom:8px; font-weight:bold;" 
+                        onclick="window.returnParcel(${p.id})">🔙 Здати дільницю</button>` 
+                : ''
+            }
+            
+            ${isAdmin ? `
+                <div style="text-align:center; font-size:12px; color:#666;">
+                    Взяв: <b>${p.taken_by || 'Невідомо'}</b>
+                </div>
+            ` : ''}
+        `}
+    </div>
+`;
+
+// Не забудь додати цю допоміжну функцію для копіювання десь у скрипті:
+window.copyShareLink = (link) => {
+    navigator.clipboard.writeText(link).then(() => {
+        alert("Посилання на дільницю скопійовано!");
+    });
+};
+                layer.bindPopup(popupHtml, { minWidth: 200 }).openPopup();
+            });
+            allParcelLayers.push({ layer, label, name: p.name.toLowerCase() });
+        });
+    }
+
+    // Функція для здачі дільниці (повернення)
+    window.returnParcel = async (id) => {
+        if (!confirm("Ви впевнені, що хочете здати цю дільницю?")) return;
+
+        const { error } = await supabase
+            .from('parcels')
+            .update({ 
+                status: 'free', 
+                taken_by: null, 
+                taken_by_id: null,
+                last_returned: new Date().toISOString() // фіксуємо дату повернення для карантину
+            })
+            .eq('id', id);
+
+        if (error) {
+            alert("Помилка при поверненні: " + error.message);
+        } else {
+            location.reload(); // оновлюємо карту
+        }
     };
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        const name = localStorage.getItem('userName');
-        const role = localStorage.getItem('userRole');
-        if (name) {
-            const btn = document.getElementById('loginBtn');
-            btn.innerText = `👤 ${name}`;
-            btn.href = "profile.html";
-        }
-        if (role === 'super_admin' || role === 'admin') {
-            document.getElementById('adminEditBtn').style.display = 'flex';
-        }
-        await loadSettings();
-        await initMap();
+
+    // Пошук
+    document.getElementById('searchNumber').oninput = (e) => {
+        const v = e.target.value.toLowerCase();
+        allParcelLayers.forEach(i => {
+            if (i.name.includes(v)) { i.layer.addTo(map); i.label.addTo(map); }
+            else { map.removeLayer(i.layer); map.removeLayer(i.label); }
+        });
+    };
+
+    window.showTakeModal = async (id, name) => {
+        window.currentId = id;
+        document.getElementById('p-name').innerText = name;
+        document.getElementById('modalOverlay').style.display = 'block';
+        document.getElementById('takeModal').style.display = 'block';
+        const { data } = await supabase.from('publishers').select('id, last_name, name').order('last_name');
+        document.getElementById('v-name-select').innerHTML = data.map(u => `<option value="${u.id}">${u.last_name} ${u.name}</option>`).join('');
+    };
+
+    window.confirmTake = async () => {
+        const s = document.getElementById('v-name-select');
+        await supabase.from('parcels').update({
+            status: 'taken', taken_by: s.options[s.selectedIndex].text,
+            taken_by_id: s.value, taken_at: new Date().toISOString()
+        }).eq('id', window.currentId);
+        location.reload();
+    };
+
+    window.closeAllModals = () => {
+        document.querySelectorAll('.modal, #modalOverlay, #filterMenu, #superadmin-palette').forEach(el => el.style.display = 'none');
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSettings();
+        loadParcels();
     });
 </script>
 </body>

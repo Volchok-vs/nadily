@@ -300,39 +300,47 @@
         });
 
         // --- БЛОК ФОКУСУВАННЯ НА КОНКРЕТНІЙ ДІЛЬНИЦІ ---
+        // --- БЛОК ФОКУСУВАННЯ ТА ВІДКРИТТЯ ПОПАПУ ---
         const urlParams = new URLSearchParams(window.location.search);
         const targetParcel = urlParams.get('parcel');
 
         if (targetParcel) {
             const targetName = targetParcel.toLowerCase();
             
-            // Чекаємо мить, щоб шари встигли ініціалізуватися
+            // Використовуємо невелику затримку, щоб Leaflet встиг обробити всі шари
             setTimeout(() => {
-                let foundLayer = null;
+                let foundItem = null;
 
                 allParcelLayers.forEach(item => {
                     if (item.name === targetName) {
-                        foundLayer = item;
+                        foundItem = item;
                         // Підсвічуємо обрану дільницю
                         item.layer.setStyle({
                             color: '#ffeb3b', 
-                            weight: 5,
-                            fillOpacity: 0.6
+                            weight: 7,
+                            fillOpacity: 0.7
                         });
                     } else {
-                        // ПРИХОВУЄМО всі інші дільниці та їхні підписи
+                        // Приховуємо решту
                         map.removeLayer(item.layer);
                         map.removeLayer(item.label);
                     }
                 });
 
-                if (foundLayer) {
-                    // Масштабуємо карту суто під цю дільницю
-                    map.fitBounds(foundLayer.layer.getBounds(), { padding: [50, 50], maxZoom: 18 });
-                    // Автоматично відкриваємо вікно з кнопкою "Маршрут"
-                    foundLayer.layer.openPopup();
+                if (foundItem) {
+                    // 1. Центруємо карту
+                    map.fitBounds(foundItem.layer.getBounds(), { padding: [50, 50], maxZoom: 17 });
+
+                    // 2. ВАЖЛИВО: Перевіряємо чи прив'язаний попап, і відкриваємо його
+                    // Використовуємо метод вогню: спочатку відкриваємо на шарі
+                    foundItem.layer.openPopup();
+                    
+                    // Якщо раптом не спрацювало через особливості Leaflet, пробуємо через координати центру
+                    if (!map.hasLayer(foundItem.layer.getPopup())) {
+                        foundItem.layer.fire('click'); 
+                    }
                 }
-            }, 300);
+            }, 500); // Затримка 500мс для надійності
         }
     }
 

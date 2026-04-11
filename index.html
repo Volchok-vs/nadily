@@ -38,14 +38,12 @@
         .leaflet-custom-btn {
             background-color: #fff; width: 34px; height: 34px; line-height: 34px;
             display: block; text-align: center; text-decoration: none; color: black;
-            border-bottom: 1px solid #ccc; cursor: pointer; font-size: 18px;
-        }
+            border-bottom: 1px solid #ccc; cursor: pointer; font-size: 18px; padding: 0; margin-top: 10px;}
         .user-control-panel { display: flex; gap: 10px; }
-        .auth-btn {
-            background: white; padding: 6px 14px; border: 2px solid rgba(0,0,0,0.2);
-            border-radius: 6px; text-decoration: none; color: #333; font-weight: bold; font-size: 14px;
-        }
-        .edit-btn { background: #ff8800; color: white; border: none; }
+        .auth-btn { background: white; padding: 6px 14px; border: 2px solid rgba(0,0,0,0.2); border-radius: 6px;
+            text-decoration: none; color: #333; font-weight: bold; font-size: 19px; }
+        
+        .edit-btn { color: white; border: none; font-size: 21.4px; padding: 6px 7.4px;}
 
         /* --- ЛЕГЕНДА --- */
         .legend { 
@@ -76,6 +74,7 @@
         .modal { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; }
         #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2500; }
     </style>
+    <link rel="stylesheet" href="css/style_mod.css">
 </head>
 <body>
 
@@ -83,8 +82,21 @@
 <div id="modalOverlay" onclick="window.closeAllModals()"></div>
 
 <div id="filterMenu">
-    <h4 style="margin:0 0 10px 0;">🔍 Пошук дільниці</h4>
-    <input type="text" id="searchNumber" placeholder="Введіть номер..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; box-sizing: border-box;">
+    <h4 style="margin:0 0 10px 0;">🔍 Фільтр дільниць</h4>
+    
+    <div style="margin-bottom: 10px;">
+        <input type="text" id="searchNumber" placeholder="Номер дільниці..." 
+               style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; box-sizing: border-box;">
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+        <label><input type="radio" name="statusFilter" value="all" checked> Показати всі</label>
+        <label><input type="radio" name="statusFilter" value="free"> ✅ Вільні</label>
+        <label><input type="radio" name="statusFilter" value="taken"> 🚩 На руках (Всі)</label>
+        <label id="myParcelsLabel" style="display:none;">
+            <input type="radio" name="statusFilter" value="mine"> 👤 Мої дільниці
+        </label>
+    </div>
 </div>
 
 <div id="superadmin-palette">
@@ -102,13 +114,78 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="module">
+    import { handleUrlParams, shareParcel, returnParcel } from "./js/parcel-logic.js";
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
     const supabase = createClient("https://modsgjjtwxbdnlycvifp.supabase.co", "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D");
+    import { initSearchAndFilters } from "./js/search-filter.js";
+    import { initGeolocation } from "./js/geolocation.js";
+    window.shareParcel = shareParcel;
+    window.returnParcel = (id) => returnParcel(id, supabase); // передаємо supabase
+   
+    window.allParcelLayers = [];
 
-    const map = L.map('map').setView([49.2321, 29.0577], 15);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+    window.quickLogout = () => {
+        if (confirm("Швидкий вихід ?")) {
+            // Очищуємо дані, але зберігаємо налаштування розробника!
+            const devMode = localStorage.getItem('devMode');
+            const showQuickLogout = localStorage.getItem('showQuickLogout');
+            
+            localStorage.clear();
+            
+            // Повертаємо налаштування розробника назад після очищення
+            if (devMode) localStorage.setItem('devMode', devMode);
+            if (showQuickLogout) localStorage.setItem('showQuickLogout', showQuickLogout);
+            
+            location.reload();
+        }
+    };
 
-    let allParcelLayers = [];
+        // 1. Схема OpenStreetMap
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    });
+
+    // 2. Супутник (Esri World Imagery)
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri'
+    });
+
+    // 3. Рельєф (OpenTopoMap)
+    const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data: © OSM, SRTM | style: © OpenTopoMap'
+    });
+
+    // 1. Чистий супутник
+    const satelliteOnly = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+
+    // 2. Прозорий шар з назвами (наприклад, від CartoDB або Esri Labels)
+    const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+        pane: 'shadowPane' // щоб назви були поверх всього, але під твоїми лініями дільниць
+    });
+
+    // Створюємо групу: Супутник + Назви
+    const satelliteHybrid = L.layerGroup([satelliteOnly, labels]);
+    // Ініціалізація карти з шаром за замовчуванням (наприклад, супутник)
+    window.map = L.map('map', {
+        center: [49.2321, 29.0577],
+        zoom: 15,
+        layers: [satelliteHybrid] // Шар за замовчуванням
+    });
+
+    // Створюємо об'єкти для контролера
+    const baseMaps = {
+        "Схема (OSM)": osm,
+        "Супутник": satellite,
+        "Супутник з вулицями": satelliteHybrid, // Тепер тут будуть назви
+        "Рельєф": topo
+    };
+
+    // Додаємо перемикач на карту
+    L.control.layers(baseMaps).addTo(map);
+
+    initGeolocation(window.map);
+  
+    window.allParcelLayers = [];
     window.mapSettings = { colors: {} };
 
     // --- 1. КЕРУВАННЯ (КНОПКИ ТА РОЛІ) ---
@@ -120,9 +197,18 @@
         onAdd: function() {
             const container = L.DomUtil.create('div', 'user-control-panel');
             const name = localStorage.getItem('userName');
+            
+            const showLogout = localStorage.getItem('showQuickLogout') === 'true';
+            
             container.innerHTML = `
                 <a href="${name ? 'profile.html' : 'login.html'}" class="auth-btn">${name ? '👤 ' + name : '🔐 Увійти'}</a>
-                ${isAdmin ? '<a href="map-editor.html" class="auth-btn edit-btn">✏️ Редактор</a>' : ''}
+                ${(showLogout && name) ? `
+                <div onclick="window.quickLogout()" class="leaflet-bar auth-btn" 
+                     style="background: #ff4757a3; color: white; cursor: pointer; text-align: center; padding: 6px 7.2px;">
+                    👈
+                </div>
+            ` : ''}
+                ${isAdmin ? '<a href="map-editor.html" class="auth-btn edit-btn">✏️</a>' : ''}
             `;
             return container;
         }
@@ -136,14 +222,32 @@
             // Кнопка Де я?
             const btnLocate = L.DomUtil.create('button', 'leaflet-custom-btn', container);
             btnLocate.innerHTML = '🎯'; 
-            btnLocate.onclick = () => map.locate({setView: true, maxZoom: 17});
+            btnLocate.title = "Моя локація"; // Додамо підказку
+
+            // Викликаємо функцію, яку прописали в geolocation.js
+            btnLocate.onclick = function(e) {
+                L.DomEvent.stopPropagation(e); // Щоб клік по кнопці не спрацював як клік по карті
+                window.locateMe(); 
+            };
 
             // Кнопка Фільтр
             const btnFilter = L.DomUtil.create('button', 'leaflet-custom-btn', container);
             btnFilter.innerHTML = '🔍'; 
             btnFilter.onclick = () => {
                 const m = document.getElementById('filterMenu');
-                m.style.display = m.style.display === 'none' ? 'block' : 'none';
+                // Спочатку перевіряємо поточний стан
+                const currentlyVisible = m.style.display === 'block';
+                
+                // Перемикаємо стан
+                m.style.display = currentlyVisible ? 'none' : 'block';
+
+                // Якщо ми щойно відкрили вікно (стало block)
+                if (!currentlyVisible) { 
+                    const myLabel = document.getElementById('myParcelsLabel');
+                    if (myLabel) {
+                        myLabel.style.display = localStorage.getItem('userId') ? 'block' : 'none';
+                    }
+                }
             };
 
             // Кнопка Палітра (Тільки Супер Адмін)
@@ -217,7 +321,7 @@
     // Модальне віконце на карті
     async function loadParcels() {
         const { data } = await supabase.from('parcels').select('*');
-        
+        window.allParcelLayers = []; // Зміни тут, щоб було window.
         // Отримуємо дані поточного користувача
         const role = localStorage.getItem('userRole');
         const currentUserId = localStorage.getItem('userId'); // ID авторизованого юзера
@@ -227,9 +331,27 @@
         data?.forEach(p => {
             if (!p.geom) return;
             const layer = L.geoJSON(p.geom, { style: getStyle(p) }).addTo(map);
-            const label = L.tooltip({ permanent: true, direction: 'center', className: 'parcel-label' })
-                .setContent(p.name || "").setLatLng(layer.getBounds().getCenter()).addTo(map);
+            const labelPos = (p.label_pos && p.label_pos.length === 2) 
+                ? L.latLng(p.label_pos[0], p.label_pos[1]) 
+                : layer.getBounds().getCenter();
 
+            // 3. ПРИВ'ЯЗУЄМО ТА ВІДКРИВАЄМО НОМЕР
+            // Використовуємо bindTooltip + openTooltip для точного позиціювання
+            layer.bindTooltip(p.name || "", { 
+                permanent: true, 
+                direction: 'center', 
+                className: 'parcel-label' 
+            }).openTooltip(labelPos);
+
+            const label = layer.getTooltip(); // Отримуємо посилання на створений тултіп
+            
+
+            window.allParcelLayers.push({ 
+                layer, 
+                label, 
+                name: p.name.toString().toLowerCase(),
+                data: p 
+            });
             layer.on('click', (e) => {
                 L.DomEvent.stopPropagation(e);
                 const isTaken = p.status === 'taken';
@@ -242,8 +364,8 @@
 
                 // Отримуємо координати центру для Google Maps
                 const center = layer.getBounds().getCenter();
-                // Правильне посилання для Google Maps
-                const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${center.lat},${center.lng}`;
+                // Правильне посилання для Google Maps (стандартний формат)
+                const googleMapsUrl = `https://www.google.com/maps?q=${center.lat},${center.lng}`;
 
                 let popupHtml = `
                     <div class="popup-container">
@@ -299,114 +421,12 @@
             allParcelLayers.push({ layer, label, name: p.name.toLowerCase() });
         });
 
-        // --- БЛОК ФОКУСУВАННЯ НА КОНКРЕТНІЙ ДІЛЬНИЦІ ---
+        initSearchAndFilters(window.map, window.allParcelLayers);
         
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetParcel = urlParams.get('parcel');
-
-        if (targetParcel) {
-            const targetName = targetParcel.toLowerCase().trim();
-            
-            // Збільшуємо затримку до 800мс, щоб база даних і Leaflet точно все підготували
-            setTimeout(() => {
-                let foundItem = null;
-
-                allParcelLayers.forEach(item => {
-                    // Очищуємо назву з бази від зайвих пробілів для точного порівняння
-                    const currentName = item.name.toString().toLowerCase().trim();
-                    
-                    if (currentName === targetName) {
-                        foundItem = item;
-                        item.layer.setStyle({
-                            color: '#ffeb3b', 
-                            weight: 8,
-                            fillOpacity: 0.7
-                        });
-                        item.layer.addTo(map); // Про всяк випадок переконуємось, що він на карті
-                    } else {
-                        map.removeLayer(item.layer);
-                        map.removeLayer(item.label);
-                    }
-                });
-
-                if (foundItem) {
-                    // 1. Спочатку летимо до об'єкта
-                    map.fitBounds(foundItem.layer.getBounds(), { padding: [50, 50], maxZoom: 17 });
-
-                    // 2. Чекаємо завершення анімації польоту карти (flyTo/fitBounds)
-                    map.once('moveend', () => {
-                        // 3. Імітуємо реальний клік по дільниці
-                        foundItem.layer.fire('click');
-                        
-                        // 4. Якщо клік не допоміг (буває в деяких версіях), відкриваємо примусово за координатами
-                        setTimeout(() => {
-                            if (!foundItem.layer.getPopup() || !foundItem.layer.isPopupOpen()) {
-                                foundItem.layer.openPopup();
-                            }
-                        }, 100);
-                    });
-
-                    // Якщо анімація не запустилася (ми вже на місці), просто тиснемо
-                    foundItem.layer.fire('click');
-                } else {
-                    console.error("Дільницю з назвою '" + targetName + "' не знайдено серед завантажених.");
-                }
-            }, 800); 
-        }
+        handleUrlParams();
     }
 
-
-    // Функція для здачі дільниці (повернення)
-    window.returnParcel = async (id) => {
-        if (!confirm("Ви впевнені, що хочете здати цю дільницю?")) return;
-
-        const { error } = await supabase
-            .from('parcels')
-            .update({ 
-                status: 'free', 
-                taken_by: null, 
-                taken_by_id: null,
-                last_returned: new Date().toISOString() // фіксуємо дату повернення для карантину
-            })
-            .eq('id', id);
-
-        if (error) {
-            alert("Помилка при поверненні: " + error.message);
-        } else {
-            location.reload(); // оновлюємо карту
-        }
-    };
-
-    window.shareParcel = async (name, link) => {
-        const shareData = {
-            title: `Дільниця ${name}`,
-            text: `Ось посилання на дільницю ${name} в карті:`,
-            url: link,
-        };
-
-        try {
-            // Перевірка чи підтримує браузер системне меню "Поділитися" (iOS/Android/Safari)
-            if (navigator.share) {
-                await navigator.share(shareData);
-            } else {
-                // Якщо це ПК або браузер без підтримки Share API
-                await navigator.clipboard.writeText(link);
-                alert("Посилання копійовано! Тепер надішліть його віснику.");
-            }
-        } catch (err) {
-            console.log("Користувач скасував або виникла помилка:", err);
-        }
-    };
-
-    // Пошук
-    document.getElementById('searchNumber').oninput = (e) => {
-        const v = e.target.value.toLowerCase();
-        allParcelLayers.forEach(i => {
-            if (i.name.includes(v)) { i.layer.addTo(map); i.label.addTo(map); }
-            else { map.removeLayer(i.layer); map.removeLayer(i.label); }
-        });
-    };
-
+    
     window.showTakeModal = async (id, name) => {
         window.currentId = id;
         document.getElementById('p-name').innerText = name;
@@ -433,6 +453,81 @@
         loadSettings();
         loadParcels();
     });
+
+    let searchTimeout; // Змінна для зберігання таймера поза функцією
+
+    document.getElementById('searchNumber').addEventListener('input', function(e) {
+        const val = e.target.value.trim().toLowerCase();
+        
+        // 1. МИТТЄВА ФІЛЬТРАЦІЯ (візуально приховуємо зайве відразу)
+        window.allParcelLayers.forEach(item => {
+            const isMatch = item.name.includes(val);
+            if (isMatch) {
+                window.map.addLayer(item.layer);
+            } else {
+                window.map.removeLayer(item.layer);
+            }
+        });
+
+        // 2. ЗАТРИМКА ПЕРЕД ПОЛЬОТОМ (Debounce)
+        clearTimeout(searchTimeout); // Скасовуємо попередній таймер, якщо ти натиснув клавішу знову
+        
+        searchTimeout = setTimeout(() => {
+            if (val !== "") {
+                // Шукаємо точну відповідність номера
+                const target = window.allParcelLayers.find(p => p.name === val);
+                
+               if (target) {
+                    // Отримуємо межі (границі) дільниці
+                    const bounds = target.layer.getBounds();
+                    
+                    // Використовуємо flyToBounds для розумного фокусування
+                    window.map.flyToBounds(bounds, {
+                        padding: [100, 100],      // Внутрішній відступ (чим більше число, тим меншою буде дільниця на екрані)
+                        duration: 2.0,            // Час польоту в секундах
+                        easeLinearity: 0.1,       // Максимальна плавність старту та зупинки
+                        maxZoom: 18               // Щоб дільниця не ставала занадто великою (на весь екран), якщо вона маленька
+                    });
+
+                    // Відкриваємо попап з невеликою затримкою після приземлення
+                    setTimeout(() => {
+                        target.layer.fire('click');
+                    }, 2100); 
+                }
+            }
+        }, 800); // Пауза 800 мс (0.8 секунди)
+    });
+
+    document.addEventListener('click', (event) => {
+        const menus = ['filterMenu', 'superadmin-palette', 'takeModal'];
+        const toggleButtons = ['.leaflet-custom-btn', '.edit-btn', '.auth-btn', '.popup-btn']; // Додав .popup-btn
+
+        // 1. Перевіряємо, чи клікнули на якусь кнопку відкриття
+        let clickedOnButton = toggleButtons.some(selector => {
+            const elements = document.querySelectorAll(selector);
+            return Array.from(elements).some(el => el.contains(event.target));
+        });
+
+        // 2. Окремо перевіряємо, чи клік був всередині попапа Leaflet
+        const clickedInsidePopup = event.target.closest('.leaflet-popup');
+
+        // Якщо клікнули на кнопку або всередині попапа — не закриваємо нічого
+        if (clickedOnButton || clickedInsidePopup) return; 
+
+        // 3. Закриваємо активні меню
+        menus.forEach(id => {
+            const menu = document.getElementById(id);
+            if (menu && menu.style.display === 'block' && !menu.contains(event.target)) {
+                menu.style.display = 'none';
+                if (id === 'takeModal') {
+                    const overlay = document.getElementById('modalOverlay');
+                    if (overlay) overlay.style.display = 'none';
+                }
+            }
+        });
+    });
 </script>
+<script src="js/main.js" defer></script>
+
 </body>
 </html>

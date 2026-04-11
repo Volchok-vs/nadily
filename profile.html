@@ -70,6 +70,9 @@
         <div id="adminMenu" class="hidden">
             <div class="nav-item" onclick="switchTab('group-cards')">👥 Картки групи</div>
             <div class="nav-item" onclick="switchTab('all-territories')">📋 Список територій</div>
+            <a href="dev-settings.html" id="devLink" class="nav-item" style="display: none; border-left: 3px solid #ff9800; color: #ff9800;">
+                🛠 Режим розробки
+            </a>
         </div>
         <a href="index.html" class="nav-item">🗺️ Повернутись до карти</a>
         <div class="nav-item logout-btn" onclick="logout()">🏃 Вийти</div>
@@ -280,6 +283,9 @@
         if (userRole === 'admin' || userRole === 'super_admin') {
             const adminMenu = document.getElementById('adminMenu');
             if (adminMenu) adminMenu.classList.remove('hidden');
+            if (userRole === 'super_admin') {
+                document.getElementById('devLink').style.display = 'flex';
+            }
             loadGroupStats();
         }
 

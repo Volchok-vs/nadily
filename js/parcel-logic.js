@@ -50,9 +50,14 @@ export async function shareParcel(name, link) {
 // Функція здачі дільниці
 export async function returnParcel(id, supabase) {
     if (!confirm("Ви впевнені, що хочете здати цю дільницю?")) return;
-    const { error } = await supabase.from('parcels').update({ 
-        status: 'free', taken_by: null, taken_by_id: null, last_returned: new Date().toISOString() 
-    }).eq('id', id);
+    // Приклад того, як має виглядати фіксація здачі
+const { error } = await supabase.from('parcels').update({
+    status: 'free',
+    taken_by: null,
+    taken_by_id: null,
+    taken_at: null,
+    last_returned: new Date().toISOString() // ОБОВ'ЯЗКОВО ДЛЯ КАРАНТИНУ
+}).eq('id', id);
 
     if (error) alert("Помилка: " + error.message);
     else location.reload();

@@ -1,11 +1,5 @@
 // main.js
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-// 1. Ініціалізація Supabase
-export const supabase = createClient(
-    "https://modsgjjtwxbdnlycvifp.supabase.co", 
-    "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D"
-);
 
 // 2. Спільні змінні (експортуються один раз на самому початку)
 export const userRole = localStorage.getItem('userRole');

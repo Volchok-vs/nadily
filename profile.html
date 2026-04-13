@@ -213,9 +213,8 @@
     </div>
 
 <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-    const supabase = createClient("https://modsgjjtwxbdnlycvifp.supabase.co", "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D");
-
+    import { supabase } from "./js/config.js"; // Просто імпортуємо готову "розетку"
+    
     const userId = localStorage.getItem('userId');
     const userRole = localStorage.getItem('userRole');
 

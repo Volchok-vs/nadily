@@ -124,10 +124,8 @@
 
 <script type="module">
     // Імпортуємо клієнт (якщо ви використовуєте ES модулі, інакше використовуйте вікно)
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    const supabase = createClient("https://modsgjjtwxbdnlycvifp.supabase.co", "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D");
-
+   import { supabase } from "./js/config.js"; // Просто імпортуємо готову "розетку"
+   
     async function handleLogin() {
         const name = document.getElementById('name').value.trim();
         const key = document.getElementById('password').value.trim();

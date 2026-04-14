@@ -1,7 +1,3 @@
-/* Базові налаштування */
-body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-#map { height: 100vh; width: 100%; }
-
 .leaflet-top.leaflet-right {
     display: flex;
     gap: 10px;
@@ -9,161 +5,88 @@ body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
     align-items: center;
 }
 
-/* Попапи Leaflet */
-.leaflet-popup-content-wrapper { background: #fff !important; border-radius: 12px !important; box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important; }
-.popup-container { min-width: 200px; }
-.popup-title { font-size: 17px; font-weight: bold; display: block; text-align: center; }
-.popup-btn-row { display: flex; gap: 8px; margin: 8px 0; }
-.popup-btn { 
-    display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; 
-    padding: 7px; border-radius: 8px; border: 1px solid #ccc; background: white; 
-    cursor: pointer; font-size: 13px; text-decoration: none; color: #333; 
+.leaflet-touch .leaflet-bar {
+    border: none;
 }
-.popup-btn.primary { background: #179133; color: white; border: none; font-weight: bold; padding: 10px; }
-
-/* Кнопки інтерфейсу */
-.auth-btn { background: white; padding: 6px 14px; border: 2px solid rgba(0,0,0,0.2); border-radius: 6px; text-decoration: none; color: #333; font-weight: bold; font-size: 19px; }
-.edit-btn { background: #1565C0; color: white; border: none; font-size: 21px; padding: 6px 8px; }
-.leaflet-custom-btn { background: #fff; width: 34px; height: 34px; display: block; text-align: center; cursor: pointer; font-size: 18px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px; }
-
-/* Модальні вікна */
-.modal, .logic-modal, .modal-container {
-    display: none; position: fixed; background: white; z-index: 3000; padding: 20px; 
-    border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-.modal { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; }
-#filterMenu { top: 70px; left: 60px; width: 220px; }
-#modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2500; }
-
-.close-btn { position: absolute; top: 5px; right: 10px; cursor: pointer; font-size: 22px; color: #888; }
-.quarantine-warning { color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 6px; border: 1px solid #d32f2f; font-weight: bold; margin-bottom: 10px; }
-.admin-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #1565C0; }
-.modal-select { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 6px; }
-
-/* Легенда */
-.legend { position: absolute; bottom: 20px; right: 20px; z-index: 1000; }
-.info-icon { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: #1565C0; color: white; border-radius: 50%; font-size: 24px; cursor: pointer; }
-
-/* Підписи дільниць */
-.parcel-label { background: transparent !important; border: none !important; box-shadow: none !important; color: white !important; font-weight: bold; text-shadow: 1px 1px 2px black; }
 
 
-/* АДАПТИВНІСТЬ ДЛЯ МОБІЛЬНИХ ПРИСТРОЇВ (Екрани менше 768px) */
+/* ПОВНА АДАПТАЦІЯ ПІД МОБІЛЬНІ ПРИСТРОЇ */
 @media screen and (max-width: 768px) {
-    /* 1. Модальні вікна на весь екран */
-    .modal {
-        width: 90% !important;
-        max-width: 350px;
-        padding: 15px;
+    
+    /* 1. Фільтр-меню: робимо компактним та з прокруткою */
+    #filterMenu {
+        top: 10px !important;
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        max-height: 85vh !important; /* Щоб не вилізало за екран */
+        overflow-y: auto !important; /* Додаємо внутрішню прокрутку */
+        transform: none !important;
+        padding: 12px !important;
+        box-sizing: border-box;
     }
 
-    /* 2. Фільтр-меню тепер виїжджає по центру або знизу */
-    #filterMenu {
+    /* 2. Модальні вікна (Видача дільниці): центрування */
+    .modal, .logic-modal, .modal-container {
+        width: 92% !important;
+        max-width: 340px !important;
+        padding: 15px !important;
         top: 50% !important;
         left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 85% !important;
-        max-height: 80vh;
-        overflow-y: auto;
+        transform: translate(-50%, -50%) !important; /* Чітко по центру */
     }
 
-    /* 3. Збільшуємо кнопки для зручного натискання пальцем */
-    .leaflet-custom-btn, .auth-btn, .edit-btn {
-        width: 44px !important;
-        height: 44px !important;
-        font-size: 22px !important;
+    /* 3. Кнопки керування: збільшуємо для пальців (стандарт 44px) */
+    .auth-btn {
         display: flex;
         align-items: center;
         justify-content: center;
+       
     }
 
-    .popup-btn {
-        padding: 12px !important; /* Більша зона натискання у попапі */
-        font-size: 15px !important;
-    }
-
-    /* 4. Оптимізація легенди та інфо-іконки */
-    .legend {
-        bottom: 15px;
-        right: 15px;
-    }
-    
-    .info-icon {
-        width: 44px;
-        height: 44px;
-    }
-
-    /* 5. Попапи Leaflet робимо ширшими */
-    .leaflet-popup-content {
-        width: 250px !important;
-        margin: 10px !important;
-    }
-}
-
-/* ДЛЯ ДУЖЕ МАЛЕНЬКИХ ТЕЛЕФОНІВ (менше 480px) */
-@media screen and (max-width: 480px) {
-    .popup-btn-row {
-        flex-direction: column; /* Кнопки в попапі одна під одною */
-    }
-}
-
-/* АДАПТАЦІЯ ДЛЯ МОБІЛЬНИХ ПРИСТРОЇВ */
-@media screen and (max-width: 768px) {
-    /* Робимо модальні вікна зручнішими (на весь екран по ширині) */
-    .modal, .logic-modal, .modal-container {
-        width: 90% !important;
-        max-width: 380px !important;
-        left: 50% !important;
-        transform: translate(-50%, -10%) !important;
-        top: 15% !important;
-        padding: 15px !important;
-    }
-
-    /* Фільтр-меню тепер з'являється по центру */
-    #filterMenu {
-        left: 50% !important;
-        top: 20% !important;
-        transform: translate(-50%, 0) !important;
-        width: 85% !important;
-    }
-
-    /* Збільшуємо кнопки керування для натискання пальцем (Touch-friendly) */
-    .leaflet-custom-btn, .auth-btn {
-        width: 44px !important;
-        height: 44px !important;
-        line-height: 44px !important;
-        font-size: 22px !important;
-        display: flex;
-        align-items: center;
+    .leaflet-custom-btn {
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 24px !important;
         justify-content: center;
+        margin-bottom: 10px;
+        border-radius: 6px;
     }
 
-    /* Попапи на карті робимо ширшими */
-    .leaflet-popup-content {
-        width: 260px !important;
-        font-size: 14px;
+    /* 4. Попапи на мапі: адаптуємо під ширину екрану */
+    .leaflet-popup-content-wrapper {
+        width: 280px !important;
+    }
+
+    .popup-btn-row {
+        flex-direction: column !important; /* Кнопки в попапі одна під одною */
+        gap: 8px !important;
     }
 
     .popup-btn {
-        padding: 12px !important; /* Більша область для натискання */
-        font-size: 15px !important;
+        padding: 12px !important;
+        font-size: 16px !important;
+        width: 100% !important;
+        box-sizing: border-box;
     }
 
-    /* Кнопки в попапі ставимо одна під одною, якщо екран дуже вузький */
-    .popup-btn-row {
-        flex-direction: column;
-        gap: 5px;
-    }
-
-    /* Легенда та іконка "?" */
+    /* 5. Легенда (іконка питання) */
     .legend {
-        bottom: 15px;
-        right: 15px;
+        bottom: 20px !important;
+        right: 15px !important;
     }
-    
+
     .info-icon {
-        width: 46px;
-        height: 46px;
-        font-size: 28px;
+        width: 48px !important;
+        height: 48px !important;
+        font-size: 26px !important;
+    }
+
+    /* Виправляємо відступи у списках всередині фільтра */
+    .filter-options label {
+        display: block;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+        font-size: 16px;
     }
 }

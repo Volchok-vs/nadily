@@ -18,11 +18,22 @@ function initMainMap() {
     const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', { pane: 'shadowPane' });
     const satelliteHybrid = L.layerGroup([satelliteOnly, labels]);
 
+    // Перевіряємо, чи це мобільний пристрій (ширина менше 768px)
+    const isMobile = window.innerWidth <= 768;
+
     window.map = L.map('map', {
         center: [49.2321, 29.0577],
         zoom: 15,
-        layers: [satelliteHybrid]
+        layers: [satelliteHybrid],
+        zoomControl: !isMobile // Вимикаємо кнопки масштабу, якщо це мобільний
     });
+
+    // Якщо це НЕ мобільний, можна явно вказати позицію кнопок (опціонально)
+    if (!isMobile) {
+        L.control.zoom({
+            position: 'topright'
+        }).addTo(map);
+    }
 }
 
 async function loadParcels() {

@@ -4,7 +4,6 @@
 <head>
     <meta charset="utf-8" />
     <title>Карта дільниць</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
@@ -318,7 +317,25 @@
         </div>
     </div>
 
-    
+    <div id="superadmin-palette">
+        <h4 style="margin:0 0 10px 0;">🎨 Налаштування кольорів</h4>
+        <div id="palette-inputs"></div>
+        <button onclick="window.saveColorsToDB()"
+            style="width:100%; background:#179133; color:white; border:none; padding:10px; border-radius:6px; margin-top:10px; cursor:pointer;">Зберегти</button>
+    </div>
+
+    <div id="paletteMenu"
+        style="display: none; position: fixed; right: 20px; top: 80px; background: white; z-index: 2000; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 280px; max-height: 80vh; overflow-y: auto;">
+        <h3 style="margin-top:0;">Налаштування кольорів</h3>
+        <div id="colorSettingsList"></div>
+        <button onclick="window.saveMapColors()"
+            style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-top:10px;">
+            Зберегти в базу
+        </button>
+        <button onclick="document.getElementById('paletteMenu').style.display='none'"
+            style="width:100%; background:none; border:none; color:gray; cursor:pointer; margin-top:5px;">Закрити</button>
+    </div>
+
     <div id="takeModal" class="modal">
         <h3 style="margin-top:0;">Дільниця <span id="p-name"></span></h3>
 
@@ -343,7 +360,7 @@
         <span class="info-icon" onclick="UI.toggleModal('logicModal', true)">?</span>
     </div>
 
-    <div id="logicModal" class="modal-container" style="display:none; width: 0px; max-width: 90vw; padding: 20px; background: #ffffff; border-radius: 14px; border: 2px solid #2c3e50; box-shadow: 0 10px 40px rgba(0,0,0,0.3); font-family: 'Segoe UI', Tahoma, sans-serif; color: #2c3e50;">
+    <div id="logicModal" class="modal-container" style="display:none; width: 500px; max-width: 90vw; padding: 20px; background: #ffffff; border-radius: 14px; border: 2px solid #2c3e50; box-shadow: 0 10px 40px rgba(0,0,0,0.3); font-family: 'Segoe UI', Tahoma, sans-serif; color: #2c3e50;">
     
     <h3 style="margin: 0 0 15px 0; font-size: 20px; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px;">🗺️ Пояснення мапи</h3>
     
@@ -571,22 +588,12 @@
         // Створюємо групу: Супутник + Назви
         const satelliteHybrid = L.layerGroup([satelliteOnly, labels]);
         // Ініціалізація карти з шаром за замовчуванням (наприклад, супутник)
-        // Перевіряємо, чи це мобільний пристрій (ширина менше 768px)
-        const isMobile = window.innerWidth <= 768;
-
         window.map = L.map('map', {
             center: [49.2321, 29.0577],
             zoom: 15,
-            layers: [satelliteHybrid],
-            zoomControl: !isMobile // Вимикаємо кнопки масштабу, якщо це мобільний
+            layers: [satelliteHybrid] // Шар за замовчуванням
         });
 
-        // Якщо це НЕ мобільний, можна явно вказати позицію кнопок (опціонально)
-        if (!isMobile) {
-            L.control.zoom({
-                position: 'topright'
-            }).addTo(map);
-        }
         // Створюємо об'єкти для контролера
         const baseMaps = {
             "Схема (OSM)": osm,
@@ -617,7 +624,7 @@
                 const showLogout = localStorage.getItem('showQuickLogout') === 'true';
 
                 container.innerHTML = `
-                    <a href="${name ? 'profile.html' : 'login.html'}" class="auth-btn profil-btn">
+                    <a href="${name ? 'profile.html' : 'login.html'}" class="auth-btn">
                         ${name ? '👤 ' + name : '🔐 Увійти'}
                     </a>
                     
@@ -674,6 +681,23 @@
                         }
                     }
                 });
+
+                // Кнопка Палітра
+                // Кнопка Палітра всередині ToolControl
+                if (role === 'super_admin') {
+                    createBtn('🎨', "Налаштування кольорів", () => {
+                        const menu = document.getElementById('paletteMenu');
+                        if (menu) {
+                            const isVisible = menu.style.display === 'block';
+                            menu.style.display = isVisible ? 'none' : 'block';
+
+                            // Якщо відкриваємо — рендеримо налаштування
+                            if (!isVisible && typeof window.renderColorSettings === 'function') {
+                                window.renderColorSettings();
+                            }
+                        }
+                    });
+                }
 
                 return container;
             }

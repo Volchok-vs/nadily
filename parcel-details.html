@@ -81,7 +81,9 @@
         <label for="sectorTypeSelect" style="font-size: 14px; flex-shrink: 0;">Тип:</label>
         <select id="sectorTypeSelect" disabled style="flex-grow: 1; padding: 5px; border-radius: 5px;">
             <option value="Приватний сектор">Приватний сектор</option>
-            <option value="Багатоповерхівки">Багатоповерхівки</option>
+            <option value="Поверхівки">Поверхівки</option>
+            <option value="Змішані">Змішані</option>
+            <option value="Ділова">Ділова</option>
             <option value="Село">Село</option>
         </select>
     </div>
@@ -161,7 +163,8 @@
 
 <script type="module">
     // 1. Імпортуємо все необхідне. Тепер ці змінні доступні скрізь нижче.
-    import { supabase, isAdmin, currentUserId } from "./js/main.js";
+    import { supabase } from "./js/config.js"; // Просто імпортуємо готову "розетку"
+    import { isAdmin, currentUserId } from "./js/main.js";
     import { formatStatusHTML, getDurationText } from "./js/status-helper.js";
     // Отримуємо ID з URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -214,7 +217,7 @@
     let updateData = {};
     
     if (isSectorEdit) {
-        updateData.sector_type = document.getElementById('sectorTypeSelect').value;
+        updateData.category = document.getElementById('sectorTypeSelect').value;
     }
     
     if (isDateEdit) {
@@ -260,7 +263,7 @@
             const lastProcInput = document.getElementById('lastProcessedDate');
             const sectorSelect = document.getElementById('sectorTypeSelect');
             if (lastProcInput) lastProcInput.value = p.last_processed || '';
-            if (sectorSelect) sectorSelect.value = p.sector_type || 'Приватний сектор';
+            if (sectorSelect) sectorSelect.value = p.category || 'Приватний сектор';
         }
     }
 

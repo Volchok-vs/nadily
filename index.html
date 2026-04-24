@@ -3,9 +3,12 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Карта дільниць</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
         body {
             margin: 0;
@@ -13,20 +16,29 @@
             font-family: 'Segoe UI', sans-serif;
         }
 
+        /* Клас, який ми будемо додавати до body через JS */
+        body.modal-open {
+            overflow: hidden;
+            touch-action: none;
+            /* Забороняє «тягнути» сторінку пальцем */
+        }
+
+        /* Сама модалка має ігнорувати прокрутку body */
+        .modal-container {
+            touch-action: auto;
+            /* Дозволяє прокрутку всередині самої модалки */
+        }
+
         #map {
-            height: 100vh;
+            height: 100dvh;
             width: 100%;
         }
 
-        /* --- СТИЛІЗАЦІЯ ПОПАПА (з макета) --- */
+        /* Стилизация попапов */
         .leaflet-popup-content-wrapper {
-            background: #ffff !important;
+            background: #ffffff !important;
             border-radius: 12px !important;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
-        }
-
-        .leaflet-popup-tip {
-            background: #fdfaf0 !important;
         }
 
         .popup-container {
@@ -42,129 +54,155 @@
         }
 
         .popup-status {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 12px;
+            font-size: 13px;
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 4px;
+            border-radius: 4px;
         }
 
-        /* Ряд для кнопок Маршрут + Деталі */
+        .status-free {
+            background: #e6f4ea;
+            color: #1e7e34;
+        }
+
+        .status-taken {
+            background: #feeeee;
+            color: #d93025;
+        }
+
+        .popup-btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .popup-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .popup-btn.primary {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+
+        /* Меню фильтров */
+        #filterMenu {
+            position: fixed;
+            top: 66px;
+            left: 57px;
+            z-index: 1001;
+            background: #ffffffd9;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: none;
+            width: 250px;
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+
+        /* --- СТИЛИ ПОПАПА (из index_1) --- */
+        .popup-container {
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .popup-title {
+            font-size: 17px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .popup-status {
+            font-size: 13px;
+            display: block;
+            margin-bottom: 10px;
+            padding: 4px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
         .popup-btn-row {
             display: flex;
             gap: 8px;
             margin-bottom: 8px;
+            justify-content: center;
         }
 
         .popup-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            width: 100%;
-            padding: 7px;
+            flex: 1;
+            padding: 8px;
             border-radius: 8px;
-            border: 1px solid #ccc;
-            background: white;
+            border: 1px solid #ddd;
+            background: #f8f9fa;
             cursor: pointer;
             font-size: 13px;
             text-decoration: none;
-            color: #333;
+            color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
         }
 
-        a.popup-btn.popup-btn-sh {
-            width: 128px;
+        .popup-btn:hover {
+            background: #e2e6ea;
         }
 
         .popup-btn.primary {
-            background: #179133;
+            background: #007bff;
             color: white;
             border: none;
             font-weight: bold;
-            padding: 10px;
+            width: 100%;
         }
 
-        /* --- КНОПКИ КЕРУВАННЯ --- */
-        .leaflet-custom-btn {
-            background-color: #fff;
-            width: 34px;
-            height: 34px;
-            line-height: 34px;
-            display: block;
-            text-align: center;
-            text-decoration: none;
-            color: black;
-            border-bottom: 1px solid #ccc;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 0;
-            margin-top: 10px;
-        }
-
-        .user-control-panel {
-            display: flex;
-            gap: 10px;
-        }
-
-        .auth-btn {
-            background: white;
-            padding: 6px 14px;
-            border: 2px solid rgba(0, 0, 0, 0.2);
-            border-radius: 6px;
-            text-decoration: none;
-            color: #333;
-            font-weight: bold;
-            font-size: 19px;
-        }
-
-        .edit-btn {
-            color: white;
-            border: none;
-            font-size: 21.4px;
-            padding: 6px 7.4px;
-        }
-
-        /* Підписи на карті */
-        .parcel-label {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            color: white !important;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px black;
-        }
-
-        /* Модалки */
-        #filterMenu,
-        #superadmin-palette,
-        .modal,
-        .logic-modal {
-            display: none;
-            position: fixed;
-            background: white;
-            z-index: 3000;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        #filterMenu {
-            top: 70px;
-            left: 60px;
-            width: 220px;
-        }
-
-        #superadmin-palette {
-            top: 110px;
-            left: 60px;
-            width: 250px;
-        }
-
-        .modal {
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px;
-        }
-
+        /* --- СТИЛИ МОДАЛЬНОГО ОКНА --- */
         #modalOverlay {
             display: none;
             position: fixed;
@@ -173,35 +211,49 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
-            z-index: 2500;
+            z-index: 2000;
+            backdrop-filter: blur(2px);
         }
 
-        /* Базовые стили модальных окон */
-        .modal-container {
+        .modal {
+            display: none;
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: white;
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            z-index: 2501;
-            width: 340px;
-            box-sizing: border-box;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            z-index: 2001;
+            width: 300px;
         }
 
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1999;
+        .user-control-panel {
+            display: flex;
+            gap: 8px;
+            margin: 10px;
         }
 
-        /* Стили легенды */
+        .auth-btn {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+            font-size: 19px;
+            display: flex;
+            align-items: center;
+            border: none;
+        }
+
+        .edit-btn {
+            font-size: 21.4px;
+            padding: 6px 7.4px;
+        }
+
         .legend {
             position: absolute;
             bottom: 20px;
@@ -212,19 +264,6 @@
             border-radius: 49%;
             font-size: 12px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 3px;
-        }
-
-        .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
         }
 
         .info-icon {
@@ -241,43 +280,217 @@
             font-weight: bold;
         }
 
-        .logic-item {
-            margin-bottom: 12px;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        .logic-color {
-            display: inline-block;
-            width: 20px;
-            height: 10px;
-            border-radius: 3px;
-            margin-right: 8px;
-            border: 1px solid #ccc;
-        }
-
-        .btn-confirm-light {
-            width: 100%;
-            background: #eee;
+        /* Стиль контейнера (збігається зі стандартним зумом) */
+        .leaflet-custom-btn {
+            background-color: #ffffff;
             border: none;
-            padding: 10px;
-            border-radius: 8px;
+            border-bottom: 1px solid #ddd;
+            width: 34px;
+            height: 34px;
             cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: background-color 0.2s;
+            padding: 0;
         }
 
-        .btn-confirm-light:hover {
-            background: #e0e0e0;
+        .leaflet-custom-btn:last-child {
+            border-bottom: none;
+        }
+
+        .leaflet-custom-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .leaflet-custom-btn:active {
+            background-color: #e0e0e0;
+        }
+
+        /* Для тач-пристроїв (Pixel 7) */
+        .leaflet-touch .leaflet-custom-btn {
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .leaflet-touch .leaflet-control-layers,
+        .leaflet-touch .leaflet-bar {
+            border: 0px solid rgba(0, 0, 0, 0.2);
+            background-clip: padding-box;
+        }
+
+        .accuracy-info-box {
+            border: 1px solid #2762ef;
+            background-color: rgb(10 75 173 / 54%);
+        }
+
+        .parcel-label {
+            background: transparent;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .parcel-label b {
+            display: block;
+            width: 40px;
+            /* Має збігатися з iconSize в JS */
+            text-align: center;
+            font-size: 13px;
+            font-family: sans-serif;
         }
     </style>
     <link rel="stylesheet" href="css/style_mod.css">
+    <link rel="stylesheet" href="css/responsive.css">
 </head>
 
 <body>
-
     <div id="map"></div>
-    <div id="modalOverlay" onclick="window.closeAllModals()"></div>
+
+    <div id="modalOverlay" onclick="UI.closeAllModals()"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:-1;">
+    </div>
+
+    <div id="takeModal" class="modal">
+        <h3 style="margin-top:0;">Дільниця <span id="p-name"></span></h3>
+
+        <div id="quarantine-msg"
+            style="display:none; color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 14px; font-weight: bold; border: 1px solid #d32f2f;">
+            ⚠️ Дільниця на карантині (3 міс.)
+        </div>
+
+        <div id="admin-bypass-container" style="display:none; margin-bottom:10px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size: 14px; color: #1565C0;">
+                <input type="checkbox" id="admin-bypass-checkbox"> Дозволити видачу (адмін)
+            </label>
+        </div>
+
+        <select id="v-name-select" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px;"></select>
+
+        <button id="confirm-take-btn" onclick="window.confirmTake()"
+            style="width:100%; background:#179133; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;">ПІДТВЕРДИТИ</button>
+    </div>
+
+    <div class="legend" style="position: fixed; bottom: 20px; right: 20px; z-index: 10001;">
+        <span class="info-icon" onclick="UI.toggleModal('logicModal', true)">?</span>
+    </div>
+
+    <div id="logicModal" class="modal-container"
+        style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10003; width: 500px; max-width: 90vw; padding: 20px; background: #ffffff; border-radius: 14px; border: 2px solid #2c3e50; box-shadow: 0 10px 40px rgba(0,0,0,0.3); font-family: 'Segoe UI', Tahoma, sans-serif; color: #2c3e50;">
+        <h3
+            style="margin: 0 0 15px 0; font-size: 20px; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px;">
+            🗺️ Пояснення мапи</h3>
+        <div style="max-height: 70vh; overflow-y: auto; padding-right: 5px;">
+
+            <div style="margin-bottom: 20px;">
+                <strong
+                    style="display: block; margin-bottom: 10px; color: #7f8c8d; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">🏙️
+                    ТИПИ ЗАБУДОВИ</strong>
+
+                <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
+                    <div
+                        style="min-width: 35px; height: 18px; background: #FFA500; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;">
+                    </div>
+                    <span><b>Багатоповерхівки:</b> Райони з багатоквартирними будинками.</span>
+                </div>
+
+                <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
+                    <div
+                        style="min-width: 35px; height: 18px; background: #969600; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;">
+                    </div>
+                    <span><b>Змішана забудова:</b> Поєднання приватних та багатоповерхових будинків.</span>
+                </div>
+
+                <div style="display: none; align-items: flex-start; margin-bottom: 10px;">
+                    <div
+                        style="min-width: 35px; height: 18px; background: #0000FF; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;">
+                    </div>
+                    <span><b>Ділова зона:</b> Офісні центри та комерційні об’єкти.</span>
+                </div>
+
+                <div style="display: none; align-items: flex-start; margin-bottom: 10px;">
+                    <div
+                        style="min-width: 35px; height: 18px; background: #8B4513; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;">
+                    </div>
+                    <span><b>Село:</b> Приватні будинки в приміській зоні.</span>
+                </div>
+            </div>
+
+            <div
+                style="margin-bottom: 20px; padding: 12px; background: #f4f7f6; border-radius: 10px; border-left: 4px solid #2ecc71;">
+                <strong
+                    style="display: block; margin-bottom: 8px; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">🏡
+                    ПРИВАТНИЙ СЕКТОР</strong>
+                <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;">
+                    <div style="width: 16px; height: 16px; background: #008000; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #50C878; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #A020F0; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #0BDA51; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #FC0FC0; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #93C572; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #710193; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #85BB65; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #FFF200; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #98FF98; border-radius: 2px;"></div>
+                    <div style="width: 16px; height: 16px; background: #DA70D6; border-radius: 2px;"></div>
+                </div>
+                <span style="font-size: 11px; color: #666; line-height: 1.3; display: block;">Автоматичне чергування
+                    кольорів для розділення сусідніх ділянок.</span>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <strong
+                    style="display: block; margin-bottom: 10px; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">⚠️
+                    СТАТУС ОПРАЦЮВАННЯ</strong>
+
+                <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
+                    <div
+                        style="min-width: 35px; height: 18px; background: #FF0000; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;">
+                    </div>
+                    <span><b style="color: #e74c3c;">Червоний:</b> Не опрацьовувалася понад 6-7 місяців.</span>
+                </div>
+
+                <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
+                    <div
+                        style="min-width: 35px; height: 18px; background: #808080; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;">
+                    </div>
+                    <span><b>Сірий (Карантин):</b> Здана менше 3 місяців тому.</span>
+                </div>
+
+                <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
+                    <div
+                        style="min-width: 35px; height: 18px; background: #163e25; border: 2px solid #dbf706aa; margin-right: 12px; margin-top: 2px; border-radius: 3px;">
+                    </div>
+                    <span><b>Темно-зелений:</b> Зараз у роботі.</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <strong
+                    style="display: block; margin-bottom: 10px; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">📐
+                    ОСОБЛИВОСТІ МЕЖ</strong>
+                <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
+                    <div
+                        style="min-width: 35px; height: 18px; background: transparent; border: 2px dashed #333; margin-right: 12px; margin-top: 2px; border-radius: 3px;">
+                    </div>
+                    <span><b>Пунктир:</b> Територія складається з кількох окремих ділянок.</span>
+                </div>
+            </div>
+
+        </div>
+        <button onclick="UI.toggleModal('logicModal', false)"
+            style="width: 100%; margin-top: 20px; padding: 12px; background: #3498db; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; font-size: 15px;">
+            Зрозуміло
+        </button>
+    </div>
+
+
 
     <div id="filterMenu">
         <span id="closeFilter" style="
@@ -287,7 +500,7 @@
             cursor: pointer; 
             font-size: 22px; 
             font-weight: bold; 
-            color: #888;
+            color: #333333cf;
         ">&times;</span>
 
         <h4 style="margin:0 0 10px 0;">🔍 Фільтр дільниць</h4>
@@ -317,659 +530,673 @@
             </label>
         </div>
     </div>
-
-    <div id="superadmin-palette">
-        <h4 style="margin:0 0 10px 0;">🎨 Налаштування кольорів</h4>
-        <div id="palette-inputs"></div>
-        <button onclick="window.saveColorsToDB()"
-            style="width:100%; background:#179133; color:white; border:none; padding:10px; border-radius:6px; margin-top:10px; cursor:pointer;">Зберегти</button>
-    </div>
-
-    <div id="paletteMenu"
-        style="display: none; position: fixed; right: 20px; top: 80px; background: white; z-index: 2000; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 280px; max-height: 80vh; overflow-y: auto;">
-        <h3 style="margin-top:0;">Налаштування кольорів</h3>
-        <div id="colorSettingsList"></div>
-        <button onclick="window.saveMapColors()"
-            style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-top:10px;">
-            Зберегти в базу
-        </button>
-        <button onclick="document.getElementById('paletteMenu').style.display='none'"
-            style="width:100%; background:none; border:none; color:gray; cursor:pointer; margin-top:5px;">Закрити</button>
-    </div>
-
-    <div id="takeModal" class="modal">
-        <h3 style="margin-top:0;">Дільниця <span id="p-name"></span></h3>
-
-        <div id="quarantine-msg"
-            style="display:none; color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 14px; font-weight: bold; border: 1px solid #d32f2f;">
-            ⚠️ Дільниця на карантині (3 міс.)
-        </div>
-
-        <div id="admin-bypass-container" style="display:none; margin-bottom:10px;">
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size: 14px; color: #1565C0;">
-                <input type="checkbox" id="admin-bypass-checkbox"> Дозволити видачу (адмін)
-            </label>
-        </div>
-
-        <select id="v-name-select" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px;"></select>
-
-        <button id="confirm-take-btn" onclick="window.confirmTake()"
-            style="width:100%; background:#179133; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;">ПІДТВЕРДИТИ</button>
-    </div>
-
-    <div class="legend">
-        <span class="info-icon" onclick="UI.toggleModal('logicModal', true)">?</span>
-    </div>
-
-    <div id="logicModal" class="modal-container" style="display:none; width: 500px; max-width: 90vw; padding: 20px; background: #ffffff; border-radius: 14px; border: 2px solid #2c3e50; box-shadow: 0 10px 40px rgba(0,0,0,0.3); font-family: 'Segoe UI', Tahoma, sans-serif; color: #2c3e50;">
-    
-    <h3 style="margin: 0 0 15px 0; font-size: 20px; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px;">🗺️ Пояснення мапи</h3>
-    
-    <div style="max-height: 70vh; overflow-y: auto; padding-right: 5px;">
-        
-        <div style="margin-bottom: 20px;">
-            <strong style="display: block; margin-bottom: 10px; color: #7f8c8d; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">🏙️ ТИПИ ЗАБУДОВИ</strong>
-            
-            <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                <div style="min-width: 35px; height: 18px; background: #FFA500; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;"></div>
-                <span><b>Багатоповерхівки:</b> Райони з багатоквартирними будинками.</span>
-            </div>
-            
-            <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                <div style="min-width: 35px; height: 18px; background: #969600; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;"></div>
-                <span><b>Змішана забудова:</b> Поєднання приватних та багатоповерхових будинків.</span>
-            </div>
-            
-            <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                <div style="min-width: 35px; height: 18px; background: #0000FF; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;"></div>
-                <span><b>Ділова зона:</b> Офісні центри та комерційні об’єкти.</span>
-            </div>
-            
-            <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                <div style="min-width: 35px; height: 18px; background: #8B4513; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;"></div>
-                <span><b>Село:</b> Приватні будинки в приміській зоні.</span>
-            </div>
-        </div>
-
-        <div style="margin-bottom: 20px; padding: 12px; background: #f4f7f6; border-radius: 10px; border-left: 4px solid #2ecc71;">
-            <strong style="display: block; margin-bottom: 8px; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">🏡 ПРИВАТНИЙ СЕКТОР</strong>
-            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;">
-                <div style="width: 16px; height: 16px; background: #008000; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #50C878; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #A020F0; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #0BDA51; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #FC0FC0; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #93C572; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #710193; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #85BB65; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #FFF200; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #98FF98; border-radius: 2px;"></div>
-                <div style="width: 16px; height: 16px; background: #DA70D6; border-radius: 2px;"></div>
-            </div>
-            <span style="font-size: 11px; color: #666; line-height: 1.3; display: block;">Використовується автоматичне чергування кольорів для візуального розділення сусідніх ділянок.</span>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-            <strong style="display: block; margin-bottom: 10px; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">⚠️ СТАТУС ОПРАЦЮВАННЯ</strong>
-            
-            <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                <div style="min-width: 35px; height: 18px; background: #FF0000; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;"></div>
-                <span><b style="color: #e74c3c;">Червоний колір:</b> Територія давно не опрацьовувалася (понад 6-7 місяців).</span>
-            </div>
-            
-            <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                <div style="min-width: 35px; height: 18px; background: #808080; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;"></div>
-                <span><b>Сірий (Карантин):</b> Нещодавно здана (менше 3 місяців тому). Вісники поки не можуть її брати.</span>
-            </div>
-            
-            <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                <div style="min-width: 35px; height: 18px; background: #163e25; border: 2px solid rgba(0,0,0,0.1); margin-right: 12px; margin-top: 2px; border-radius: 3px;"></div>
-                <span><b>Темно-зелений:</b> Дільниця зараз у роботі (зайнята).</span>
-            </div>
-        </div>
-
-        <div style="margin-bottom: 10px;">
-            <strong style="display: block; margin-bottom: 10px; color: #7f8c8d; font-size: 11px; text-transform: uppercase;">📐 ОСОБЛИВОСТІ МЕЖ</strong>
-            <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                <div style="min-width: 35px; height: 18px; background: transparent; border: 2px dashed #333; margin-right: 12px; margin-top: 2px; border-radius: 3px;"></div>
-                <span><b>Пунктир:</b> Вказує на те, що територія складається з кількох окремих ділянок (MultiPolygon).</span>
-            </div>
-        </div>
-
-    </div>
-
-    <button onclick="UI.toggleModal('logicModal', false)" style="width: 100%; margin-top: 20px; padding: 12px; background: #3498db; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; font-size: 15px; transition: 0.3s; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);">
-        Зрозуміло
+    <button id="reset-focus-btn" onclick="window.resetMapFocus()">
+        ⬅️ Показати всі дільниці
     </button>
-</div>
-
-    <div id="modalOverlay" class="modal-overlay" style="display:none;" onclick="UI.closeAllModals()"></div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+    <script src="js/ui-controller.js"></script>
     <script type="module">
-        import { handleUrlParams, shareParcel, returnParcel } from "./js/parcel-logic.js";
-        import { supabase } from "./js/config.js"; // Просто імпортуємо готову "розетку"
-        import { initGeolocation } from "./js/geolocation.js";
-        import { initSearchAndFilters, updateFilterCounts } from "./js/search-filter.js";
-        window.shareParcel = shareParcel;
-        window.returnParcel = (parcelId) => returnParcel(parcelId, supabase);
-        window.updateFilterCounts = updateFilterCounts; // робимо її глобальною
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+        const supabaseUrl = "https://modsgjjtwxbdnlycvifp.supabase.co";
+        const supabaseKey = "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D";
+
+        // ВОТ ЭТА СТРОКА: Привязываем клиент к объекту window
+        window.supabase = createClient(supabaseUrl, supabaseKey);
+
+        console.log("Supabase ініціалізовано як модуль і додано у window");
+    </script>
+    <script type="module" src="js/map-styles.js"></script>
+    <script type="module">
+        import { returnParcel, handleUrlParams } from './js/parcel-logic.js';
+
+        import { isAdmin, currentUserId } from './js/main.js';
+        import { initGeolocation } from './js/geolocation.js'; // перевірте шлях до файлу
+        import { initSearchAndFilters, updateFilterCounts } from './js/search-filter.js';
+
+
+        // Ініціалізація глобальних змінних
+        window.userRole = localStorage.getItem('userRole');
+        window.currentUserId = localStorage.getItem('userId');
+        window.userFullName = localStorage.getItem('userFullName');
+        window.isAdmin = (window.userRole === 'admin' || window.userRole === 'super_admin');
+        window.isAuth = !!localStorage.getItem('userKey');
         window.allParcelLayers = [];
-        import { getParcelStyle } from './js/map-styles.js';
-        window.getParcelStyle = getParcelStyle;
-        import './js/palette-manager.js';
-        window.supabase = supabase;
-
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            // 1. Спочатку завантажуємо актуальні кольори з бази
-            try {
-                const { data } = await supabase.from('settings').select('data').eq('id', 'map_palette').maybeSingle();
-                if (data && data.data) {
-                    window.mapConfig = data.data;
-                }
-            } catch (e) {
-                console.error("Помилка завантаження палітри, використовуємо стандартну", e);
-            }
-
-            // 2. Оновлюємо інтерфейс (кнопки)
-            checkAuthUI();
-
-            // 3. Тільки тепер завантажуємо дільниці на карту
-            loadParcels();
-        });
-
-        // Безпечне призначення кнопок
-        const pBtn = document.getElementById('paletteBtn');
-        if (pBtn) {
-            pBtn.onclick = () => {
-                const menu = document.getElementById('paletteMenu');
-                if (menu) {
-                    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-                    if (menu.style.display === 'block' && typeof window.renderColorSettings === 'function') {
-                        window.renderColorSettings();
-                    }
-                }
-            };
-        }
-
-
-        const UI = {
-            toggleModal(modalId, show = true) {
-                const modal = document.getElementById(modalId);
-                const overlay = document.getElementById('modalOverlay');
-                if (modal) modal.style.display = show ? 'block' : 'none';
-                if (overlay) overlay.style.display = show ? 'block' : 'none';
-            },
-            closeAllModals() {
-                // Скрываем все модалки и оверлей
-                document.getElementById('logicModal').style.display = 'none';
-                document.getElementById('takeModal').style.display = 'none';
-                document.getElementById('modalOverlay').style.display = 'none';
-            }
-        };
-
-        function checkAuthUI() {
-            const role = localStorage.getItem('userRole');
-            const isAuth = !!localStorage.getItem('userId');
-            const isAdmin = (role === 'admin' || role === 'super_admin');
-            const isSuperAdmin = (role === 'super_admin');
-
-            // Показуємо кнопку палітри тільки супер-адміну
-            const pBtn = document.getElementById('paletteBtn');
-            if (pBtn) pBtn.style.display = isSuperAdmin ? 'flex' : 'none';
-
-            // Показуємо напис "Мої дільниці" тільки авторизованим
-            const myLabel = document.getElementById('myParcelsLabel');
-            if (myLabel) myLabel.style.display = isAuth ? 'block' : 'none';
-        }
-        // Робимо її доступною для виклику в DOMContentLoaded
-        window.checkAuthUI = checkAuthUI;
-
-        // ОБЯЗАТЕЛЬНО: Прописываем функции в глобальное окно
-        window.UI = UI;
-        window.openLogicModal = () => UI.toggleModal('logicModal', true);
-        window.closeLogicModal = () => UI.toggleModal('logicModal', false);
-        window.closeAllModals = UI.closeAllModals;
-        window.closeModal = UI.closeAllModals; // Для совместимости с другими кнопками
-
-
-        window.quickLogout = () => {
-            if (confirm("Швидкий вихід ?")) {
-                // Очищуємо дані, але зберігаємо налаштування розробника!
-                const devMode = localStorage.getItem('devMode');
-                const showQuickLogout = localStorage.getItem('showQuickLogout');
-
-                localStorage.clear();
-
-                // Повертаємо налаштування розробника назад після очищення
-                if (devMode) localStorage.setItem('devMode', devMode);
-                if (showQuickLogout) localStorage.setItem('showQuickLogout', showQuickLogout);
-
-                location.reload();
-            }
-        };
-
-        // Завантаження палітри з бази
-        async function syncPalette() {
-            const { data, error } = await supabase.from('settings').select('data').eq('id', 'map_palette').maybeSingle();
-            if (data && data.data) {
-                // Оновлюємо глобальний конфіг даними з бази
-                window.mapConfig = data.data;
-            }
-        }
-
-        // Виклик завантаження перед малюванням
-        await syncPalette();
-
-
-        // 1. Схема OpenStreetMap
-        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        });
-
-        // 2. Супутник (Esri World Imagery)
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles © Esri'
-        });
-
-        // 3. Рельєф (OpenTopoMap)
-        const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            attribution: 'Map data: © OSM, SRTM | style: © OpenTopoMap'
-        });
-
-        // 1. Чистий супутник
-        const satelliteOnly = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
-
-        // 2. Прозорий шар з назвами (наприклад, від CartoDB або Esri Labels)
-        const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
-            pane: 'shadowPane' // щоб назви були поверх всього, але під твоїми лініями дільниць
-        });
-
-        // Створюємо групу: Супутник + Назви
-        const satelliteHybrid = L.layerGroup([satelliteOnly, labels]);
-        // Ініціалізація карти з шаром за замовчуванням (наприклад, супутник)
-        window.map = L.map('map', {
-            center: [49.2321, 29.0577],
-            zoom: 15,
-            layers: [satelliteHybrid] // Шар за замовчуванням
-        });
-
-        // Створюємо об'єкти для контролера
-        const baseMaps = {
-            "Схема (OSM)": osm,
-            "Супутник": satellite,
-            "Супутник з вулицями": satelliteHybrid, // Тепер тут будуть назви
-            "Рельєф": topo
-        };
-
-        // Додаємо перемикач на карту
-        L.control.layers(baseMaps).addTo(map);
-
-        initGeolocation(window.map);
-
-        window.mapSettings = { colors: {} };
-
-        // --- 1. КЕРУВАННЯ (КНОПКИ ТА РОЛІ) ---
-        // Твій існуючий контекст
-        const role = localStorage.getItem('userRole');
-        const isAdmin = (role === 'admin' || role === 'super_admin');
-        // Додаємо нову константу тільки для супер-адміна
-        const isSuperAdmin = (role === 'super_admin'); 
-
+        window.handleUrlParams = handleUrlParams;
+        // --- 1. КЛАСИ КОНТРОЛІВ (Тільки опис) ---
         const AuthControl = L.Control.extend({
             options: { position: 'topright' },
             onAdd: function () {
                 const container = L.DomUtil.create('div', 'user-control-panel');
                 const name = localStorage.getItem('userName');
+                const role = localStorage.getItem('userRole');
                 const showLogout = localStorage.getItem('showQuickLogout') === 'true';
+                const isSuperAdmin = (role === 'super_admin');
 
                 container.innerHTML = `
-                    <a href="${name ? 'profile.html' : 'login.html'}" class="auth-btn">
-                        ${name ? '👤 ' + name : '🔐 Увійти'}
-                    </a>
-                    
-                    ${(showLogout && name) ? `
-                        <div onclick="window.quickLogout()" class="leaflet-bar auth-btn" 
-                            style="background: #ff4757a3; color: white; cursor: pointer; text-align: center; padding: 6px 7.2px;">
-                            👈
-                        </div>
-                    ` : ''}
+                <a href="${name ? 'profile.html' : 'login.html'}" class="auth-btn">
+                    ${name ? '👤 ' + name : '🔐 Увійти'}
+                </a>
+                ${(showLogout && name) ? `
+                    <div onclick="window.quickLogout()" class="auth-btn" 
+                        style="background: #ff4757; color: white; cursor: pointer;">
+                        👈
+                    </div>
+                ` : ''}
+                ${isSuperAdmin ? '<a href="map-editor.html" class="auth-btn edit-btn">✏️</a>' : ''}
+            `;
 
-                    ${isSuperAdmin ? '<a href="map-editor.html" class="auth-btn edit-btn">✏️</a>' : ''}
-                `;
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.disableScrollPropagation(container);
                 return container;
             }
         });
 
 
-        const ToolControl = L.Control.extend({
-            options: { position: 'topleft' },
-            onAdd: function () {
-                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
 
-                // Функция-помощник для тач-событий
-                const createBtn = (html, title, onClickAction) => {
-                    const btn = L.DomUtil.create('button', 'leaflet-custom-btn', container);
-                    btn.innerHTML = html;
-                    btn.title = title;
+       
+        // --- 2. ІНІЦІАЛІЗАЦІЯ КАРТИ ---
+function initMainMap() {
+    // ... ваші змінні osm, topo, satelliteHybrid залишаються без змін ...
 
-                    // Используем механизм Leaflet, который понимает и клик, и тап
-                    L.DomEvent.on(btn, 'click', function (e) {
-                        L.DomEvent.stopPropagation(e); // Не даем карте двигаться
-                        L.DomEvent.preventDefault(e);  // Защита от двойного клика на мобилках
-                        onClickAction(e);
-                    });
+    // 1. ОПИС БАЗОВИХ ШАРІВ
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' });
+    const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap (SRTM)' });
+    const satelliteOnly = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+    const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', { pane: 'shadowPane' });
+    const satelliteHybrid = L.layerGroup([satelliteOnly, labels]);
 
-                    return btn;
-                };
+    // 2. ДОДАНО ТУТ: Визначаємо, який шар увімкнути
+    const baseMaps = {
+        "🛰️ Гібрид": satelliteHybrid,
+        "🗺️ Схема (OSM)": osm,
+        "⛰️ Рельєф (Topo)": topo
+    };
+    
+    // Перевіряємо localStorage
+    const savedLayerName = localStorage.getItem('selectedBaseLayer');
+    // Якщо в пам'яті є шар і він існує в списку — беремо його, інакше — Гібрид
+    const initialLayer = (savedLayerName && baseMaps[savedLayerName]) 
+                         ? baseMaps[savedLayerName] 
+                         : satelliteHybrid;
 
-                // Кнопка Де я?
-                createBtn('🎯', "Моя локація", () => {
-                    window.locateMe();
-                });
+    // 3. ІНІЦІАЛІЗАЦІЯ КАРТИ
+    window.map = L.map('map', {
+        preferCanvas: false,
+        center: [49.2321, 29.0577],
+        zoom: 15,
+        layers: [initialLayer], // <--- ЗМІНЕНО ТУТ: тепер використовуємо initialLayer
+        zoomControl: false,
+    });
 
-                // Кнопка Фільтр
-                createBtn('🔍', "Фільтр дільниць", () => {
-                    const m = document.getElementById('filterMenu');
-                    const isVisible = m.style.display === 'block';
-                    m.style.display = isVisible ? 'none' : 'block';
+    // Додаємо перемикач
+    L.control.layers(baseMaps, null, {
+        position: 'bottomleft',
+        collapsed: true
+    }).addTo(window.map);
 
-                    if (!isVisible) {
-                        const myLabel = document.getElementById('myParcelsLabel');
-                        if (myLabel) {
-                            myLabel.style.display = localStorage.getItem('userId') ? 'block' : 'none';
-                        }
-                    }
-                });
+    // 4. ДОДАНО ТУТ: Подія для збереження вибору
+    window.map.on('baselayerchange', function (e) {
+        localStorage.setItem('selectedBaseLayer', e.name);
+        console.log("💾 Шар збережено:", e.name);
+    });
 
-                // Кнопка Палітра
-                // Кнопка Палітра всередині ToolControl
-                if (role === 'super_admin') {
-                    createBtn('🎨', "Налаштування кольорів", () => {
-                        const menu = document.getElementById('paletteMenu');
-                        if (menu) {
-                            const isVisible = menu.style.display === 'block';
-                            menu.style.display = isVisible ? 'none' : 'block';
+    // ... далі ваш код (initGeolocation, AuthControl) ...
+    if (typeof initGeolocation === 'function') initGeolocation(window.map);
+    new AuthControl().addTo(window.map);
+}
 
-                            // Якщо відкриваємо — рендеримо налаштування
-                            if (!isVisible && typeof window.renderColorSettings === 'function') {
-                                window.renderColorSettings();
-                            }
-                        }
-                    });
+
+        // У вашому блоці handleUrlParams (якщо він в index) або після handleUrlParams():
+        if (new URLSearchParams(window.location.search).has('parcel')) {
+            document.getElementById('reset-focus-btn').style.display = 'block';
+        }
+
+        // Функція для поширення посилання на дільницю
+        window.shareParcel = async function (name, link) {
+            const shareData = {
+                title: `Дільниця №${name}`,
+                text: `Ось посилання на дільницю №${name} на мапі:`,
+                url: link
+            };
+
+            try {
+                // Перевіряємо, чи підтримує браузер стандартний діалог "Поділитися" (мобільні браузери)
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else {
+                    // Якщо не підтримує (десктоп), копіюємо в буфер обміну
+                    await navigator.clipboard.writeText(link);
+                    alert('Посилання скопійовано в буфер обміну!');
                 }
-
-                return container;
-            }
-        });
-
-        map.addControl(new AuthControl());
-        map.addControl(new ToolControl());
-
-        function getStyle(p) {
-            const s = window.mapSettings.colors;
-            let fill = s.private?.color || '#008000';
-            if (p.status === 'taken') fill = s.taken?.color || '#e74c3c';
-            return { color: "white", weight: 2, fillColor: fill, fillOpacity: 0.5 };
-        }
-
-        async function loadParcels() {
-            window.allParcelLayers = []; // Очищуємо список перед кожним завантаженням
-
-            console.log("🚀 Починаю завантаження дільниць з Supabase...");
-
-            // Додаємо connection_point у вибірку (в базі це ST_AsGeoJSON(ST_PointOnSurface(geom)))
-            const { data } = await supabase.from('parcels').select('id, name, status, category, sector_type, geom, last_returned, label_pos, taken_by, taken_by_id');
-
-            const role = localStorage.getItem('userRole');
-            const currentUserId = localStorage.getItem('userId');
-            const isAdmin = (role === 'admin' || role === 'super_admin');
-            const isAuth = !!currentUserId;
-
-            data?.forEach(p => {
-                if (!p.geom) return;
-
-                // Створюємо основний шар геометрії
-                const layer = L.geoJSON(p.geom, {
-                    style: (feature) => window.getParcelStyle(p) 
-                }).addTo(map).bringToFront();
-
-                // --- БЛОК ДЛЯ MULTIPOLYGON ---
-        // --- ФІНАЛЬНИЙ БЛОК MULTIPOLYGON (БЕЗ ЗАЙВИХ ЛІНІЙ) ---
-        const gType = p.geom.type;
-        if (gType === 'MultiPolygon' || gType === 'Multipolygon') {
-            const parcelStyle = window.getParcelStyle(p);
-            const parcelColor = parcelStyle.color || '#a1a1a1';
-
-            // 1. ЯКІР — це позиція твого ярлика 76
-            const anchorPoint = (p.label_pos && p.label_pos.length === 2)
-                ? L.latLng(p.label_pos[0], p.label_pos[1])
-                : layer.getBounds().getCenter();
-
-            // 2. Проходимо по кожній частині MultiPolygon
-            p.geom.coordinates.forEach((polyCoords) => {
-                const coords = polyCoords[0].map(coord => [coord[1], coord[0]]);
-                const partPolygon = L.polygon(coords);
-                const partCenter = partPolygon.getBounds().getCenter();
-
-                // 3. ПЕРЕВІРКА: чи ярлик стоїть всередині цього шматка?
-                // Ми використовуємо вбудований метод Leaflet: layer.getBounds().contains()
-                // Це простіше, ніж окрема функція
-                const isAnchorInside = partPolygon.getBounds().contains(anchorPoint);
-
-                if (!isAnchorInside) {
-                    const line = L.polyline([partCenter, anchorPoint], {
-                        color: parcelColor,
-                        weight: 2,
-                        dashArray: '5, 10',
-                        opacity: 0.6,
-                        interactive: false
-                    }).addTo(map);
-
-                    // Синхронізація видимості
-                    layer.on('remove', () => map.removeLayer(line));
-                    layer.on('add', () => line.addTo(map));
+            } catch (err) {
+                console.error('Помилка при спробі поділитися:', err);
+                // Резервний варіант — просто копіювання
+                try {
+                    await navigator.clipboard.writeText(link);
+                    alert('Посилання скопійовано!');
+                } catch (copyErr) {
+                    alert('Не вдалося скопіювати посилання.');
                 }
-            });
-            console.log(`🎯 Пунктири для №${p.name} оптимізовано`);
-        }
-                // --- КІНЕЦЬ БЛОКУ MULTIPOLYGON ---
-
-                // Визначаємо позицію ярлика
-                const labelPos = (p.label_pos && p.label_pos.length === 2)
-                    ? L.latLng(p.label_pos[0], p.label_pos[1])
-                    : layer.getBounds().getCenter();
-
-                layer.bindTooltip(p.name || "", {
-                    permanent: true,
-                    direction: 'center',
-                    className: 'parcel-label'
-                }).openTooltip(labelPos);
-
-                window.allParcelLayers.push({
-                    layer: layer, 
-                    label: layer.getTooltip(),
-                    name: p.name.toString().toLowerCase(),
-                    data: p
-                });
-
-                // Обробник кліку
-                layer.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    const isTaken = p.status === 'taken';
-                    const now = new Date();
-                    const returnDate = p.last_returned ? new Date(p.last_returned) : new Date(0);
-                    const quarantineEndDate = new Date(returnDate);
-                    quarantineEndDate.setMonth(quarantineEndDate.getMonth() + 3);
-                    const isQuarantine = now < quarantineEndDate;
-                    const qDateStr = quarantineEndDate.toLocaleDateString('uk-UA');
-                    
-                    const shareLink = window.location.origin + window.location.pathname + '?parcel=' + p.name;
-                    const center = layer.getBounds().getCenter();
-                    
-                    // Виправлене посилання на Google Maps
-                    const googleMapsUrl = 'https://www.google.com/maps?q=' + center.lat + ',' + center.lng;
-
-                    let popupHtml = '<div class="popup-container">' +
-                        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">' +
-                            '<span class="popup-title">Дільниця ' + p.name + '</span>' +
-                            '<button onclick="window.shareParcel(\'' + p.name + '\', \'' + shareLink + '\')" style="border:none; background:none; cursor:pointer; font-size:18px;">📤</button>' +
-                        '</div>' +
-
-                        ((!isTaken && isQuarantine) ?
-                            '<div style="color: #d32f2f; background: #ffebee; padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 12px; border: 1px solid #d32f2f; text-align:center;">' +
-                            '⚠️ Карантин до <b>' + qDateStr + '</b></div>' : '') +
-
-                        '<div class="popup-status">Статус: ' +
-                            '<span style="color:' + (isTaken ? '#e74c3c' : (isQuarantine ? '#808080' : '#28a745')) + '">' +
-                                ' ● ' + (isTaken ? 'Зайнята' : (isQuarantine ? 'Карантин' : 'Вільна')) +
-                            '</span>' +
-                        '</div>' +
-
-                        '<div class="popup-btn-row">' +
-                            '<button class="popup-btn" onclick="window.open(\'' + googleMapsUrl + '\', \'_blank\')">📍 Маршрут</button>' +
-                            (isAdmin ? '<a href="parcel-details.html?id=' + p.id + '" class="popup-btn">⚙️ Картка</a>' : '') +
-                        '</div>' +
-
-                        (!isTaken ?
-                            (isQuarantine ?
-                                (isAdmin ?
-                                    '<div style="margin-bottom:8px;">' +
-                                    '<label style="font-size:11px; color:#1565C0; cursor:pointer;">' +
-                                    '<input type="checkbox" onchange="const btn=document.getElementById(\'btn-take-' + p.id + '\'); btn.disabled=!this.checked; btn.style.opacity=this.checked?\'1\':\'0.5\'">' +
-                                    ' Розблокувати (Адмін)</label></div>' +
-                                    '<button id="btn-take-' + p.id + '" class="popup-btn primary" disabled style="opacity:0.5;" onclick="window.showTakeModal(' + p.id + ', \'' + p.name + '\')">✋ Взяти (Карантин)</button>'
-                                    : '<p style="font-size:11px; color:#888; text-align:center;">На обробці до ' + qDateStr + '</p>')
-                                : (isAuth ?
-                                    '<button class="popup-btn primary" onclick="window.showTakeModal(' + p.id + ', \'' + p.name + '\')">✋ Взяти дільницю</button>'
-                                    : '<p style="font-size:11px; color:orange; text-align:center;">Увійдіть, щоб взяти</p>')
-                            ) :
-                            ((isAdmin || (isAuth && String(p.taken_by_id) === String(currentUserId))) ?
-                                '<button class="popup-btn" style="border:1px solid #dc3545; color:#dc3545;" onclick="window.returnParcel(' + p.id + ')">🔙 Здати дільницю</button>'
-                                : '')
-                        ) +
-
-                        (isAdmin && isTaken ? '<div style="text-align:center; font-size:11px; color:#666; margin-top:5px;">Взяв: ' + (p.taken_by || 'Невідомо') + '</div>' : '') +
-                        '</div>';
-
-                    layer.bindPopup(popupHtml, { minWidth: 200 });
-                });
-            });
-
-            if (typeof initSearchAndFilters === 'function') {
-                initSearchAndFilters(window.map, window.allParcelLayers);
             }
-            handleUrlParams();
-        }
-        window.showTakeModal = async (id, name) => {
-            window.currentId = id;
-            const parcel = window.allParcelLayers.find(l => l.data.id === id)?.data;
-            if (!parcel) return;
-
-            const role = localStorage.getItem('userRole');
-            const currentUserId = localStorage.getItem('userId');
-            const isAdmin = (role === 'admin' || role === 'super_admin');
-
-            // Елементи інтерфейсу
-            const qMsg = document.getElementById('quarantine-msg');
-            const bypassCont = document.getElementById('admin-bypass-container');
-            const bypassCheck = document.getElementById('admin-bypass-checkbox');
-            const takeBtn = document.getElementById('confirm-take-btn');
-            const select = document.getElementById('v-name-select');
-
-            document.getElementById('p-name').innerText = name;
-            document.getElementById('modalOverlay').style.display = 'block';
-            document.getElementById('takeModal').style.display = 'block';
-
-            // --- 1. РОЗРАХУНОК КАРАНТИНУ (Дата здачі + 3 місяці) ---
+        };
+        // --- 3. ЛОГІКА ПОПАПІВ ---
+        window.createPopupContent = function (p) {
+            // 1. Розрахунок дат та статусів
             const now = new Date();
-            const returnDate = parcel.last_returned ? new Date(parcel.last_returned) : new Date(0);
+            const returnDate = p.last_returned ? new Date(p.last_returned) : new Date(0);
             const quarantineEndDate = new Date(returnDate);
             quarantineEndDate.setMonth(quarantineEndDate.getMonth() + 3);
 
             const isQuarantine = now < quarantineEndDate;
-            const qDateStr = quarantineEndDate.toLocaleDateString('uk-UA'); // Гарна дата: 12.07.2026
+            const qDateStr = quarantineEndDate.toLocaleDateString('uk-UA');
+            const isTaken = p.status === 'taken';
 
-            // --- 2. ЛОГІКА ВІДОБРАЖЕННЯ ---
-            if (isQuarantine) {
-                // Показуємо повідомлення з датою
-                qMsg.innerHTML = `⚠️ Карантин до <b>${qDateStr}</b>`;
-                qMsg.style.display = 'block';
+            // Отримуємо дані про користувача
+            const isAuth = !!localStorage.getItem('userId');
+            const currentUserId = localStorage.getItem('userId') || window.currentUserId;
 
-                // Блок для адміна
-                bypassCont.style.display = isAdmin ? 'block' : 'none';
+            const shareLink = `${window.location.origin}${window.location.pathname}?parcel=${encodeURIComponent(p.name || p.number)}`;
+            const googleMapsUrl = `https://www.google.com/maps?q=${p.center_lat},${p.center_lng}`;
 
-                if (isAdmin) {
-                    takeBtn.style.display = 'block';
-                    takeBtn.disabled = true; // Кнопка вимкнена, поки не клацнуть чекбокс
-                    takeBtn.style.opacity = '0.5';
-                    takeBtn.innerText = "ВЗЯТИ (АДМІН)";
+            // 2. Формування базової верстки (Заголовок, Статус, Маршрут)
+            let popupHtml = `<div class="popup-container" style="min-width:200px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; gap: 10px;">
+    <span class="popup-title" style="font-weight:bold; font-size:16px; color: #1D192B;">
+        Дільниця ${p.name || p.number}
+    </span>
+    
+    <button onclick="window.shareParcel('${p.name || p.number}', '${shareLink}')" class="m3-share-btn">
+        <div class="icon-stack">
+            🔗<span class="mini-arrow">➦</span>
+        </div>
+    </button>
+</div>
 
-                    bypassCheck.checked = false;
-                    bypassCheck.onchange = (e) => {
-                        takeBtn.disabled = !e.target.checked;
-                        takeBtn.style.opacity = e.target.checked ? '1' : '0.5';
-                    };
+        ${(!isTaken && isQuarantine) ? `
+            <div style="color: #d32f2f; background: #ffebee; padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 12px; border: 1px solid #d32f2f; text-align:center;">
+                ⚠️ Карантин до <b>${qDateStr}</b>
+            </div>` : ''}
+
+        <div class="popup-status" style="font-size:13px; margin-bottom:10px;">Статус: 
+            <span style="font-weight:bold; color:${isTaken ? '#e74c3c' : (isQuarantine ? '#808080' : '#28a745')}">
+                ● ${isTaken ? 'Зайнята' : (isQuarantine ? 'Карантин' : 'Вільна')}
+            </span>
+        </div>
+
+        <div class="popup-btn-row" style="display:flex; gap:5px; margin-top:10px; margin-bottom:10px;">
+            <button class="popup-btn" style="flex:1; padding:8px; cursor:pointer;" onclick="window.open('${googleMapsUrl}', '_blank')">📍 Маршрут</button>
+            ${window.isAdmin ? `<a href="parcel-details.html?id=${p.id}" class="popup-btn" style="flex:1; text-align:center; text-decoration:none; padding:8px; border:1px solid #ccc; border-radius:4px; color:black; font-size:12px;">⚙️ Картка</a>` : ''}
+        </div>`;
+
+            // 3. Логіка кнопок дії
+            if (!isTaken) {
+                if (isQuarantine) {
+                    if (window.isAdmin) {
+                        // Повертаємо блок розблокування для адміна (з вашого правильного коду)
+                        popupHtml += `
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:11px; color:#1565C0; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" onchange="const btn=document.getElementById('btn-take-${p.id}'); btn.disabled=!this.checked; btn.style.opacity=this.checked?'1':'0.5'; btn.style.cursor=this.checked?'pointer':'not-allowed'"> 
+                        Розблокувати (Адмін)
+                    </label>
+                </div>
+                <button id="btn-take-${p.id}" class="popup-btn primary" disabled style="opacity:0.5; width:100%; padding:10px; background:#0d6efd; color:white; border:none; border-radius:6px; cursor:not-allowed;" 
+                    onclick="window.startTakeProcess('${p.id}', true)">
+                    ✋ Взяти (Карантин)
+                </button>`;
+                    } else {
+                        popupHtml += `<p style="font-size:11px; color:#888; text-align:center;">На обробці до ${qDateStr}</p>`;
+                    }
                 } else {
-                    takeBtn.style.display = 'none'; // Вісник кнопку взагалі не бачить
+                    // Перевірка авторизації для вільної дільниці
+                    if (isAuth) {
+                        popupHtml += `<button class="popup-btn primary" style="width:100%; padding:10px; background:#0d6efd; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="window.startTakeProcess('${p.id}', false)">
+                    ✋ Взяти дільницю
+                </button>`;
+                    } else {
+                        // Кнопка для неавторизованих користувачів
+                        popupHtml += `
+                <button class="popup-btn" 
+                    style="width:100%; padding:10px; background:#f8f9fa; border:1px dashed #ffa500; color:#e67e22; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500;" 
+                    onclick="window.location.href='login.html'">
+                    🔑 Увійдіть, щоб взяти
+                </button>`;
+                    }
                 }
             } else {
-                // Карантину немає - все стандартно
-                qMsg.style.display = 'none';
-                bypassCont.style.display = 'none';
-                takeBtn.style.display = 'block';
-                takeBtn.disabled = false;
-                takeBtn.style.opacity = '1';
-                takeBtn.innerText = "ПІДТВЕРДИТИ";
+                // Якщо дільниця зайнята (Збережено вашу перевірку власника)
+                if (window.isAdmin || (isAuth && String(p.taken_by_id) === String(currentUserId))) {
+                    popupHtml += `<button class="popup-btn" 
+                style="width:100%; padding:10px; border:1px solid #dc3545; color:#dc3545; background:none; border-radius:6px; cursor:pointer; font-weight:bold;" 
+                onclick="window.returnParcel(${p.id})">
+                🔙 Здати дільницю
+            </button>`;
+                }
+                popupHtml += `<div style="text-align:center; font-size:11px; color:#666; margin-top:5px;">Взяв: ${p.taken_by || 'Невідомо'}</div>`;
             }
 
-            // --- 3. ЗАВАНТАЖЕННЯ КОРИСТУВАЧІВ ---
-            const { data: publishers } = await supabase.from('publishers').select('id, last_name, name').order('last_name');
-
-            select.innerHTML = publishers.map(u =>
-                `<option value="${u.id}" ${u.id == currentUserId ? 'selected' : ''}>${u.last_name} ${u.name}</option>`
-            ).join('');
-
-            // Тільки адмін може змінити того, хто бере дільницю
-            select.disabled = !isAdmin;
+            popupHtml += `</div>`;
+            return popupHtml;
         };
 
-        window.confirmTake = async () => {
-            const s = document.getElementById('v-name-select');
-            await supabase.from('parcels').update({
-                status: 'taken', taken_by: s.options[s.selectedIndex].text,
-                taken_by_id: s.value, taken_at: new Date().toISOString()
-            }).eq('id', window.currentId);
-            location.reload();
-        };
 
-        window.closeAllModals = () => {
-            document.querySelectorAll('.modal, #modalOverlay, #filterMenu, #superadmin-palette').forEach(el => el.style.display = 'none');
-        };
-       
-        let searchTimeout; // Змінна для зберігання таймера поза функцією
 
-        // 1. Закрытие по крестику
-        document.getElementById('closeFilter').addEventListener('click', (e) => {
-            document.getElementById('filterMenu').style.display = 'none';
-        });
+        // --- 4. ЗАВАНТАЖЕННЯ ДІЛЬНИЦЬ ---
+        async function loadParcels() {
+            window.allParcelLayers = [];
+            const { data: parcels, error } = await window.supabase.from('parcels').select('*');
+            if (error) return console.error(error);
 
-        // 2. Закрытие при клике по карте или мимо фильтра
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('filterMenu');
-            // Если клик не по меню и не по кнопке открытия (которая внутри leaflet-control)
-            if (!menu.contains(e.target) && !e.target.closest('.leaflet-custom-btn')) {
-                menu.style.display = 'none';
+            // Проходимо циклом по кожному об'єкту дільниці (p) з отриманого масиву parcels
+            parcels.forEach(p => {
+                // 1. ПЕРЕВІРКА ГЕОМЕТРІЇ
+                if (!p.geom) return;
+
+                // 2. ДЕКОДУВАННЯ
+                const geoData = (typeof p.geom === 'string') ? JSON.parse(p.geom) : p.geom;
+
+                // 3. СТВОРЕННЯ ШАРУ (Спочатку створюємо сам полігон)
+                // Тимчасово передаємо p для стилю, поки preparedData не готова
+                const polygonLayer = L.geoJSON(geoData, {
+                    style: () => window.getStyle ? window.getStyle(p) : { color: '#a1a1a1' }
+                });
+
+                // 4. ВИЗНАЧЕННЯ ЯКОРЯ (Тепер polygonLayer вже існує, тому помилки не буде)
+                const anchorPoint = (p.label_pos && p.label_pos.length === 2)
+                    ? L.latLng(p.label_pos[0], p.label_pos[1])
+                    : polygonLayer.getBounds().getCenter();
+
+                // 5. ПІДГОТОВКА ДАНИХ (Тепер додаємо координати якоря)
+                const preparedData = {
+                    ...p,
+                    center_lat: anchorPoint.lat,
+                    center_lng: anchorPoint.lng,
+                    last_returned: p.last_returned ? new Date(p.last_returned) : null,
+                    status: p.status || 'free',
+                    category: p.category || 'Приватний сектор',
+                    name: (p.name || '').toString()
+                };
+
+                // 6. ПРИВ'ЯЗКА ДАНИХ ДО ШАРУ ТА ПОПАПУ
+                polygonLayer.options.parcelData = preparedData;
+
+                // Оновлюємо стиль вже з повними даними
+                if (window.getStyle) polygonLayer.setStyle(window.getStyle(preparedData));
+
+
+                polygonLayer.bindPopup(() => {
+                    return window.createPopupContent(polygonLayer.options.parcelData);
+                });
+
+                // 7. СТВОРЕННЯ ГРУПИ ТА ДОДАВАННЯ ПОЛІГОНУ
+                const parcelGroup = L.featureGroup();
+                polygonLayer.addTo(parcelGroup);
+
+                // 8. ЛОГІКА ПУНКТИРУ (Використовуємо вже існуючі anchorPoint та preparedData)
+                if (geoData.type === 'MultiPolygon' || geoData.type === 'Multipolygon') {
+                    const style = window.getStyle ? window.getStyle(preparedData) : { fillColor: '#a1a1a1' };
+                    geoData.coordinates.forEach((polyCoords) => {
+                        const coords = polyCoords[0].map(coord => [coord[1], coord[0]]);
+                        const partPolygon = L.polygon(coords);
+                        const partCenter = partPolygon.getBounds().getCenter();
+                        const isAnchorInside = partPolygon.getBounds().contains(anchorPoint);
+
+                        if (!isAnchorInside) {
+                            L.polyline([partCenter, anchorPoint], {
+                                color: style.fillColor || style.color || '#a1a1a1',
+                                weight: 3,
+                                dashArray: '10, 15',
+                                opacity: 0.7,
+                                interactive: false,
+                                pane: 'markerPane'
+                            }).addTo(parcelGroup);
+                        }
+                    });
+                }
+
+                // 9. СТВОРЕННЯ ЯРЛИКА
+                const label = L.marker(anchorPoint, {
+                    icon: L.divIcon({
+                        className: 'parcel-label',
+                        html: `<b style="color:white; text-shadow: 2px 2px 3px black;">${preparedData.name}</b>`,
+                        iconSize: [40, 20],
+                        iconAnchor: [20, 10]
+                    }),
+                    interactive: false
+                }).addTo(window.map);
+
+                // 10. ВІДОБРАЖЕННЯ ТА РЕЄСТРАЦІЯ
+                parcelGroup.addTo(window.map);
+                window.allParcelLayers.push({
+                    id: p.id,
+                    name: preparedData.name.toLowerCase(),
+                    data: preparedData,
+                    layer: parcelGroup,
+                    label: label
+                });
+            });
+        }
+
+        // Слухаємо зміни в таблиці в реальному часі
+        supabase
+            .channel('any')
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'parcels'
+            }, payload => {
+                console.log('Дані оновлено в базі:', payload.new);
+                // Викликаємо функцію оновлення інтерфейсу
+                handleParcelUpdate(payload.new);
+            })
+            .subscribe();
+
+        // Функція, яка миттєво міняє колір на карті та в таблиці
+        function handleParcelUpdate(updatedParcel) {
+            // 1. Оновлюємо колір на карті Leaflet
+            if (window.parcelLayers && window.parcelLayers[updatedParcel.id]) {
+                const layer = window.parcelLayers[updatedParcel.id];
+
+                // Використовуємо вашу існуючу функцію стилів
+                if (typeof getParcelStyle === 'function') {
+                    layer.setStyle(getParcelStyle(updatedParcel));
+                } else {
+                    // Резервний варіант, якщо статус 'free'
+                    if (updatedParcel.status === 'free') {
+                        layer.setStyle({ fillColor: 'green', color: 'green', fillOpacity: 0.3 });
+                    }
+                }
+                // Оновлюємо дані всередині об'єкта шару
+                layer.feature.properties = { ...layer.feature.properties, ...updatedParcel };
             }
-        });
-        // 3. Чтобы клики ВНУТРИ фильтра не проваливались на карту (Leaflet специфично)
-        const filterElement = document.getElementById('filterMenu');
-        L.DomEvent.disableClickPropagation(filterElement);
-        L.DomEvent.disableScrollPropagation(filterElement);
+
+            // 2. Оновлюємо рядок у таблиці (якщо вона у вас є під картою)
+            const row = document.querySelector(`tr[data-id="${updatedParcel.id}"]`);
+            if (row) {
+                // Тут логіка оновлення комірок (статус, дата тощо)
+                const statusCell = row.querySelector('.status-cell');
+                if (statusCell) statusCell.innerHTML = updatedParcel.status === 'free' ? 'Вільна' : 'В роботі';
+            }
+        }
+
+        // Функція скидання фокусу
+        window.resetMapFocus = function () {
+            // 1. Очищуємо URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            // 2. Ховаємо кнопку
+            const resetBtn = document.getElementById('reset-focus-btn');
+            if (resetBtn) resetBtn.style.display = 'none';
+
+            // 3. Повертаємо видимість та стилі
+            if (window.allParcelLayers) {
+                window.allParcelLayers.forEach(item => {
+                    // Додаємо шар на карту, якщо він був видалений
+                    if (!window.map.hasLayer(item.layer)) {
+                        item.layer.addTo(window.map);
+                    }
+                    if (item.label && !window.map.hasLayer(item.label)) {
+                        item.label.addTo(window.map);
+                    }
+
+                    // ПРИМУСОВО повертаємо стандартний стиль
+                    // Використовуємо window.getStyle, бо саме вона ініціалізована у вашому проекті
+                    if (typeof window.getStyle === 'function') {
+                        const originalStyle = window.getStyle(item.data);
+                        item.layer.setStyle(originalStyle);
+                    }
+                });
+
+                // Опціонально: скидаємо зум, щоб побачити всі дільниці
+                // window.map.setView([49.2321, 29.0577], 15);
+            }
+        };;
+
+        // Функція розблокування для адміна (викликається з чекбокса в попапі)
+        window.handleAdminUnlock = function (checkbox, parcelId) {
+            const btn = document.getElementById(`main-take-btn-${parcelId}`);
+            if (btn) {
+                if (checkbox.checked) {
+                    btn.disabled = false;
+                    btn.style.background = "#0d6efd";
+                    btn.style.color = "white";
+                    btn.style.cursor = "pointer";
+                    btn.style.opacity = "1";
+                } else {
+                    btn.disabled = true;
+                    btn.style.background = "#ccc";
+                    btn.style.color = "#666";
+                    btn.style.cursor = "not-allowed";
+                }
+            }
+        };
+
+        // Функція для завантаження списку вісників у модалку
+        async function loadPublishers() {
+            const select = document.getElementById('v-name-select');
+            if (!select) return;
+
+            const { data: publishers, error } = await window.supabase
+                .from('publishers')
+                .select('id, name, last_name')
+                .order('last_name', { ascending: true });
+
+            if (error) return console.error("Помилка завантаження вісників:", error);
+
+            const currentUserId = localStorage.getItem('userId');
+            const isAdmin = window.isAdmin;
+
+            // Очищуємо список
+            select.innerHTML = '';
+
+            if (isAdmin) {
+                // Адмін бачить усіх
+                publishers.forEach(pub => {
+                    const option = document.createElement('option');
+                    option.value = pub.id;
+                    option.dataset.name = `${pub.last_name} ${pub.name}`;
+                    option.textContent = `${pub.last_name} ${pub.name}`;
+                    // Автовибір поточного адміна для зручності
+                    if (String(pub.id) === String(currentUserId)) option.selected = true;
+                    select.appendChild(option);
+                });
+            } else {
+                // Звичайний користувач бачить тільки себе
+                const me = publishers.find(p => String(p.id) === String(currentUserId));
+                if (me) {
+                    const option = document.createElement('option');
+                    option.value = me.id;
+                    option.dataset.name = `${me.last_name} ${me.name}`;
+                    option.textContent = `${me.last_name} ${me.name}`;
+                    select.appendChild(option);
+                }
+            }
+        }
+
+        // Відкриття модалки призначення
+        window.startTakeProcess = async function (parcelId, isQuarantine) {
+            // 1. Шукаємо дані про дільницю
+            const parcel = window.allParcelLayers.find(p => String(p.id) === String(parcelId));
+            const parcelData = parcel ? (parcel.data || {}) : {};
+            const parcelName = parcelData.name || '';
+
+            // 2. Оновлюємо заголовок модалки
+            const pNameElem = document.getElementById('p-name');
+            if (pNameElem) pNameElem.innerText = parcelName;
+
+            // 3. Знаходимо всі потрібні елементи в HTML
+            const qMsg = document.getElementById('quarantine-msg');
+            const adminBypass = document.getElementById('admin-bypass-container');
+            const bypassCheckbox = document.getElementById('admin-bypass-checkbox');
+            const confirmBtn = document.getElementById('confirm-take-btn');
+
+            // 4. Логіка для КАРАНТИННОЇ дільниці
+            if (isQuarantine) {
+                // Розрахунок дати (3 місяці від останнього повернення)
+                const returnDate = parcelData.last_returned ? new Date(parcelData.last_returned) : new Date();
+                const endDate = new Date(returnDate);
+                endDate.setMonth(endDate.getMonth() + 3);
+                const dateStr = endDate.toLocaleDateString('uk-UA');
+
+                // Показуємо текст карантину з датою
+                if (qMsg) {
+                    qMsg.innerHTML = `⚠️ Дільниця на карантині до <b>${dateStr}</b>`;
+                    qMsg.style.display = 'block';
+                }
+
+                // Блокуємо кнопку відразу при відкритті
+                confirmBtn.disabled = true;
+                confirmBtn.style.opacity = '0.5';
+                confirmBtn.style.cursor = 'not-allowed';
+
+                if (window.isAdmin) {
+                    if (adminBypass) adminBypass.style.display = 'block';
+                    if (bypassCheckbox) {
+                        bypassCheckbox.checked = false; // Скидаємо чекбокс
+
+                        // Вішаємо подію: кнопка оживає тільки коли чекбокс активний
+                        bypassCheckbox.onchange = function () {
+                            confirmBtn.disabled = !this.checked;
+                            confirmBtn.style.opacity = this.checked ? '1' : '0.5';
+                            confirmBtn.style.cursor = this.checked ? 'pointer' : 'not-allowed';
+                        };
+                    }
+                }
+            }
+            // 5. Логіка для ЗВИЧАЙНОЇ дільниці (без карантину)
+            else {
+                if (qMsg) qMsg.style.display = 'none';
+                if (adminBypass) adminBypass.style.display = 'none';
+
+                // Активуємо кнопку, бо обмежень немає
+                confirmBtn.disabled = false;
+                confirmBtn.style.opacity = '1';
+                confirmBtn.style.cursor = 'pointer';
+            }
+
+            // 6. Завантажуємо список вісників
+            await loadPublishers();
+
+            // 7. Відкриваємо саму модалку
+            if (window.UI) {
+                UI.toggleModal('takeModal', true);
+            } else {
+                document.getElementById('takeModal').style.display = 'block';
+                document.getElementById('modalOverlay').style.display = 'block';
+            }
+
+            // 8. Прив'язуємо фінальний виклик Supabase до кнопки
+            confirmBtn.onclick = () => window.confirmTake(parcelId);
+        };
+
+        // Сама логіка запису в БД
+        window.confirmTake = async function (parcelId) {
+            // Якщо ID не передано через аргумент (наприклад, кнопка в HTML має onclick="window.confirmTake()"),
+            // це може спричинити помилку. Але ми призуємо його в startTakeProcess, тож усе ок.
+            if (!parcelId) return alert("Помилка: ID дільниці не знайдено.");
+
+            const select = document.getElementById('v-name-select');
+            const bypassCheckbox = document.getElementById('admin-bypass-checkbox');
+            const qMsg = document.getElementById('quarantine-msg');
+            const isQuarantineVisible = qMsg && qMsg.style.display === 'block';
+
+            // Перевірка на карантин + чекбокс
+            if (isQuarantineVisible && bypassCheckbox && !bypassCheckbox.checked) {
+                alert("Дільниця на карантині! Потрібно поставити відмітку 'Дозволити видачу'.");
+                return;
+            }
+
+            const pubId = select.value;
+            const selectedOption = select.options[select.selectedIndex];
+            const pubName = selectedOption ? selectedOption.dataset.name : null;
+
+            if (!pubId) return alert("Оберіть вісника!");
+
+            // Вимикаємо кнопку, щоб уникнути подвійного кліку
+            const confirmBtn = document.getElementById('confirm-take-btn');
+            if (confirmBtn) confirmBtn.disabled = true;
+
+            const { error } = await window.supabase
+                .from('parcels')
+                .update({
+                    status: 'taken',
+                    taken_by_id: pubId,
+                    taken_by: pubName,
+                    taken_at: new Date().toISOString()
+                })
+                .eq('id', parcelId);
+
+            if (error) {
+                alert("Помилка БД: " + error.message);
+                if (confirmBtn) confirmBtn.disabled = false;
+            } else {
+                // Замість location.reload можна зробити тихе оновлення, 
+                // але для простоти reload — найнадійніший варіант
+                location.reload();
+            }
+        };
+        window.returnParcel = async (id) => {
+            // 1. Знайти дані дільниці для повідомлення
+            const item = window.allParcelLayers ? window.allParcelLayers.find(i => i.id === id) : null;
+            const name = item ? (item.name || item.number) : id;
+
+            // 2. Виклик логіки здачі
+            await returnParcel(id, name, window.supabase, () => {
+                // ПІСЛЯ УСПІХУ В БАЗІ:
+
+                // Закриваємо попап (про всяк випадок перед перезавантаженням)
+                if (window.map) window.map.closePopup();
+
+                // Показуємо повідомлення
+                if (typeof showToast === 'function') {
+                    showToast(`Дільницю №${name} здано. Оновлення карти...`);
+                }
+
+                // 3. ПЕРЕЗАВАНТАЖЕННЯ СТОРІНКИ
+                // Додаємо невелику затримку 500мс, щоб користувач встиг побачити Toast
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Спершу карта
+    initMainMap(); 
+
+    // 2. ОДИН РАЗ завантажуємо дані
+    await loadParcels(); 
+
+    // 3. ОДИН РАЗ налаштовуємо пошук, коли дані вже є
+    if (typeof initSearchAndFilters === 'function') {
+        initSearchAndFilters(window.map, window.allParcelLayers);
+    }
+
+    // 4. ОДИН РАЗ запускаємо інструменти (лінійка і т.д.)
+    if (window.initToolControl) {
+        initToolControl(window.map);
+    }
+
+    // 5. ОДИН РАЗ обробляємо перехід за посиланням
+    if (typeof handleUrlParams === 'function') {
+        handleUrlParams();
+        
+        // Показуємо кнопку скидання, якщо в URL є дільниця
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetBtn = document.getElementById('reset-focus-btn');
+        if (urlParams.has('parcel') && resetBtn) {
+            resetBtn.style.display = 'block';
+        }
+    }
+
+    // 6. ОДИН РАЗ рахуємо кількість для фільтрів
+    if (typeof updateFilterCounts === 'function') {
+        updateFilterCounts(window.allParcelLayers);
+    }
+});
     </script>
-    <script src="js/main.js" type="module" defer></script>
-    <script src="js/dev-tools.js"></script>
 
+    <script src="js/dev-tools.js"></script>
 </body>
+
 </html>

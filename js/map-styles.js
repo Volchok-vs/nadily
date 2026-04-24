@@ -3,6 +3,7 @@
  * Використовує категорії, статус "Зайнята", Карантин та логіку старіння (8+ місяців)
  */
 export function getParcelStyle(pData) {
+    
     // 1. КОНФІГУРАЦІЯ БАЗОВИХ КОЛЬОРІВ
     // Беремо кольори з бази (якщо завантажені), інакше — стандартні
     const config = (window.mapConfig && window.mapConfig.colors) ? window.mapConfig.colors : {
@@ -60,7 +61,7 @@ export function getParcelStyle(pData) {
     // 3. ПЕРЕВІРКА СТАТУСУ "ЗАЙНЯТА"
     if (pData.status === 'taken') {
         baseColor = config.taken;
-        strokeColor = '#dbf706'; // Світло-жовта межа
+        strokeColor = '#dbf706aa'; // Світло-жовта межа
     }
 
     // 4. РОЗРАХУНОК КАРАНТИНУ (менше 3 місяців)
@@ -74,7 +75,7 @@ export function getParcelStyle(pData) {
     }
 
     // 5. ЛОГІКА СТАРІННЯ (6, 7, 8+ МІСЯЦІВ)
-    let finalOpacity = 0.2; 
+    let finalOpacity = 0.3; 
     let weight = 1.5;
 
     if (pData.status !== 'taken' && diffMonths >= 6) {
@@ -125,3 +126,5 @@ function interpolateColor(color1, color2, factor) {
     
     return `#${hex(r)}${hex(g)}${hex(b)}`;
 }
+
+window.getStyle = getParcelStyle;

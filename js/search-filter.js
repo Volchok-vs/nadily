@@ -119,3 +119,6 @@ export function initSearchAndFilters(map, allParcelLayers) {
     // Початковий підрахунок при ініціалізації
     updateFilterCounts(allParcelLayers);
 }
+if (typeof renderParcels !== 'undefined') {
+    window.renderParcels = renderParcels;
+}

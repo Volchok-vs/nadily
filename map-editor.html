@@ -198,11 +198,7 @@
 <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
 
 <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-    const supabaseUrl = "https://modsgjjtwxbdnlycvifp.supabase.co";
-    const supabaseKey = "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D";
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    import { supabase } from "./js/config.js"; // Просто імпортуємо готову "розетку"
 
     // Функція гамбургера
     window.toggleMenu = function() {
@@ -256,28 +252,38 @@
 
     // Збереження
     async function saveToSupabase() {
-        const parcels = [];
-        drawnItems.eachLayer(layer => {
-            let name = "Без назви";
-            if (layer.getTooltip()) name = layer.getTooltip().getContent().toString();
-            
-            let labelPos = null;
-            if (layer.getTooltip()) {
-                const ll = layer.getTooltip().getLatLng();
-                labelPos = [ll.lat, ll.lng];
-            }
+    const parcels = [];
+    drawnItems.eachLayer(layer => {
+        let name = "Без назви";
+        if (layer.getTooltip()) name = layer.getTooltip().getContent().toString();
+        
+        let labelPos = null;
+        if (layer.getTooltip()) {
+            const ll = layer.getTooltip().getLatLng();
+            labelPos = [ll.lat, ll.lng];
+        }
 
-            parcels.push({
-                name: name,
-                geom: layer.toGeoJSON().geometry,
-                label_pos: labelPos
-            });
+        parcels.push({
+            name: name,
+            geom: layer.toGeoJSON().geometry,
+            label_pos: labelPos
+            // Ми НЕ надсилаємо статус, ID чи хто взяв, щоб не перезаписати їх дефолтними значеннями
         });
+    });
 
-        await supabase.from('parcels').delete().neq('id', 0);
-        const { error } = await supabase.from('parcels').insert(parcels);
-        if (!error) document.getElementById('output').innerText = "База оновлена";
+    // ВИДАЛЯЄМО РЯДОК З DELETE!
+    // Використовуємо upsert. Він знайде запис за 'name' і оновить тільки geom та label_pos
+    const { error } = await supabase
+        .from('parcels')
+        .upsert(parcels, { onConflict: 'name' }); 
+
+    if (!error) {
+        document.getElementById('output').innerText = "Зміни збережено (без втрати даних)";
+    } else {
+        console.error("Помилка збереження:", error.message);
+        document.getElementById('output').innerText = "Помилка збереження!";
     }
+}
 
     // Завантаження файлу
     window.handleUpload = async function() {
@@ -292,9 +298,14 @@
             label_pos: f.properties?.labelPos || null
         }));
 
-        await supabase.from('parcels').delete().neq('id', 0);
-        await supabase.from('parcels').insert(parcels);
-        loadParcelsFromDB();
+        // Замість видалення - розумне оновлення
+        const { error } = await supabase.from('parcels').upsert(parcels, { onConflict: 'name' });
+        
+        if (!error) {
+            loadParcelsFromDB();
+        } else {
+            alert("Помилка завантаження: " + error.message);
+        }
     }
 
     // Завантаження з бази
@@ -335,7 +346,23 @@
     });
 
     map.on('draw:edited', saveToSupabase);
-    map.on('draw:deleted', saveToSupabase);
+    map.on('draw:deleted', async function (e) {
+        const layers = e.layers;
+        layers.eachLayer(async (layer) => {
+            const name = layer.getTooltip()?.getContent().toString();
+            if (name) {
+                // Видаляємо конкретно цю дільницю за назвою
+                const { error } = await supabase.from('parcels').delete().eq('name', name);
+                if (!error) {
+                    console.log(`Дільницю ${name} видалено з бази`);
+                } else {
+                    console.error("Помилка видалення:", error.message);
+                }
+            }
+        });
+        // Після видалення оновлюємо інші дільниці (якщо вони були змінені паралельно)
+        saveToSupabase(); 
+    });;
 
     window.downloadGeoJSON = function() {
         var data = drawnItems.toGeoJSON();

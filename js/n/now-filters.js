@@ -1,29 +1,36 @@
-(async function () {
-    // 1. ПІДГОТОВКА
+(async function() {
     const { data: allParcels } = await supabase.from('parcels').select('*');
-    const { data: { session } } = await supabase.auth.getSession();
-    const myEmail = session?.user?.email || "";
+    const currentUserId = localStorage.getItem('userId');
+    const userRole = localStorage.getItem('userRole');
+    const isAdmin = (userRole === 'admin' || userRole === 'super_admin');
 
-    // Більш надійний фільтр для "Моїх"
-    const myParcels = allParcels.filter(p => p.taken_by === myEmail);
-    const myParcelsCount = myParcels.length;
+    const isFree = (p) => !p.status || p.status === 'free' || p.status === 'null' || p.status === '';
+    const isTaken = (p) => p.status === 'taken' || p.status === 'reserved';
 
-    // Лог для перевірки в консолі (можна видалити потім)
-    console.log("Ваш email:", myEmail, "| Знайдено дільниць:", myParcelsCount);
+    const myParcels = allParcels.filter(p => String(p.taken_by_id) === String(currentUserId));
+    const takenParcels = allParcels.filter(isTaken);
 
-    // Визначаємо унікальні категорії серед ваших дільниць
-    const myUniqueCats = [...new Set(myParcels.map(p => (p.category || "").toLowerCase()).filter(c => c))];
-    // ...
+    let config = {
+        showVillage: false,
+        showBusiness: false
+    };
 
-    window.renderParcels = function (filteredData) {
+    const catsDef = [
+        {id: 'приватн', label: '🏠 Приватні', adminOnly: false},
+        {id: 'змішан', label: '🏢+🏠 Змішані', adminOnly: false},
+        {id: 'поверхів', label: '🏢 Поверхівки', adminOnly: false},
+        {id: 'ділова', label: '💼 Ділова тер.', adminOnly: true, configKey: 'showBusiness'},
+        {id: 'села', label: '🚜 Села', adminOnly: true, configKey: 'showVillage'}
+    ];
+
+    window.renderParcels = function(filteredData) {
         const filteredIds = filteredData.map(p => p.id);
-        if (!window.allParcelLayers) return console.error("Помилка: Карта не завантажена.");
-
+        if (!window.allParcelLayers) return;
         window.allParcelLayers.forEach(item => {
             const shouldShow = filteredIds.includes(item.id);
             if (shouldShow) {
                 if (!window.map.hasLayer(item.layer)) item.layer.addTo(window.map);
-                if (!window.map.hasLayer(item.label)) item.label.addTo(window.map);
+                if (item.label && !window.map.hasLayer(item.label)) item.label.addTo(window.map);
             } else {
                 window.map.removeLayer(item.layer);
                 if (item.label) window.map.removeLayer(item.label);
@@ -31,181 +38,171 @@
         });
     };
 
-    // 2. СТИЛІ
-    if (document.getElementById('final-logic-styles')) document.getElementById('final-logic-styles').remove();
+    if (document.getElementById('dynamic-filter-styles')) document.getElementById('dynamic-filter-styles').remove();
     const styleSheet = document.createElement("style");
-    styleSheet.id = 'final-logic-styles';
+    styleSheet.id = 'dynamic-filter-styles';
     styleSheet.innerText = `
-        #filterMenu { position: fixed; top: 10px; left: 10px; background: white; padding: 18px; border-radius: 15px; z-index: 10001; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 300px; font-family: sans-serif; }
+        #filterMenu { position: fixed; top: 10px; left: 10px; background: white; padding: 18px; border-radius: 15px; z-index: 10001; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 300px; font-family: sans-serif; max-height: 85vh; overflow-y: auto; }
         .filter-section { margin-bottom: 8px; padding: 10px; border-radius: 10px; border: 1px solid #eee; transition: 0.2s; cursor: pointer; }
         .filter-section.active { border-color: #1565C0; background: #f8fbff; opacity: 1; }
-        .filter-section.inactive { opacity: 0.5; background: #fafafa; }
+        .filter-section.inactive { opacity: 0.6; background: #fafafa; }
         .sub-list { padding-left: 28px; margin-top: 10px; display: none; flex-direction: column; gap: 8px; }
         .filter-section.active .sub-list { display: flex; }
         .row { display: flex; align-items: center; width: 100%; cursor: pointer; font-size: 14px; }
         .count-badge { font-size: 11px; background: #eee; padding: 2px 8px; border-radius: 10px; margin-left: auto; font-weight: bold; color: #666; }
         .filter-section.active .count-badge { background: #1565C0; color: white; }
-        .hidden-cat { display: none !important; }
+        .sub-count { font-size: 10px; color: #888; margin-left: 4px; font-weight: normal; }
         #searchBox { width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid #eef2f7; border-radius: 10px; box-sizing: border-box; outline: none; }
+        #searchBox:focus { border-color: #1565C0; }
+        .settings-header { margin-top: 15px; padding: 8px; border-top: 1px dashed #ccc; color: #555; font-size: 12px; text-align: center; cursor: pointer; font-weight: bold; }
+        #settingsContent { display: none; padding: 10px; background: #fcfcfc; border-radius: 8px; border: 1px solid #ddd; margin-top: 5px; }
     `;
     document.head.appendChild(styleSheet);
 
-    if (document.getElementById('filterMenu')) document.getElementById('filterMenu').remove();
+    const renderUI = () => {
+        if (document.getElementById('filterMenu')) document.getElementById('filterMenu').remove();
+        const menu = document.createElement('div');
+        menu.id = 'filterMenu';
 
-    // 3. HTML
-    const menu = document.createElement('div');
-    menu.id = 'filterMenu';
-    const cats = [
-        { id: 'приватн', label: '🏠 Приватні' },
-        { id: 'змішан', label: '🏢+🏠 Змішані' },
-        { id: 'поверхів', label: '🏢 Поверхівки' },
-        { id: 'ділова', label: '💼 Ділова тер.', admin: true },
-        { id: 'села', label: '🚜 Села', admin: true }
-    ];
+        const renderSubItems = (prefix, dataList) => {
+            return catsDef
+                .filter(c => {
+                    if (c.configKey && !config[c.configKey]) return false;
+                    // Для підкатегорій показуємо лише ті, що реально є в поточному списку (Вільні/На руках тощо)
+                    const currentCats = [...new Set(dataList.map(p => (p.category || "").toLowerCase()))];
+                    return currentCats.some(cc => cc.includes(c.id));
+                })
+                .map(c => {
+                    const count = dataList.filter(p => (p.category || "").toLowerCase().includes(c.id)).length;
+                    return `
+                        <label class="row sub-item">
+                            <input type="checkbox" class="sub-${prefix}" data-type="${c.id}" checked> 
+                            <span style="margin-left:8px;">${c.label}</span>
+                            <span class="sub-count">(${count})</span>
+                        </label>
+                    `;
+                }).join('');
+        };
 
-    menu.innerHTML = `
-        <h4 style="margin:0 0 12px 0;">🔍 Розумний фільтр</h4>
-        <input type="text" id="searchBox" placeholder="Введіть точний номер...">
+        menu.innerHTML = `
+            <h4 style="margin:0 0 12px 0;">🔍 Розумний фільтр</h4>
+            <input type="text" id="searchBox" placeholder="Пошук за номером..." value="${window.currentSearch || ''}">
 
-        <div class="filter-section active" id="sec-all">
-            <label class="row"><input type="checkbox" id="chk-all" checked> <span style="margin-left:10px;">Показати все</span> <span class="count-badge">${allParcels.length}</span></label>
-        </div>
-
-        <div class="filter-section inactive" id="sec-free">
-            <label class="row"><input type="checkbox" id="chk-free"> <span style="margin-left:10px;">✅ Вільні</span> <span class="count-badge" id="cnt-free">0</span></label>
-            <div class="sub-list">
-                ${cats.map(c => `<label class="row sub-item ${c.admin ? 'hidden-cat' : ''}" data-cat="${c.id}"><input type="checkbox" class="sub-free" data-type="${c.id}"> <span style="margin-left:8px;">${c.label}</span></label>`).join('')}
+            <div class="filter-section active" id="sec-all">
+                <label class="row"><input type="checkbox" id="chk-all" checked> <span style="margin-left:10px;">Всі дільниці</span> <span class="count-badge">${allParcels.length}</span></label>
             </div>
-        </div>
 
-        <div class="filter-section inactive" id="sec-taken">
-            <label class="row"><input type="checkbox" id="chk-taken"> <span style="margin-left:10px;">🚩 На руках</span> <span class="count-badge" id="cnt-taken">0</span></label>
-            <div class="sub-list">
-                ${cats.map(c => `<label class="row sub-item ${c.admin ? 'hidden-cat' : ''}" data-cat="${c.id}"><input type="checkbox" class="sub-taken" data-type="${c.id}"> <span style="margin-left:8px;">${c.label}</span></label>`).join('')}
+            <div class="filter-section inactive" id="sec-mine" style="display: ${myParcels.length > 0 ? 'block' : 'none'};">
+                <label class="row"><input type="checkbox" id="chk-mine"> <span style="margin-left:10px;">👤 Мої дільниці</span> <span class="count-badge">${myParcels.length}</span></label>
+                <div class="sub-list">${renderSubItems('mine', myParcels)}</div>
             </div>
-        </div>
 
-        // У блоці menu.innerHTML знайдіть частину sec-mine:
-
-        <div class="filter-section inactive" id="sec-mine" style="display: ${myParcelsCount > 0 ? 'block' : 'none'};">
-            <label class="row">
-                <input type="checkbox" id="chk-mine"> 
-                <span style="margin-left:10px;">👤 Мої дільниці</span> 
-                <span class="count-badge">${myParcelsCount}</span>
-            </label>
-            <div class="sub-list">
-                ${cats.filter(c => myUniqueCats.some(uc => uc.includes(c.id))).map(c => `
-                    <label class="row sub-item" data-cat="${c.id}">
-                        <input type="checkbox" class="sub-mine" data-type="${c.id}"> 
-                        <span style="margin-left:8px;">${c.label}</span>
-                    </label>
-                `).join('')}
+            <div class="filter-section inactive" id="sec-free">
+                <label class="row"><input type="checkbox" id="chk-free"> <span style="margin-left:10px;">✅ Вільні</span> <span class="count-badge">${allParcels.filter(isFree).length}</span></label>
+                <div class="sub-list">${renderSubItems('free', allParcels.filter(isFree))}</div>
             </div>
-        </div>
 
-        <div style="margin-top:10px; border-top:1px dashed #ccc; padding-top:10px; font-size:11px; color:#888;">
-            <details>
-                <summary style="cursor:pointer;">Налаштування категорій</summary>
-                <label style="display:block; margin-top:5px;"><input type="checkbox" onchange="window.tCat('ділова', this.checked)"> Ділова</label>
-                <label style="display:block;"><input type="checkbox" onchange="window.tCat('села', this.checked)"> Села</label>
-            </details>
-        </div>
-    `;
-    document.body.appendChild(menu);
+            <div class="filter-section inactive" id="sec-taken" style="display: ${takenParcels.length > 0 ? 'block' : 'none'};">
+                <label class="row"><input type="checkbox" id="chk-taken"> <span style="margin-left:10px;">🚩 На руках</span> <span class="count-badge">${takenParcels.length}</span></label>
+                <div class="sub-list">${renderSubItems('taken', takenParcels)}</div>
+            </div>
 
-    // 4. ЛОГІКА
-    let searchTimeout;
-
-    const apply = () => {
-        const searchVal = document.getElementById('searchBox').value.trim().toLowerCase();
-        const isAll = document.getElementById('chk-all').checked;
-        const isFree = document.getElementById('chk-free').checked;
-        const isTaken = document.getElementById('chk-taken').checked;
-        const isMine = document.getElementById('chk-mine').checked;
-
-        document.getElementById('sec-all').className = `filter-section ${isAll ? 'active' : 'inactive'}`;
-        document.getElementById('sec-free').className = `filter-section ${isFree ? 'active' : 'inactive'}`;
-        document.getElementById('sec-taken').className = `filter-section ${isTaken ? 'active' : 'inactive'}`;
-        const mS = document.getElementById('sec-mine'); if (mS) mS.className = `filter-section ${isMine ? 'active' : 'inactive'}`;
-
-        const filtered = allParcels.filter(p => {
-            const parcelName = (p.name || "").toString().toLowerCase();
-            const pStatus = (p.status || "").toLowerCase();
-            const pCat = (p.category || "").toLowerCase();
-            const isActuallyFree = (!pStatus || pStatus === 'free' || pStatus === 'null' || pStatus === '');
-
-            if (searchVal !== "" && parcelName !== searchVal) return false;
-
-            if (isAll) return true;
-
-            // Фільтрація МОЇХ
-            if (isMine && p.taken_by === myEmail) {
-                const activeCats = Array.from(document.querySelectorAll('.sub-mine:checked')).map(el => el.dataset.type);
-                if (activeCats.length === 0) return true; // Якщо підкатегорії не обрані, показуємо всі мої
-                return activeCats.some(c => pCat.includes(c));
-            }
-
-            if (isFree && isActuallyFree) {
-                const activeCats = Array.from(document.querySelectorAll('.sub-free:checked')).map(el => el.dataset.type);
-                return activeCats.some(c => pCat.includes(c));
-            }
-
-            if (isTaken && (pStatus === 'taken' || pStatus === 'reserved')) {
-                const activeCats = Array.from(document.querySelectorAll('.sub-taken:checked')).map(el => el.dataset.type);
-                return activeCats.some(c => pCat.includes(c));
-            }
-            return false;
-        });
-
-        window.renderParcels(filtered);
+            ${isAdmin ? `
+                <div class="settings-header" id="toggleSettings">⚙️ Налаштування категорій</div>
+                <div id="settingsContent">
+                    <label class="row" style="margin-bottom:8px;"><input type="checkbox" id="set-village" ${config.showVillage ? 'checked' : ''}> <span style="margin-left:8px;">🚜 Показувати Села</span></label>
+                    <label class="row"><input type="checkbox" id="set-business" ${config.showBusiness ? 'checked' : ''}> <span style="margin-left:8px;">💼 Показувати Ділову</span></label>
+                </div>
+            ` : ''}
+        `;
+        document.body.appendChild(menu);
+        setupEventListeners();
     };
 
-    const switchMode = (id) => {
-        document.getElementById('searchBox').value = "";
-        ['chk-all', 'chk-free', 'chk-taken', 'chk-mine'].forEach(cid => {
-            const el = document.getElementById(cid); if (!el) return;
-            if (cid === id) {
-                el.checked = true;
-                if (id === 'chk-free') document.querySelectorAll('.sub-free').forEach(s => s.checked = true);
-                if (id === 'chk-taken') document.querySelectorAll('.sub-taken').forEach(s => s.checked = true);
-                if (id === 'chk-mine') document.querySelectorAll('.sub-mine').forEach(s => s.checked = true);
-            } else {
-                el.checked = false;
-                if (cid === 'chk-free') document.querySelectorAll('.sub-free').forEach(s => s.checked = false);
-                if (cid === 'chk-taken') document.querySelectorAll('.sub-taken').forEach(s => s.checked = false);
-                if (cid === 'chk-mine') document.querySelectorAll('.sub-mine').forEach(s => s.checked = false);
+    const setupEventListeners = () => {
+        const apply = () => {
+            const searchVal = document.getElementById('searchBox').value.trim().toLowerCase();
+            window.currentSearch = searchVal;
+            const isAll = document.getElementById('chk-all').checked;
+            const isFreeMode = document.getElementById('chk-free').checked;
+            const isTakenMode = document.getElementById('chk-taken').checked;
+            const isMineMode = document.getElementById('chk-mine').checked;
+
+            const filtered = allParcels.filter(p => {
+                const pName = (p.name || "").toString().toLowerCase();
+                const pCat = (p.category || "").toLowerCase();
+                if (searchVal !== "" && pName !== searchVal) return false;
+                if (isAll) return true;
+
+                if (isMineMode && String(p.taken_by_id) === String(currentUserId)) {
+                    const activeCats = Array.from(document.querySelectorAll('.sub-mine:checked')).map(el => el.dataset.type);
+                    return activeCats.length === 0 || activeCats.some(c => pCat.includes(c));
+                }
+                if (isFreeMode && isFree(p)) {
+                    const activeCats = Array.from(document.querySelectorAll('.sub-free:checked')).map(el => el.dataset.type);
+                    return activeCats.length === 0 || activeCats.some(c => pCat.includes(c));
+                }
+                if (isTakenMode && isTaken(p)) {
+                    const activeCats = Array.from(document.querySelectorAll('.sub-taken:checked')).map(el => el.dataset.type);
+                    return activeCats.length === 0 || activeCats.some(c => pCat.includes(c));
+                }
+                return false;
+            });
+
+            window.renderParcels(filtered);
+            
+            ['all', 'free', 'mine', 'taken'].forEach(m => {
+                const sec = document.getElementById(`sec-${m}`);
+                const chk = document.getElementById(`chk-${m}`);
+                if (sec && chk) sec.className = `filter-section ${chk.checked ? 'active' : 'inactive'}`;
+            });
+        };
+
+        const switchMode = (id) => {
+            if (id !== 'chk-all') {
+                document.getElementById('searchBox').value = '';
+                window.currentSearch = '';
             }
-        });
-        apply();
-    };
 
-    // 5. ПОДІЇ
-    window.tCat = (id, show) => document.querySelectorAll(`.sub-item[data-cat="${id}"]`).forEach(e => e.classList.toggle('hidden-cat', !show));
-
-    document.getElementById('chk-all').onchange = () => switchMode('chk-all');
-    document.getElementById('chk-free').onchange = () => switchMode('chk-free');
-    document.getElementById('chk-taken').onchange = () => switchMode('chk-taken');
-    if (document.getElementById('chk-mine')) document.getElementById('chk-mine').onchange = () => switchMode('chk-mine');
-
-    document.getElementById('searchBox').onfocus = () => {
-        if (!document.getElementById('chk-all').checked) {
             ['chk-all', 'chk-free', 'chk-taken', 'chk-mine'].forEach(cid => {
-                const el = document.getElementById(cid); if (el) el.checked = (cid === 'chk-all');
+                const el = document.getElementById(cid); if(!el) return;
+                el.checked = (cid === id);
+                if (cid === id && cid !== 'chk-all') {
+                    const prefix = cid.split('-')[1];
+                    document.querySelectorAll(`.sub-${prefix}`).forEach(sub => sub.checked = true);
+                }
             });
             apply();
+        };
+
+        const sBox = document.getElementById('searchBox');
+        sBox.onfocus = () => switchMode('chk-all');
+        sBox.oninput = apply;
+
+        document.getElementById('chk-all').onclick = () => switchMode('chk-all');
+        document.getElementById('chk-free').onclick = () => switchMode('chk-free');
+        if (document.getElementById('chk-taken')) document.getElementById('chk-taken').onclick = () => switchMode('chk-taken');
+        if (document.getElementById('chk-mine')) document.getElementById('chk-mine').onclick = () => switchMode('chk-mine');
+        
+        document.querySelectorAll('.sub-free, .sub-taken, .sub-mine').forEach(el => el.onchange = apply);
+
+        if (isAdmin) {
+            document.getElementById('toggleSettings').onclick = () => {
+                const content = document.getElementById('settingsContent');
+                content.style.display = content.style.display === 'block' ? 'none' : 'block';
+            };
+
+            document.getElementById('set-village').onchange = (e) => {
+                config.showVillage = e.target.checked;
+                renderUI(); apply();
+            };
+            document.getElementById('set-business').onchange = (e) => {
+                config.showBusiness = e.target.checked;
+                renderUI(); apply();
+            };
         }
     };
 
-    document.getElementById('searchBox').oninput = () => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(apply, 400);
-    };
-
-    document.querySelectorAll('.sub-free, .sub-taken, .sub-mine').forEach(el => el.onchange = apply);
-
-    // Лічильники
-    document.getElementById('cnt-free').innerText = allParcels.filter(p => !p.status || p.status === 'free' || p.status === 'null' || p.status === '').length;
-    document.getElementById('cnt-taken').innerText = allParcels.filter(p => p.status === 'taken' || p.status === 'reserved').length;
-
+    renderUI();
     apply();
 })();

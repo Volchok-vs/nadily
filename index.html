@@ -37,8 +37,17 @@
         /* Стилизация попапов */
         .leaflet-popup-content-wrapper {
             background: #ffffff !important;
-            border-radius: 12px !important;
+
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+            padding: 8px;
+            border-radius: 16px;
+            /* Material Design 3 стиль */
+        }
+
+        .leaflet-popup-content {
+            font-size: 15px;
+            /* Трохи більше для зручності читання на ходу */
+            margin: 10px 12px;
         }
 
         .popup-container {
@@ -98,18 +107,7 @@
         }
 
         /* Меню фильтров */
-        #filterMenu {
-            position: fixed;
-            top: 66px;
-            left: 57px;
-            z-index: 1001;
-            background: #ffffffd9;
-            padding: 10px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            display: none;
-            width: 250px;
-        }
+
 
         .filter-group {
             margin-bottom: 15px;
@@ -345,6 +343,299 @@
             font-size: 13px;
             font-family: sans-serif;
         }
+
+        /* Стилі нового фільтра */
+        #filter-wrapper {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 10001;
+            width: 300px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+
+        /* Мобільна адаптація */
+        @media (max-width: 600px) {
+            #filter-wrapper {
+                width: calc(100% - 30px);
+                top: 10px;
+                left: 10px;
+            }
+
+            #filter-mobile-header {
+                display: flex !important;
+                justify-content: space-between;
+                align-items: center;
+                background: #1565C0;
+                color: white;
+                padding: 10px 15px;
+                border-radius: 12px;
+                cursor: pointer;
+                margin-bottom: 5px;
+            }
+
+            /* Згорнутий стан на мобільних */
+            #filter-wrapper.collapsed #filterMenu {
+                display: none;
+            }
+        }
+
+
+        .filter-section.inactive {
+            opacity: 0.6;
+        }
+
+        .sub-list {
+            padding-left: 25px;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .count-badge {
+            float: right;
+            font-size: 11px;
+            background: #eee;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        /* Додай це в блок <style> твого index.html */
+
+
+        #searchBox {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            box-sizing: border-box;
+        }
+
+        .filter-section {
+            border: 1px solid #f0f0f0;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            padding: 12px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-section.active {
+            border-color: #007bff;
+            background-color: #f0f7ff;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-header label {
+            flex-grow: 1;
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .count-badge {
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .filter-section.active .count-badge {
+            background: #007bff;
+            color: white;
+        }
+
+        /* Приховуємо підпункти, якщо секція не активна */
+        .sub-list {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .filter-section.active .sub-list {
+            display: block;
+        }
+
+        .sub-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .sub-count {
+            margin-left: auto;
+            color: #999;
+            font-size: 12px;
+        }
+
+
+
+        .admin-settings {
+            margin-top: 15px;
+            border-top: 1px dashed #ccc;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        #toggleAdmin {
+            cursor: pointer;
+            padding: 5px;
+            text-align: center;
+        }
+
+        /* Основний рядок фільтра */
+        #filterMenu .row {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            cursor: pointer;
+            padding: 8px 4px;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        /* Назва категорії */
+        .label-text {
+            margin-left: 10px;
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+            /* Щоб назва не переносилася */
+        }
+
+        /* Контейнер для крапок */
+        .dots-filler {
+            flex-grow: 1;
+            /* Займає весь вільний простір */
+            margin: 0 8px;
+            border-bottom: 2px dotted #ccc;
+            /* Самі точки через border */
+            position: relative;
+            top: -4px;
+            /* Піднімаємо точки до рівня тексту */
+            min-width: 20px;
+        }
+
+        /* Число */
+        .count-badge {
+            font-size: 12px;
+            color: #777;
+            font-weight: bold;
+            min-width: 25px;
+            text-align: right;
+        }
+
+        .dots-filler {
+            flex-grow: 1;
+            margin: 0 10px;
+            /* Використовуємо border для надійності */
+            border-bottom: 2px dotted #ccc;
+            height: 14px;
+            /* Важливо, щоб був розмір */
+            align-self: center;
+        }
+
+        /* Обов'язково додаємо flex батькові */
+        #filterMenu .row,
+        .section-header {
+            display: flex !important;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* Універсальний рядок для всіх пунктів меню */
+        .filter-section .section-header,
+        .sub-item.row {
+            display: flex !important;
+            align-items: center;
+            width: 100%;
+            cursor: pointer;
+            padding: 6px 0;
+        }
+
+        /* Назва пункту */
+        .label-text,
+        .section-header label {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Крапки: тепер вони будуть скрізь */
+        .dots-filler {
+            flex-grow: 1;
+            margin: 0 10px;
+            border-bottom: 2px dotted #ccc;
+            height: 12px;
+            /* Висота контейнера для точок */
+            align-self: center;
+            min-width: 10px;
+        }
+
+        /* Лічильники */
+        .count-badge,
+        .sub-count {
+            flex-shrink: 0;
+            font-size: 12px;
+            color: #888;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        #filterMenu {
+            display: none;
+            /* по замовчуванню сховано */
+            position: absolute;
+            top: 60px;
+            left: 60px;
+            z-index: 1000;
+            background: #ffffff9c;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            width: 260px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        /* Щоб кліки всередині меню не йшли на карту */
+        #filterMenu {
+            pointer-events: auto;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            cursor: pointer;
+            padding: 5px 0;
+        }
+
+        .dots-filler {
+            flex-grow: 1;
+            border-bottom: 1px dotted #ccc;
+            margin: 0 10px;
+            height: 12px;
+        }
+
+        .count-badge {
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+            margin-left: auto;
+        }
     </style>
     <link rel="stylesheet" href="css/style_mod.css">
     <link rel="stylesheet" href="css/responsive.css">
@@ -372,6 +663,18 @@
         </div>
 
         <select id="v-name-select" style="width:100%; padding:10px; margin-bottom:15px; border-radius:6px;"></select>
+
+        <div id="admin-date-edit-container"
+            style="display:none; margin-bottom: 15px; padding: 12px; border: 1px dashed #1565C0; border-radius: 8px; background: #f0f7ff;">
+            <label
+                style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size: 13px; color: #1565C0; margin-bottom: 8px; font-weight: bold;">
+                <input type="checkbox" id="enable-date-edit"
+                    onchange="document.getElementById('custom-take-date').disabled = !this.checked">
+                Змінити дату видачі
+            </label>
+            <input type="date" id="custom-take-date" disabled
+                style="width: stretch; padding: 10px; border-radius: 6px; border: 1px solid #ccc; background: white; font-size: 14px; color: #333;">
+        </div>
 
         <button id="confirm-take-btn" onclick="window.confirmTake()"
             style="width:100%; background:#179133; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer;">ПІДТВЕРДИТИ</button>
@@ -490,69 +793,61 @@
         </button>
     </div>
 
-
-
     <div id="filterMenu">
-        <span id="closeFilter" style="
-            position: absolute; 
-            top: 5px; 
-            right: 10px; 
-            cursor: pointer; 
-            font-size: 22px; 
-            font-weight: bold; 
-            color: #333333cf;
-        ">&times;</span>
-
-        <h4 style="margin:0 0 10px 0;">🔍 Фільтр дільниць</h4>
-
-        <div style="margin-bottom: 10px;">
-            <input type="text" id="searchNumber" placeholder="Номер дільниці..."
-                style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px; box-sizing: border-box;">
+        <input type="text" id="searchBox" placeholder="Пошук за номером..." autocomplete="off">
+        <div class="filter-section active" id="sec-all">
+            <label class="row">
+                <input type="checkbox" id="chk-all" checked>
+                <span class="label-text">Всі дільниці</span>
+                <span class="dots-filler"></span>
+                <span class="count-badge" id="cnt-all">0</span>
+            </label>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
-            <label>
-                <input type="radio" name="statusFilter" value="all" checked>
-                Показати всі <span id="cnt-all" style="color: #888; font-size: 12px;">(0)</span>
+        <div class="filter-section inactive" id="sec-mine" style="display: none;">
+            <label class="row">
+                <input type="checkbox" id="chk-mine">
+                <span class="label-text">👤 Мої дільниці</span>
+                <span class="dots-filler"></span>
+                <span class="count-badge" id="cnt-mine">0</span>
             </label>
-            <label>
-                <input type="radio" name="statusFilter" value="free">
-                ✅ Вільні <span id="cnt-free" style="color: #28a745; font-weight: bold; font-size: 12px;">(0)</span>
+            <div class="sub-list" id="sub-mine-list"></div>
+        </div>
+
+        <div class="filter-section inactive" id="sec-free">
+            <label class="row">
+                <input type="checkbox" id="chk-free">
+                <span class="label-text">✅ Вільні</span>
+                <span class="dots-filler"></span>
+                <span class="count-badge" id="cnt-free">0</span>
             </label>
-            <label>
-                <input type="radio" name="statusFilter" value="taken">
-                🚩 На руках <span id="cnt-taken" style="color: #e74c3c; font-weight: bold; font-size: 12px;">(0)</span>
+            <div class="sub-list" id="sub-free-list"></div>
+        </div>
+
+        <div class="filter-section inactive" id="sec-taken" style="display: none;">
+            <label class="row">
+                <input type="checkbox" id="chk-taken">
+                <span class="label-text">🚩 На руках</span>
+                <span class="dots-filler"></span>
+                <span class="count-badge" id="cnt-taken">0</span>
             </label>
-            <label id="myParcelsLabel" style="display:none;">
-                <input type="radio" name="statusFilter" value="mine">
-                👤 Мої дільниці <span id="cnt-mine"
-                    style="color: #1565C0; font-weight: bold; font-size: 12px;">(0)</span>
-            </label>
+            <div class="sub-list" id="sub-taken-list"></div>
         </div>
     </div>
+
     <button id="reset-focus-btn" onclick="window.resetMapFocus()">
         ⬅️ Показати всі дільниці
     </button>
     <script src="js/ui-controller.js"></script>
-    <script type="module">
-        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-        const supabaseUrl = "https://modsgjjtwxbdnlycvifp.supabase.co";
-        const supabaseKey = "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D";
-
-        // ВОТ ЭТА СТРОКА: Привязываем клиент к объекту window
-        window.supabase = createClient(supabaseUrl, supabaseKey);
-
-        console.log("Supabase ініціалізовано як модуль і додано у window");
-    </script>
     <script type="module" src="js/map-styles.js"></script>
     <script type="module">
+        import { supabase } from "./js/config.js";
         import { returnParcel, handleUrlParams } from './js/parcel-logic.js';
 
         import { isAdmin, currentUserId } from './js/main.js';
         import { initGeolocation } from './js/geolocation.js'; // перевірте шлях до файлу
         import { initSearchAndFilters, updateFilterCounts } from './js/search-filter.js';
-
+        import { getDurationText } from './js/status-helper.js';
 
         // Ініціалізація глобальних змінних
         window.userRole = localStorage.getItem('userRole');
@@ -593,57 +888,57 @@
 
 
 
-       
+
         // --- 2. ІНІЦІАЛІЗАЦІЯ КАРТИ ---
-function initMainMap() {
-    // ... ваші змінні osm, topo, satelliteHybrid залишаються без змін ...
+        function initMainMap() {
+            // ... ваші змінні osm, topo, satelliteHybrid залишаються без змін ...
 
-    // 1. ОПИС БАЗОВИХ ШАРІВ
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' });
-    const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap (SRTM)' });
-    const satelliteOnly = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
-    const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', { pane: 'shadowPane' });
-    const satelliteHybrid = L.layerGroup([satelliteOnly, labels]);
+            // 1. ОПИС БАЗОВИХ ШАРІВ
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' });
+            const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap (SRTM)' });
+            const satelliteOnly = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+            const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', { pane: 'shadowPane' });
+            const satelliteHybrid = L.layerGroup([satelliteOnly, labels]);
 
-    // 2. ДОДАНО ТУТ: Визначаємо, який шар увімкнути
-    const baseMaps = {
-        "🛰️ Гібрид": satelliteHybrid,
-        "🗺️ Схема (OSM)": osm,
-        "⛰️ Рельєф (Topo)": topo
-    };
-    
-    // Перевіряємо localStorage
-    const savedLayerName = localStorage.getItem('selectedBaseLayer');
-    // Якщо в пам'яті є шар і він існує в списку — беремо його, інакше — Гібрид
-    const initialLayer = (savedLayerName && baseMaps[savedLayerName]) 
-                         ? baseMaps[savedLayerName] 
-                         : satelliteHybrid;
+            // 2. ДОДАНО ТУТ: Визначаємо, який шар увімкнути
+            const baseMaps = {
+                "🛰️ Гібрид": satelliteHybrid,
+                "🗺️ Схема (OSM)": osm,
+                "⛰️ Рельєф (Topo)": topo
+            };
 
-    // 3. ІНІЦІАЛІЗАЦІЯ КАРТИ
-    window.map = L.map('map', {
-        preferCanvas: false,
-        center: [49.2321, 29.0577],
-        zoom: 15,
-        layers: [initialLayer], // <--- ЗМІНЕНО ТУТ: тепер використовуємо initialLayer
-        zoomControl: false,
-    });
+            // Перевіряємо localStorage
+            const savedLayerName = localStorage.getItem('selectedBaseLayer');
+            // Якщо в пам'яті є шар і він існує в списку — беремо його, інакше — Гібрид
+            const initialLayer = (savedLayerName && baseMaps[savedLayerName])
+                ? baseMaps[savedLayerName]
+                : satelliteHybrid;
 
-    // Додаємо перемикач
-    L.control.layers(baseMaps, null, {
-        position: 'bottomleft',
-        collapsed: true
-    }).addTo(window.map);
+            // 3. ІНІЦІАЛІЗАЦІЯ КАРТИ
+            window.map = L.map('map', {
+                preferCanvas: false,
+                center: [49.2321, 29.0577],
+                zoom: 15,
+                layers: [initialLayer], // <--- ЗМІНЕНО ТУТ: тепер використовуємо initialLayer
+                zoomControl: false,
+            });
 
-    // 4. ДОДАНО ТУТ: Подія для збереження вибору
-    window.map.on('baselayerchange', function (e) {
-        localStorage.setItem('selectedBaseLayer', e.name);
-        console.log("💾 Шар збережено:", e.name);
-    });
+            // Додаємо перемикач
+            L.control.layers(baseMaps, null, {
+                position: 'bottomleft',
+                collapsed: true
+            }).addTo(window.map);
 
-    // ... далі ваш код (initGeolocation, AuthControl) ...
-    if (typeof initGeolocation === 'function') initGeolocation(window.map);
-    new AuthControl().addTo(window.map);
-}
+            // 4. ДОДАНО ТУТ: Подія для збереження вибору
+            window.map.on('baselayerchange', function (e) {
+                localStorage.setItem('selectedBaseLayer', e.name);
+                console.log("💾 Шар збережено:", e.name);
+            });
+
+            // ... далі ваш код (initGeolocation, AuthControl) ...
+            if (typeof initGeolocation === 'function') initGeolocation(window.map);
+            new AuthControl().addTo(window.map);
+        }
 
 
         // У вашому блоці handleUrlParams (якщо він в index) або після handleUrlParams():
@@ -681,7 +976,7 @@ function initMainMap() {
         };
         // --- 3. ЛОГІКА ПОПАПІВ ---
         window.createPopupContent = function (p) {
-            // 1. Розрахунок дат та статусів
+            // --- 1. Розрахунок дат та статусів ---
             const now = new Date();
             const returnDate = p.last_returned ? new Date(p.last_returned) : new Date(0);
             const quarantineEndDate = new Date(returnDate);
@@ -691,26 +986,36 @@ function initMainMap() {
             const qDateStr = quarantineEndDate.toLocaleDateString('uk-UA');
             const isTaken = p.status === 'taken';
 
-            // Отримуємо дані про користувача
             const isAuth = !!localStorage.getItem('userId');
             const currentUserId = localStorage.getItem('userId') || window.currentUserId;
 
-            const shareLink = `${window.location.origin}${window.location.pathname}?parcel=${encodeURIComponent(p.name || p.number)}`;
-            const googleMapsUrl = `https://www.google.com/maps?q=${p.center_lat},${p.center_lng}`;
+            // --- ПРАВКА ТУТ: Розрахунок тривалості ---
+            let duration = "";
+            try {
+                if (typeof getDurationText === 'function') {
+                    // Для зайнятих беремо taken_at, для вільних - коли повернули
+                    const dateToUse = isTaken ? p.taken_at : p.last_returned;
+                    if (dateToUse) {
+                        duration = getDurationText(dateToUse);
+                    }
+                }
+            } catch (e) {
+                console.warn("Помилка розрахунку дати:", e);
+            }
 
-            // 2. Формування базової верстки (Заголовок, Статус, Маршрут)
+            const shareLink = `${window.location.origin}${window.location.pathname}?parcel=${encodeURIComponent(p.name || p.number)}`;
+            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${p.center_lat},${p.center_lng}`;
+
+            // --- 2. Формування верстки ---
             let popupHtml = `<div class="popup-container" style="min-width:200px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; gap: 10px;">
-    <span class="popup-title" style="font-weight:bold; font-size:16px; color: #1D192B;">
-        Дільниця ${p.name || p.number}
-    </span>
-    
-    <button onclick="window.shareParcel('${p.name || p.number}', '${shareLink}')" class="m3-share-btn">
-        <div class="icon-stack">
-            🔗<span class="mini-arrow">➦</span>
+            <span class="popup-title" style="font-weight:bold; font-size:16px; color: #1D192B;">
+                Дільниця ${p.name || p.number}
+            </span>
+            <button onclick="window.shareParcel('${p.name || p.number}', '${shareLink}')" class="m3-share-btn">
+                <div class="icon-stack">🔗<span class="mini-arrow">➦</span></div>
+            </button>
         </div>
-    </button>
-</div>
 
         ${(!isTaken && isQuarantine) ? `
             <div style="color: #d32f2f; background: #ffebee; padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 12px; border: 1px solid #d32f2f; text-align:center;">
@@ -721,6 +1026,7 @@ function initMainMap() {
             <span style="font-weight:bold; color:${isTaken ? '#e74c3c' : (isQuarantine ? '#808080' : '#28a745')}">
                 ● ${isTaken ? 'Зайнята' : (isQuarantine ? 'Карантин' : 'Вільна')}
             </span>
+            ${duration ? `<span style="font-size:11px; color:#666; font-weight:normal; margin-left:4px;">${duration}</span>` : ''}
         </div>
 
         <div class="popup-btn-row" style="display:flex; gap:5px; margin-top:10px; margin-bottom:10px;">
@@ -728,11 +1034,10 @@ function initMainMap() {
             ${window.isAdmin ? `<a href="parcel-details.html?id=${p.id}" class="popup-btn" style="flex:1; text-align:center; text-decoration:none; padding:8px; border:1px solid #ccc; border-radius:4px; color:black; font-size:12px;">⚙️ Картка</a>` : ''}
         </div>`;
 
-            // 3. Логіка кнопок дії
+            // --- 3. Логіка кнопок (залишається без змін) ---
             if (!isTaken) {
                 if (isQuarantine) {
                     if (window.isAdmin) {
-                        // Повертаємо блок розблокування для адміна (з вашого правильного коду)
                         popupHtml += `
                 <div style="margin-bottom:8px;">
                     <label style="font-size:11px; color:#1565C0; cursor:pointer; display:flex; align-items:center; gap:5px;">
@@ -748,31 +1053,27 @@ function initMainMap() {
                         popupHtml += `<p style="font-size:11px; color:#888; text-align:center;">На обробці до ${qDateStr}</p>`;
                     }
                 } else {
-                    // Перевірка авторизації для вільної дільниці
                     if (isAuth) {
                         popupHtml += `<button class="popup-btn primary" style="width:100%; padding:10px; background:#0d6efd; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="window.startTakeProcess('${p.id}', false)">
                     ✋ Взяти дільницю
                 </button>`;
                     } else {
-                        // Кнопка для неавторизованих користувачів
-                        popupHtml += `
-                <button class="popup-btn" 
-                    style="width:100%; padding:10px; background:#f8f9fa; border:1px dashed #ffa500; color:#e67e22; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500;" 
-                    onclick="window.location.href='login.html'">
+                        popupHtml += `<button class="popup-btn" style="width:100%; padding:10px; background:#f8f9fa; border:1px dashed #ffa500; color:#e67e22; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500;" onclick="window.location.href='login.html'">
                     🔑 Увійдіть, щоб взяти
                 </button>`;
                     }
                 }
             } else {
-                // Якщо дільниця зайнята (Збережено вашу перевірку власника)
                 if (window.isAdmin || (isAuth && String(p.taken_by_id) === String(currentUserId))) {
-                    popupHtml += `<button class="popup-btn" 
-                style="width:100%; padding:10px; border:1px solid #dc3545; color:#dc3545; background:none; border-radius:6px; cursor:pointer; font-weight:bold;" 
-                onclick="window.returnParcel(${p.id})">
+                    popupHtml += `<button class="popup-btn" style="width:100%; padding:10px; border:1px solid #dc3545; color:#dc3545; background:none; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="window.returnParcel(${p.id})">
                 🔙 Здати дільницю
             </button>`;
                 }
-                popupHtml += `<div style="text-align:center; font-size:11px; color:#666; margin-top:5px;">Взяв: ${p.taken_by || 'Невідомо'}</div>`;
+
+                // Показуємо "Взяв" тільки адміну
+                if (window.isAdmin) {
+                    popupHtml += `<div style="text-align:center; font-size:11px; color:#666; margin-top:5px; border-top:1px dashed #eee; padding-top:5px;">Взяв: ${p.taken_by || 'Невідомо'}</div>`;
+                }
             }
 
             popupHtml += `</div>`;
@@ -826,6 +1127,12 @@ function initMainMap() {
 
                 polygonLayer.bindPopup(() => {
                     return window.createPopupContent(polygonLayer.options.parcelData);
+                }, {
+                    maxWidth: 280,         // Оптимально для мобільних екранів
+                    autoPan: true,         // Карта сама підсунеться, щоб попап вліз
+                    autoPanPadding: [20, 80], // Великий відступ зверху (80), щоб попап не ховався під верхню панель/пошук
+                    closeButton: true,
+                    className: 'modern-popup' // Можна додати свій клас для CSS
                 });
 
                 // 7. СТВОРЕННЯ ГРУПИ ТА ДОДАВАННЯ ПОЛІГОНУ
@@ -1030,21 +1337,39 @@ function initMainMap() {
             const bypassCheckbox = document.getElementById('admin-bypass-checkbox');
             const confirmBtn = document.getElementById('confirm-take-btn');
 
+            // --- ДОДАНО: Поле вибору дати для адміна ---
+            // Оновлений блок підготовки дати (замість попереднього)
+            const dateContainer = document.getElementById('admin-date-edit-container');
+            const customDateInput = document.getElementById('custom-take-date');
+            const enableCheck = document.getElementById('enable-date-edit');
+
+            if (dateContainer && window.isAdmin) {
+                dateContainer.style.display = 'block';
+
+                // Встановлюємо сьогодні як дефолт (у форматі YYYY-MM-DD)
+                const today = new Date().toISOString().split('T')[0];
+                customDateInput.value = today;
+
+                // Скидаємо чекбокс та блокуємо інпут
+                if (enableCheck) enableCheck.checked = false;
+                if (customDateInput) customDateInput.disabled = true;
+            } else if (dateContainer) {
+                dateContainer.style.display = 'none';
+            }
+            // -------------------------------------------
+
             // 4. Логіка для КАРАНТИННОЇ дільниці
             if (isQuarantine) {
-                // Розрахунок дати (3 місяці від останнього повернення)
                 const returnDate = parcelData.last_returned ? new Date(parcelData.last_returned) : new Date();
                 const endDate = new Date(returnDate);
                 endDate.setMonth(endDate.getMonth() + 3);
                 const dateStr = endDate.toLocaleDateString('uk-UA');
 
-                // Показуємо текст карантину з датою
                 if (qMsg) {
                     qMsg.innerHTML = `⚠️ Дільниця на карантині до <b>${dateStr}</b>`;
                     qMsg.style.display = 'block';
                 }
 
-                // Блокуємо кнопку відразу при відкритті
                 confirmBtn.disabled = true;
                 confirmBtn.style.opacity = '0.5';
                 confirmBtn.style.cursor = 'not-allowed';
@@ -1052,9 +1377,7 @@ function initMainMap() {
                 if (window.isAdmin) {
                     if (adminBypass) adminBypass.style.display = 'block';
                     if (bypassCheckbox) {
-                        bypassCheckbox.checked = false; // Скидаємо чекбокс
-
-                        // Вішаємо подію: кнопка оживає тільки коли чекбокс активний
+                        bypassCheckbox.checked = false;
                         bypassCheckbox.onchange = function () {
                             confirmBtn.disabled = !this.checked;
                             confirmBtn.style.opacity = this.checked ? '1' : '0.5';
@@ -1063,12 +1386,11 @@ function initMainMap() {
                     }
                 }
             }
-            // 5. Логіка для ЗВИЧАЙНОЇ дільниці (без карантину)
+            // 5. Логіка для ЗВИЧАЙНОЇ дільниці
             else {
                 if (qMsg) qMsg.style.display = 'none';
                 if (adminBypass) adminBypass.style.display = 'none';
 
-                // Активуємо кнопку, бо обмежень немає
                 confirmBtn.disabled = false;
                 confirmBtn.style.opacity = '1';
                 confirmBtn.style.cursor = 'pointer';
@@ -1091,8 +1413,6 @@ function initMainMap() {
 
         // Сама логіка запису в БД
         window.confirmTake = async function (parcelId) {
-            // Якщо ID не передано через аргумент (наприклад, кнопка в HTML має onclick="window.confirmTake()"),
-            // це може спричинити помилку. Але ми призуємо його в startTakeProcess, тож усе ок.
             if (!parcelId) return alert("Помилка: ID дільниці не знайдено.");
 
             const select = document.getElementById('v-name-select');
@@ -1100,7 +1420,7 @@ function initMainMap() {
             const qMsg = document.getElementById('quarantine-msg');
             const isQuarantineVisible = qMsg && qMsg.style.display === 'block';
 
-            // Перевірка на карантин + чекбокс
+            // 1. Перевірка на карантин
             if (isQuarantineVisible && bypassCheckbox && !bypassCheckbox.checked) {
                 alert("Дільниця на карантині! Потрібно поставити відмітку 'Дозволити видачу'.");
                 return;
@@ -1112,7 +1432,29 @@ function initMainMap() {
 
             if (!pubId) return alert("Оберіть вісника!");
 
-            // Вимикаємо кнопку, щоб уникнути подвійного кліку
+            // --- ЛОГІКА ДАТИ ІЗ ЗАХИСТОМ (БЕЗ ДУБЛІКАТІВ) ---
+            let finalTakenAt = new Date();
+            const enableCheck = document.getElementById('enable-date-edit');
+            const customDateInput = document.getElementById('custom-take-date');
+
+            if (enableCheck && enableCheck.checked && customDateInput && customDateInput.value) {
+                let tempDate = new Date(customDateInput.value);
+
+                // Виправлено: видалено зайвий тег <script і залишено лише логіку порівняння
+                if (tempDate.getFullYear() < 100) {
+                    tempDate.setFullYear(tempDate.getFullYear() + 2000);
+                }
+
+                const now = new Date();
+                // Встановлюємо поточний час для обраної дати
+                tempDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+
+                finalTakenAt = tempDate;
+            }
+
+            const isoDate = finalTakenAt.toISOString();
+            // ----------------------------------------------
+
             const confirmBtn = document.getElementById('confirm-take-btn');
             if (confirmBtn) confirmBtn.disabled = true;
 
@@ -1122,7 +1464,7 @@ function initMainMap() {
                     status: 'taken',
                     taken_by_id: pubId,
                     taken_by: pubName,
-                    taken_at: new Date().toISOString()
+                    taken_at: isoDate
                 })
                 .eq('id', parcelId);
 
@@ -1130,11 +1472,10 @@ function initMainMap() {
                 alert("Помилка БД: " + error.message);
                 if (confirmBtn) confirmBtn.disabled = false;
             } else {
-                // Замість location.reload можна зробити тихе оновлення, 
-                // але для простоти reload — найнадійніший варіант
                 location.reload();
             }
         };
+
         window.returnParcel = async (id) => {
             // 1. Знайти дані дільниці для повідомлення
             const item = window.allParcelLayers ? window.allParcelLayers.find(i => i.id === id) : null;
@@ -1161,39 +1502,39 @@ function initMainMap() {
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Спершу карта
-    initMainMap(); 
+            // 1. Спершу карта
+            initMainMap();
 
-    // 2. ОДИН РАЗ завантажуємо дані
-    await loadParcels(); 
+            // 2. ОДИН РАЗ завантажуємо дані
+            await loadParcels();
 
-    // 3. ОДИН РАЗ налаштовуємо пошук, коли дані вже є
-    if (typeof initSearchAndFilters === 'function') {
-        initSearchAndFilters(window.map, window.allParcelLayers);
-    }
+            // 3. ОДИН РАЗ налаштовуємо пошук, коли дані вже є
+            if (typeof initSearchAndFilters === 'function') {
+                initSearchAndFilters(window.map, window.allParcelLayers);
+            }
 
-    // 4. ОДИН РАЗ запускаємо інструменти (лінійка і т.д.)
-    if (window.initToolControl) {
-        initToolControl(window.map);
-    }
+            // 4. ОДИН РАЗ запускаємо інструменти (лінійка і т.д.)
+            if (window.initToolControl) {
+                initToolControl(window.map);
+            }
 
-    // 5. ОДИН РАЗ обробляємо перехід за посиланням
-    if (typeof handleUrlParams === 'function') {
-        handleUrlParams();
-        
-        // Показуємо кнопку скидання, якщо в URL є дільниця
-        const urlParams = new URLSearchParams(window.location.search);
-        const resetBtn = document.getElementById('reset-focus-btn');
-        if (urlParams.has('parcel') && resetBtn) {
-            resetBtn.style.display = 'block';
-        }
-    }
+            // 5. ОДИН РАЗ обробляємо перехід за посиланням
+            if (typeof handleUrlParams === 'function') {
+                handleUrlParams();
 
-    // 6. ОДИН РАЗ рахуємо кількість для фільтрів
-    if (typeof updateFilterCounts === 'function') {
-        updateFilterCounts(window.allParcelLayers);
-    }
-});
+                // Показуємо кнопку скидання, якщо в URL є дільниця
+                const urlParams = new URLSearchParams(window.location.search);
+                const resetBtn = document.getElementById('reset-focus-btn');
+                if (urlParams.has('parcel') && resetBtn) {
+                    resetBtn.style.display = 'block';
+                }
+            }
+
+            // 6. ОДИН РАЗ рахуємо кількість для фільтрів
+            if (typeof updateFilterCounts === 'function') {
+                updateFilterCounts(window.allParcelLayers);
+            }
+        });
     </script>
 
     <script src="js/dev-tools.js"></script>

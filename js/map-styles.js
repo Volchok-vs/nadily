@@ -71,7 +71,7 @@ export function getParcelStyle(pData) {
 
     if (pData.status !== 'taken' && diffMonths < 3) {
         baseColor = config.quarantine;
-        strokeColor = '#cbc7c7';
+        strokeColor = '#e6e2e2';
     }
 
     // 5. ЛОГІКА СТАРІННЯ (6, 7, 8+ МІСЯЦІВ)

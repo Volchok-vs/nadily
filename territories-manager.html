@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Менеджер Територій</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --sidebar-width: 250px;
+            --primary: #007bff;
+            --bg: #f4f7f6;
+        }
+
+        /* Приховуємо h1 в мобільній версії, щоб уникнути дублювання з мобільною шапкою */
+        @media (max-width: 768px) {
+            .tab-content h1 {
+                display: none !important;
+            }
+        }
+
+        /* Стилі для звіту територій на руках (адаптовано з report.html) */
+        .on-hands-card {
+            transition: all 0.3s ease;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .on-hands-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .on-hands-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .on-hands-card .card-number {
+            background: #007bff;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+        
+        .on-hands-card .card-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .on-hands-card .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .on-hands-card .info-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .on-hands-card .info-value {
+            font-size: 0.875rem;
+            color: #1f2937;
+            font-weight: 500;
+        }
+        
+        .on-hands-card .card-actions {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .on-hands-card .btn-details {
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: background 0.2s;
+            display: inline-block;
+        }
+        
+        .on-hands-card .btn-details:hover {
+            background: #0056b3;
+        }
+        
+        .on-hands-card .days-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .on-hands-card .days-low {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .on-hands-card .days-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .on-hands-card .days-high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            display: flex;
+            height: 100dvh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* Бокове меню */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+        }
+
+        .sidebar h2 {
+            padding: 0 20px;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: #ecf0f1;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #bdc3c7;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #34495e;
+            color: white;
+        }
+
+        .nav-item i {
+            margin-right: 10px;
+        }
+
+        .logout-btn {
+            margin-top: 20px;
+            color: #e74c3c;
+            border-top: 1px solid #34495e;
+        }
+
+        /* Контентна область */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        /* Таблиці та списки */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+
+        .badge {
+            background: #eee;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .tab-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .tab-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .btn-add {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background 0.2s;
+        }
+
+        .btn-add:hover {
+            background: #218838;
+        }
+
+        /* Таби */
+        .origin-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 0;
+            padding-left: 10px;
+        }
+
+        .origin-tab-btn {
+            padding: 10px 18px;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            background: #eaeeef;
+            border-radius: 10px 10px 0 0;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #555;
+            transition: all 0.2s;
+            position: relative;
+            z-index: 1;
+        }
+
+        .origin-tab-btn.active {
+            background: white;
+            color: #007bff;
+            font-weight: bold;
+            z-index: 3;
+            margin-bottom: -1px;
+            padding-bottom: 11px;
+            border-color: #ddd;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 10px 10px 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            position: relative;
+            z-index: 2;
+            padding: 15px;
+        }
+
+        /* Картки територій */
+        .territory-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .territory-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .territory-card h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .territory-card-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .territory-badge {
+            background: #007bff;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        /* Повноекранний лоадер */
+        #main-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .content-placeholder {
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            color: #999;
+            font-size: 1.1rem;
+        }
+
+        /* Картки кампаній */
+        .campaign-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+
+        .campaign-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .campaign-info {
+            flex: 1;
+        }
+
+        .campaign-info h4 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+
+        .campaign-dates {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .campaign-dates strong {
+            color: #007bff;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        .no-campaigns {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #ddd;
+        }
+
+        /* СТИЛІ ДЛЯ ЗВІТУ (з report1.html) */
+        .report-section {
+            margin-bottom: 2.5rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .report-table th, .report-table td {
+            border: 1px solid #e5e7eb;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.875rem;
+        }
+        .report-table th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .report-table th.sort-asc::after {
+            content: '↑';
+            margin-left: 5px;
+        }
+        .report-table th.sort-desc::after {
+            content: '↓';
+            margin-left: 5px;
+        }
+        .report-table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .report-table tr:hover {
+            background-color: #f1f5f9;
+        }
+        .input-days, .filter-select {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        .summary-block { /* Змінено назву, щоб уникнути конфлікту з .summary в profile.html */
+            background-color: #e0f2fe;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.875rem;
+        }
+        #progress-container, .progress-container {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 0.875rem;
+            border: 1px solid #e5e7eb;
+            display: none;
+        }
+        #progress-bar, .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #progress-fill, .progress-fill {
+            height: 100%;
+            background: #4caf50;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+        @media (max-width: 640px) {
+            .report-container { padding: 1rem; }
+            .report-section { padding: 1rem; }
+            .report-table th, .report-table td { font-size: 0.75rem; padding: 8px; }
+            .input-days, .filter-select { width: 80px; font-size: 0.75rem; }
+            .summary-block { font-size: 0.875rem; padding: 0.75rem; } /* Змінено назву */
+            #progress-container { padding: 0.75rem; }
+            #progress-bar { height: 16px; }
+            #progress-text { font-size: 0.75rem; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/profile-style.css" />
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+
+<body>
+    <div id="main-loader">
+        <div class="spinner"></div>
+    </div>
+    <div class="mobile-header">
+        <button class="mobile-nav-toggle-new" onclick="toggleSidebar()">☰</button>
+        <div class="mobile-title" id="mobile-title">🌍 Території</div>
+    </div>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar">
+        <h2>🗺️ Адмін-панель</h2>
+        <div class="nav-item active" onclick="switchTab('territories')">🌍 Території</div>
+        <div class="nav-item" onclick="switchTab('processing')">📊 Опрацювання</div>
+        <div class="nav-item" onclick="switchTab('analysis')">📈 Аналіз Територій</div>
+        <div class="nav-item" onclick="switchTab('on-hands')">👐 На руках</div>
+        <div class="nav-item" onclick="switchTab('export-import')">💾 Експорт та Імпорт</div>
+        <div class="nav-item" onclick="switchTab('settings')">⚙️ Додаткові налаштування</div>
+        <a href="profile.html" class="nav-item">👤 Назад до Профілю</a>
+        <div class="nav-item logout-btn" onclick="logout()">🏃 Вийти</div>
+    </div>
+
+    <div class="main-content">
+        <!-- ТАБ: ТЕРИТОРІЇ -->
+        <div id="tab-territories" class="tab-content">
+            <div class="tab-header">
+                <h1>🌍 Території</h1>
+                <button onclick="openAddTerritoryModal()" class="btn-add">+ Додати</button>
+            </div>
+
+            <div class="origin-tabs">
+                <button onclick="switchTerritoryFilter('city')" class="origin-tab-btn active">🏙️ Місто</button>
+                <button onclick="switchTerritoryFilter('village')" class="origin-tab-btn">🏡 Села</button>
+            </div>
+
+            <div class="card">
+                <div id="territoriesList"></div>
+            </div>
+        </div>
+
+        <!-- ТАБ: ОПРАЦЮВАННЯ (ЗВІТ) -->
+        <div id="tab-processing" class="tab-content hidden">
+            <h1>📊 Опрацювання територій</h1>
+            <div id="progress-container" class="bg-white rounded-lg shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-800 mb-2">Завантаження звіту...</h2>
+                <div id="progress-bar">
+                    <div id="progress-fill"></div>
+                </div>
+                <p id="progress-text" class="mt-2 text-sm text-gray-600">0%</p>
+            </div>
+
+            <div class="report-section">
+                <div class="summary-block">
+                    <p class="text-gray-700">Територій без записів: <span id="no-records-count">0</span></p>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Території без записів</h2>
+                <div class="flex items-center mb-4 space-x-4">
+                    <button id="no-records-search-btn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Пошук</button>
+                    <select id="no-records-type-filter" class="filter-select">
+                        <option value="">Усі типи</option>
+                        <option value="Приватний сектор">Приватний сектор</option>
+                        <option value="Поверхівки">Поверхівки</option>
+                        <option value="Змішані">Змішані</option>
+                        <option value="Село">Села</option>
+                    </select>
+                </div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="number">Номер території</th>
+                            <th data-sort="type">Тип території</th>
+                            <th>Дія</th>
+                        </tr>
+                    </thead>
+                    <tbody id="no-records-table"></tbody>
+                </table>
+            </div>
+
+            <div class="report-section">
+                <div class="summary-block">
+                    <p class="text-gray-700">Опрацьованих територій: <span id="processed-count">0</span></p>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Опрацьовані території</h2>
+                <div class="flex items-center mb-4 space-x-4">
+                    <label for="days-input" class="text-sm text-gray-700">Мінімальна кількість днів з опрацювання:</label>
+                    <input type="number" id="days-input" class="input-days" min="0" value="0">
+                    <select id="processed-type-filter" class="filter-select">
+                        <option value="">Усі типи</option>
+                        <option value="Приватний сектор">Приватний сектор</option>
+                        <option value="Поверхівки">Поверхівки</option>
+                        <option value="Змішані">Змішані</option>
+                        <option value="Село">Села</option>
+                    </select>
+                    <button id="processed-search-btn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Пошук</button>
+                </div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="number">Номер території</th>
+                            <th data-sort="type">Тип території</th>
+                            <th data-sort="date">Дата опрацювання</th>
+                            <th data-sort="days" class="sort-desc">Днів з опрацювання ↓</th>
+                            <th>Дія</th>
+                        </tr>
+                    </thead>
+                    <tbody id="processed-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ТАБ: АНАЛІЗ ТЕРИТОРІЙ -->
+        <div id="tab-analysis" class="tab-content hidden">
+            <h1>📈 Аналіз Територій</h1>
+            <div class="content-placeholder">
+                📊 Розділ буде заповнено згодом...
+            </div>
+        </div>
+
+        <!-- ТАБ: ТЕРИТОРІЯ НА РУКАХ -->
+        <div id="tab-on-hands" class="tab-content hidden">
+            <h1>👐 Території на Руках</h1>
+            
+            <div class="report-section">
+                <h3 class="text-lg font-semibold mb-4">Фільтр звіту</h3>
+                <div class="flex items-center mb-4 space-x-4">
+                    <div>
+                        <label class="text-sm text-gray-700">Території на руках більше (днів):</label>
+                        <input id="on-hands-days-threshold" type="number" min="0" placeholder="0" 
+                               class="input-days">
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-700">Фільтр за Вісником:</label>
+                        <input id="on-hands-publisher-filter" type="text" placeholder="Ім'я вісника" 
+                               class="filter-select" style="width: 150px;">
+                    </div>
+                    <button id="generate-on-hands-report" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Пошук
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button id="sort-on-hands-publisher" class="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600">
+                        Сортувати за Вісником (А-Я)
+                    </button>
+                    <button id="sort-on-hands-number" class="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600">
+                        Сортувати за Номером
+                    </button>
+                    <button id="sort-on-hands-days" class="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600">
+                        Сортувати за Днями
+                    </button>
+                </div>
+            </div>
+
+            <div id="on-hands-progress-container" class="progress-container">
+                <div class="mb-2">
+                    <div id="on-hands-progress-bar">
+                        <div id="on-hands-progress-fill"></div>
+                    </div>
+                </div>
+                <div id="on-hands-progress-text">Прогрес: 0%</div>
+            </div>
+
+            <div id="on-hands-summary" class="summary-block">
+                <p class="text-gray-700">Загальна кількість територій на руках: <span id="on-hands-count">0</span></p>
+            </div>
+            
+            <div id="on-hands-report" class="report-section">
+                <p class="text-gray-600">Очікування пошуку...</p>
+            </div>
+        </div>
+
+        <!-- ТАБ: ЕКСПОРТ ТА ІМПОРТ -->
+        <div id="tab-export-import" class="tab-content hidden">
+            <h1>💾 Експорт та Імпорт</h1>
+            <div class="content-placeholder">
+                💾 Розділ буде заповнено згодом...
+            </div>
+        </div>
+
+        <!-- ТАБ: ДОДАТКОВІ НАЛАШТУВАННЯ -->
+        <div id="tab-settings" class="tab-content hidden">
+            <div class="tab-header">
+                <h1>⚙️ Додаткові Налаштування</h1>
+            </div>
+
+            <div class="card">
+                <h3>📅 Управління Кампаніями</h3>
+                
+                <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="margin-top: 0;">Додати нову кампанію</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 15px; align-items: end;">
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; color: #666; margin-bottom: 5px;"><strong>Назва кампанії</strong></label>
+                            <input type="text" id="campaignName" placeholder="Наприклад: Весна 2026" 
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; color: #666; margin-bottom: 5px;"><strong>Дата початку</strong></label>
+                            <input type="date" id="campaignStart" 
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; font-size: 0.9rem; color: #666; margin-bottom: 5px;"><strong>Дата закінчення</strong></label>
+                            <input type="date" id="campaignEnd" 
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                        </div>
+                        
+                        <button onclick="addCampaign()" class="btn-add" style="margin: 0; padding: 10px 20px;">
+                            + Додати
+                        </button>
+                    </div>
+                </div>
+
+                <h4>Активні кампанії</h4>
+                <div id="campaignsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from "./js/config.js";
+
+        const userId = localStorage.getItem('userId');
+        const userRole = localStorage.getItem('userRole');
+
+        if (!userId || (userRole !== 'admin' && userRole !== 'super_admin')) {
+            window.location.href = 'profile.html';
+        }
+
+        // Глобальна змінна для фільтру територій
+        let currentTerritoryFilter = 'city';
+
+        // Глобальні змінні для звіту територій на руках
+        let onHandsResults = [];
+        let onHandsPublishers = new Map();
+
+        // Функція оновлення мобільного заголовка
+        function updateMobileTitle(tabName) {
+            const mobileTitle = document.getElementById('mobile-title');
+            const titles = {
+                'territories': '🌍 Території',
+                'processing': '📊 Опрацювання',
+                'analysis': '📈 Аналіз Територій',
+                'on-hands': '👐 Території на Руках',
+                'export-import': '💾 Експорт та Імпорт',
+                'settings': '⚙️ Додаткові Налаштування'
+            };
+            
+            if (mobileTitle && titles[tabName]) {
+                mobileTitle.textContent = titles[tabName];
+            }
+        }
+
+        // Перемикання вкладок
+        window.switchTab = (tabName) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            const activeTab = document.getElementById('tab-' + tabName);
+            if (activeTab) {
+                activeTab.classList.remove('hidden');
+            }
+
+            // Активуємо відповідний пункт меню
+            event.currentTarget.classList.add('active');
+
+            // Оновлюємо мобільний заголовок
+            updateMobileTitle(tabName);
+
+            // Зберігаємо поточний таб в localStorage
+            localStorage.setItem('currentAdminTab', tabName);
+
+            // Закриваємо бокову панель на мобільних
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.sidebar');
+                const overlay = document.querySelector('.sidebar-overlay');
+                if (sidebar && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                    if (overlay) overlay.classList.remove('active');
+                }
+            }
+
+            // Завантажуємо дані для конкретної вкладки
+            if (tabName === 'territories') {
+                loadTerritories();
+            } else if (tabName === 'settings') {
+                loadCampaigns();
+            }
+             else if (tabName === 'processing') {
+                // НЕ ЗАВАНТАЖУЄМО АВТОМАТИЧНО, ЛИШЕ ПО КЛІКУ
+            }
+        };
+
+        // Перемикання фільтру територій
+        window.switchTerritoryFilter = (filter) => {
+            currentTerritoryFilter = filter;
+            
+            // Оновлюємо активний таб
+            document.querySelectorAll('.origin-tabs .origin-tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            // Перезавантажуємо території з новим фільтром
+            loadTerritories();
+        };
+
+        window.logout = () => {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        };
+
+        // Функція перемикання бокової панелі для мобільних
+        window.toggleSidebar = () => {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        };
+
+        // Функція для аналізу територій на руках
+        async function generateOnHandsReport() {
+            const reportContainer = document.getElementById('on-hands-report');
+            const summaryContainer = document.getElementById('on-hands-summary');
+            const progressContainer = document.getElementById('on-hands-progress-container');
+            const progressFill = document.getElementById('on-hands-progress-fill');
+            const progressText = document.getElementById('on-hands-progress-text');
+            const daysThreshold = document.getElementById('on-hands-days-threshold');
+            const publisherFilter = document.getElementById('on-hands-publisher-filter');
+
+            reportContainer.innerHTML = '<p class="text-gray-600">Очікування пошуку...</p>';
+            summaryContainer.innerHTML = "";
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressText.innerText = 'Прогрес: 0%';
+
+            onHandsResults = [];
+            onHandsPublishers.clear();
+
+            try {
+                // Отримуємо всі території з Supabase
+                const { data: territories, error } = await supabase
+                    .from('parcels')
+                    .select('*');
+
+                if (error) throw error;
+
+                console.log('📊 Отримано територій з бази:', territories.length);
+                console.log('🔍 Аналіз структури даних:');
+                console.log('Перші 3 території для діагностики:');
+                territories.slice(0, 3).forEach((t, i) => {
+                    console.log(`${i + 1}.`, {
+                        id: t.id,
+                        name: t.name,
+                        status: t.status,
+                        taken_by: t.taken_by,
+                        taken_by_name: t.taken_by_name,
+                        last_taken: t.last_taken,
+                        last_returned: t.last_returned,
+                        last_processed: t.last_processed
+                    });
+                });
+
+                // Рахуємо території з різними статусами
+                const statusCounts = {};
+                territories.forEach(t => {
+                    statusCounts[t.status] = (statusCounts[t.status] || 0) + 1;
+                });
+                console.log('📈 Розподіл статусів територій:', statusCounts);
+
+                const totalTerritories = territories.length;
+                let processedCount = 0;
+                let takenCount = 0;
+                let skippedCount = 0;
+
+                // Обробляємо кожну територію
+                for (const territory of territories) {
+                    processedCount++;
+                    const progress = Math.round((processedCount / totalTerritories) * 100);
+                    progressFill.style.width = `${progress}%`;
+                    progressText.innerText = `Прогрес: ${progress}%`;
+
+                    // Детальна діагностика для територій зі статусом 'taken'
+                    if (territory.status === 'taken') {
+                        takenCount++;
+                        console.log(`🔍 Територія #${territory.name} (status=taken):`, {
+                            taken_by: territory.taken_by,
+                            taken_by_name: territory.taken_by_name,
+                            last_taken: territory.last_taken,
+                            daysHeld: territory.last_taken ? 
+                                Math.ceil((new Date() - new Date(territory.last_taken)) / (1000 * 60 * 60 * 24)) : 'N/A'
+                        });
+
+                        // Перевіряємо, чи є всі необхідні дані
+                        if (!territory.taken_by) {
+                            console.warn(`⚠️ Територія ${territory.name}: відсутнє поле taken_by`);
+                            skippedCount++;
+                            continue;
+                        }
+
+                        const daysHeld = territory.last_taken ? 
+                            Math.ceil((new Date() - new Date(territory.last_taken)) / (1000 * 60 * 60 * 24)) : 0;
+                        
+                        const publisherName = territory.taken_by_name || 'Невідомо';
+                        const threshold = parseInt(daysThreshold.value) || 0;
+                        
+                        console.log(`✅ Територія ${territory.name}: ${publisherName}, ${daysHeld} днів`);
+                        
+                        if (daysHeld >= threshold && 
+                            (!publisherFilter.value || publisherName.toLowerCase().includes(publisherFilter.value.toLowerCase()))) {
+                            
+                            onHandsResults.push({
+                                publisher: publisherName,
+                                number: territory.name,
+                                dateTaken: territory.last_taken,
+                                daysHeld: daysHeld,
+                                id: territory.id
+                            });
+                            
+                            onHandsPublishers.set(publisherName, (onHandsPublishers.get(publisherName) || 0) + 1);
+                        }
+                    }
+
+                    // Невелика затримка для візуалізації прогресу
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+
+                console.log(`📊 Результати аналізу:`);
+                console.log(`- Всього територій: ${totalTerritories}`);
+                console.log(`- Зі статусом 'taken': ${takenCount}`);
+                console.log(`- Пропущено (без taken_by): ${skippedCount}`);
+                console.log(`- В результаті після фільтрації: ${onHandsResults.length}`);
+                console.log(`- Унікальні вісники:`, Array.from(onHandsPublishers.keys()));
+
+                // Сортуємо за кількістю територій у вісника
+                sortOnHandsByPublisher();
+                progressContainer.style.display = 'none';
+
+            } catch (err) {
+                console.error('Помилка в generateOnHandsReport:', err);
+                alert('Виникла помилка під час завантаження даних. Спробуйте ще раз.');
+                progressContainer.style.display = 'none';
+            }
+        }
+
+        // Функція для рендерингу звіту
+        function renderOnHandsReport() {
+            const reportContainer = document.getElementById('on-hands-report');
+            const summaryContainer = document.getElementById('on-hands-summary');
+            const countElement = document.getElementById('on-hands-count');
+            
+            reportContainer.innerHTML = "";
+            summaryContainer.innerHTML = `<p class="text-gray-700">Загальна кількість територій на руках: <span id="on-hands-count">${onHandsResults.length}</span></p>`;
+
+            if (onHandsResults.length === 0) {
+                reportContainer.innerHTML = '<p class="text-gray-600 text-center">Немає територій на руках.</p>';
+                return;
+            }
+
+            // Створюємо красиві картки для результатів
+            const fragment = document.createDocumentFragment();
+            onHandsResults.forEach((result, index) => {
+                const entry = document.createElement("div");
+                entry.className = "on-hands-card";
+                
+                // Визначаємо клас для бейджа днів
+                let daysClass = 'days-low';
+                if (result.daysHeld > 30) daysClass = 'days-high';
+                else if (result.daysHeld > 14) daysClass = 'days-medium';
+                
+                entry.innerHTML = `
+                    <div class="card-header">
+                        <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">📍 Територія ${result.number}</h3>
+                        <span class="card-number">#${index + 1}</span>
+                    </div>
+                    <div class="card-info">
+                        <div class="info-item">
+                            <span class="info-label">👤 Вісник</span>
+                            <span class="info-value">${result.publisher}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">📅 Дата отримання</span>
+                            <span class="info-value">${result.dateTaken ? new Date(result.dateTaken).toLocaleDateString('uk-UA') : '-'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">⏱️ Днів на руках</span>
+                            <span class="info-value">
+                                <span class="days-badge ${daysClass}">${result.daysHeld} днів</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <a href="parcel-details.html?id=${result.id}&from=admin" class="btn-details">
+                            🔍 Переглянути деталі
+                        </a>
+                    </div>
+                `;
+                fragment.appendChild(entry);
+            });
+            reportContainer.appendChild(fragment);
+        }
+
+        // Функції сортування
+        function sortOnHandsByPublisher() {
+            onHandsResults.sort((a, b) => {
+                const countA = onHandsPublishers.get(a.publisher) || 0;
+                const countB = onHandsPublishers.get(b.publisher) || 0;
+                return countB !== countA ? countB - countA : a.publisher.localeCompare(b.publisher, "uk");
+            });
+            renderOnHandsReport();
+        }
+
+        function sortOnHandsResults(key, order) {
+            onHandsResults.sort((a, b) => {
+                if (key === "publisher") return order * a.publisher.localeCompare(b.publisher, "uk");
+                if (key === "number") return order * (parseInt(a.number.replace(/\D/g, '')) || 0 - (parseInt(b.number.replace(/\D/g, '')) || 0));
+                if (key === "daysHeld") return order * (a.daysHeld - b.daysHeld);
+                return 0;
+            });
+            renderOnHandsReport();
+        }
+
+        // Глобальний кеш територій
+        let cachedTerritories = [];
+
+        // Функція завантаження територій
+        async function loadTerritories() {
+            // Якщо кеш порожній, завантажуємо з бази
+            if (cachedTerritories.length === 0) {
+                const { data: territories, error } = await supabase
+                    .from('parcels')
+                    .select('*');
+
+                if (error) {
+                    console.error("Помилка завантаження:", error);
+                    return;
+                }
+
+                // Сортуємо за числовим значенням у назві
+                territories.sort((a, b) => {
+                    const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+                    const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+                    return numA - numB;
+                });
+
+                cachedTerritories = territories;
+            }
+
+            renderTerritories(cachedTerritories);
+        }
+
+        // Функція рендеринга територій
+        function renderTerritories(territories) {
+            const container = document.getElementById('territoriesList');
+            if (!container) return;
+
+            // Фільтруємо території за категорією
+            let filteredTerritories = territories;
+            if (currentTerritoryFilter === 'city') {
+                filteredTerritories = territories.filter(t => t.category !== 'Село');
+            } else if (currentTerritoryFilter === 'village') {
+                filteredTerritories = territories.filter(t => t.category === 'Село');
+                // Для сіл - сортуємо алфавітно
+                filteredTerritories.sort((a, b) => {
+                    return a.name.localeCompare(b.name, 'uk');
+                });
+            }
+
+            if (!filteredTerritories || filteredTerritories.length === 0) {
+                container.innerHTML = '<p style="color:gray;">Немає територій.</p>';
+                return;
+            }
+
+            container.innerHTML = filteredTerritories.map(t => {
+                const status = t.status === 'taken' ? '✓ Видана' : '○ Вільна';
+                const statusColor = t.status === 'taken' ? '#28a745' : '#6c757d';
+                const publisher = t.taken_by || '—';
+                const daysHeld = t.status === 'taken' 
+                    ? Math.floor((new Date() - new Date(t.taken_at)) / (1000 * 60 * 60 * 24))
+                    : '—';
+
+                return `
+                    <div class="territory-card" onclick="window.location.href='parcel-details.html?id=${t.id}&from=admin'">
+                        <h3>Дільниця № ${t.name}</h3>
+                        <div class="territory-card-info">
+                            <div>
+                                <p><strong>Категорія:</strong> ${t.category || 'Не вказано'}</p>
+                                <p><strong>У вісника:</strong> ${publisher}</p>
+                                ${daysHeld !== '—' ? `<p><strong>Днів на руках:</strong> ${daysHeld}</p>` : ''}
+                            </div>
+                            <div>
+                                <span class="territory-badge" style="background: ${statusColor};">${status}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Модальне вікно для додавання території
+        window.openAddTerritoryModal = () => {
+            alert('Функція буде реалізована пізніше');
+        };
+
+        // === УПРАВЛІННЯ КАМПАНІЯМИ ===
+
+        // Функція завантаження кампаній
+        async function loadCampaigns() {
+            const { data: campaigns, error } = await supabase
+                .from('campaigns')
+                .select('*')
+                .order('date_start', { ascending: true });
+
+            if (error) {
+                console.error("Помилка завантаження кампаній:", error);
+                return;
+            }
+
+            renderCampaigns(campaigns || []);
+        }
+
+        // Функція рендеринга кампаній
+        function renderCampaigns(campaigns) {
+            const container = document.getElementById('campaignsList');
+            if (!container) return;
+
+            if (!campaigns || campaigns.length === 0) {
+                container.innerHTML = '<div class="no-campaigns">📭 Кампанії не створені</div>';
+                return;
+            }
+
+            container.innerHTML = campaigns.map(c => {
+                const startDate = new Date(c.date_start).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const endDate = new Date(c.date_end).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                
+                return `
+                    <div class="campaign-card">
+                        <div class="campaign-info">
+                            <h4>📅 ${c.name}</h4>
+                            <div class="campaign-dates">
+                                <strong>Період:</strong> ${startDate} — ${endDate}
+                            </div>
+                        </div>
+                        <button onclick="deleteCampaign('${c.id}')" class="btn-delete">🗑️ Видалити</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Функція додавання кампанії
+        window.addCampaign = async () => {
+            const name = document.getElementById('campaignName').value.trim();
+            const dateStart = document.getElementById('campaignStart').value;
+            const dateEnd = document.getElementById('campaignEnd').value;
+
+            if (!name) {
+                alert('⚠️ Введіть назву кампанії');
+                return;
+            }
+
+            if (!dateStart || !dateEnd) {
+                alert('⚠️ Виберіть обидві дати');
+                return;
+            }
+
+            if (new Date(dateStart) > new Date(dateEnd)) {
+                alert('⚠️ Дата початку не може бути пізніше дати закінчення');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('campaigns')
+                .insert([{
+                    name: name,
+                    date_start: dateStart,
+                    date_end: dateEnd
+                }]);
+
+            if (!error) {
+                // Очищуємо форму
+                document.getElementById('campaignName').value = '';
+                document.getElementById('campaignStart').value = '';
+                document.getElementById('campaignEnd').value = '';
+
+                // Перезавантажуємо список
+                await loadCampaigns();
+                alert('✅ Кампанія додана успішно!');
+            } else {
+                alert('❌ Помилка при додаванні: ' + error.message);
+            }
+        };
+
+        // Функція видалення кампанії
+        window.deleteCampaign = async (campaignId) => {
+            if (!confirm('Ви впевнені, що хочете видалити цю кампанію?')) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from('campaigns')
+                .delete()
+                .eq('id', campaignId);
+
+            if (!error) {
+                await loadCampaigns();
+                alert('✅ Кампанія видалена!');
+            } else {
+                alert('❌ Помилка при видаленні: ' + error.message);
+            }
+        };
+
+        // Ховаємо лоадер
+        function hideLoader() {
+            const loader = document.getElementById('main-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 300);
+            }
+        }
+
+        // === ЛОГІКА ЗВІТУ З report1.html АДАПТОВАНА ПІД SUPABASE ===
+        const noRecordsTable = document.getElementById('no-records-table');
+        const processedTable = document.getElementById('processed-table');
+        const noRecordsSearchBtn = document.getElementById('no-records-search-btn');
+        const processedSearchBtn = document.getElementById('processed-search-btn');
+        const daysInput = document.getElementById('days-input');
+        const noRecordsTypeFilter = document.getElementById('no-records-type-filter');
+        const processedTypeFilter = document.getElementById('processed-type-filter');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const noRecordsCount = document.getElementById('no-records-count');
+        const processedCount = document.getElementById('processed-count');
+
+        let noRecordsData = [];
+        let processedData = [];
+        let sortConfig = { table: null, column: null, direction: 'asc' }; // Для сортування
+
+        const today = new Date(); // Перевизначено тут для звіту
+
+        function updateProgress(percentage) {
+            if (percentage < 100) {
+                progressContainer.style.display = 'block';
+                progressFill.style.width = `${percentage}%`;
+                progressText.textContent = `${Math.round(percentage)}%`;
+            } else {
+                progressContainer.style.display = 'none';
+            }
+        }
+
+        // Debounce function (як було в report1.html)
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Завантаження територій без записів
+        async function fetchNoRecords(typeFilter = '') {
+            try {
+                updateProgress(0);
+                noRecordsTable.innerHTML = '';
+                noRecordsData = [];
+
+                // Запит до Supabase: вибираємо всі дільниці, які ніколи не опрацьовувались
+                let queryBuilder = supabase.from('parcels').select('id, name, category, last_returned');
+                
+                // Фільтр за типом категорії
+                if (typeFilter) {
+                    queryBuilder = queryBuilder.eq('category', typeFilter);
+                }
+                
+                queryBuilder = queryBuilder.is('last_returned', null);
+                
+                const { data: parcels, error } = await queryBuilder;
+
+                if (error) throw error;
+
+                noRecordsData = parcels.map(p => ({ number: p.name, type: p.category, id: p.id }));
+                
+                noRecordsData = sortData('no-records-table', 'number', noRecordsData, true);
+                renderNoRecordsTable();
+                noRecordsCount.textContent = noRecordsData.length;
+
+            } catch (err) {
+                console.error('Помилка в fetchNoRecords:', err);
+                alert('Виникла помилка під час завантаження даних. Спробуйте ще раз.');
+            } finally {
+                updateProgress(100);
+            }
+        }
+
+        function renderNoRecordsTable() {
+            noRecordsTable.innerHTML = '';
+            if (noRecordsData.length === 0) {
+                noRecordsTable.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500">Записів не знайдено.</td></tr>';
+                return;
+            }
+            noRecordsData.forEach(({ number, type, id }) => {
+                noRecordsTable.innerHTML += `
+                    <tr>
+                        <td>${number}</td>
+                        <td>${type || 'Не вказано'}</td>
+                        <td><a href="parcel-details.html?id=${id}&from=admin" class="text-blue-600 hover:underline">Відкрити</a></td>
+                    </tr>`;
+            });
+        }
+
+        // Завантаження опрацьованих територій
+        async function fetchProcessed(daysFilter = 0, typeFilter = '') {
+            try {
+                updateProgress(0);
+                processedTable.innerHTML = '';
+                processedData = [];
+
+                // Запит до Supabase: вибираємо дільниці, які опрацьовувались
+                let queryBuilder = supabase.from('parcels').select('id, name, category, last_returned');
+                
+                // Фільтр за типом категорії
+                if (typeFilter) {
+                    queryBuilder = queryBuilder.eq('category', typeFilter);
+                }
+
+                queryBuilder = queryBuilder.not('last_returned', 'is', null); // Тільки ті, що мають дату опрацювання
+                
+                const { data: parcels, error } = await queryBuilder;
+
+                if (error) throw error;
+
+                parcels.forEach(p => {
+                    // Обробляємо тільки ті, що мають дату опрацювання (last_returned)
+                    if (p.last_returned) {
+                        const processDate = new Date(p.last_returned);
+                        const daysSinceProcessed = Math.floor((today - processDate) / (1000 * 60 * 60 * 24));
+                        if (daysSinceProcessed >= daysFilter) {
+                            processedData.push({ 
+                                number: p.name, 
+                                type: p.category, 
+                                processDate, 
+                                daysSinceProcessed, 
+                                id: p.id 
+                            });
+                        }
+                    }
+                });
+
+                // Сортування за замовчуванням від більшого до меншого
+                sortConfig = { table: 'processed-table', column: 'days', direction: 'desc' };
+                processedData = sortData('processed-table', 'days', processedData, true);
+                
+                // Встановлюємо правильну іконку сортування для стовпця "Днів з опрацювання"
+                const processedHeaders = document.querySelectorAll('#processed-table th');
+                processedHeaders.forEach(header => {
+                    header.classList.remove('sort-asc', 'sort-desc');
+                    if (header.dataset.sort === 'days') {
+                        header.classList.add('sort-desc');
+                    }
+                });
+                renderProcessedTable();
+                processedCount.textContent = processedData.length;
+
+            } catch (err) {
+                console.error('Помилка в fetchProcessed:', err);
+                alert('Виникла помилка під час завантаження даних. Спробуйте ще раз.');
+            } finally {
+                updateProgress(100);
+            }
+        }
+
+        function renderProcessedTable() {
+            processedTable.innerHTML = '';
+            if (processedData.length === 0) {
+                processedTable.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500">Записів не знайдено.</td></tr>';
+                return;
+            }
+            processedData.forEach(({ number, type, processDate, daysSinceProcessed, id }) => {
+                processedTable.innerHTML += `
+                    <tr>
+                        <td>${number}</td>
+                        <td>${type || 'Не вказано'}</td>
+                        <td>${processDate.toLocaleDateString('uk-UA')}</td>
+                        <td>${daysSinceProcessed}</td>
+                        <td><a href="parcel-details.html?id=${id}&from=admin" class="text-blue-600 hover:underline">Відкрити</a></td>
+                    </tr>`;
+            });
+        }
+
+        function sortData(tableId, column, data, preserveDirection = false) {
+            // Оновлюємо конфігурацію сортування
+            let newDirection;
+            if (preserveDirection && sortConfig.table === tableId && sortConfig.column === column) {
+                // Якщо preserveDirection=true, використовуємо поточний напрямок (для першого сортування)
+                newDirection = sortConfig.direction;
+            } else if (sortConfig.table === tableId && sortConfig.column === column) {
+                // Якщо клікаємо на той самий стовпець - перемикаємо напрямок
+                newDirection = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                // Якщо це новий стовпець - використовуємо 'asc' за замовчуванням
+                newDirection = 'asc';
+            }
+            sortConfig = { table: tableId, column, direction: newDirection };
+
+            // Оновлюємо іконки сортування в заголовках таблиці
+            const headers = document.querySelectorAll(`#${tableId} th`);
+            headers.forEach(header => {
+                header.classList.remove('sort-asc', 'sort-desc');
+                if (header.dataset.sort === column) {
+                    header.classList.add(`sort-${newDirection}`);
+                }
+            });
+
+            // Сортування даних
+            const sortedData = [...data].sort((a, b) => {
+                let valA, valB;
+                if (column === 'number') {
+                    // Для назв територій "Берестівка" або "15", сортуємо правильно
+                    valA = a.number;
+                    valB = b.number;
+                    // Спрощена логіка для змішаних чисел/тексту
+                    const numA = parseInt(valA.replace(/\D/g, '')) || 0;
+                    const numB = parseInt(valB.replace(/\D/g, '')) || 0;
+                    if (numA !== numB) return newDirection === 'asc' ? numA - numB : numB - numA;
+                    return newDirection === 'asc' ? valA.localeCompare(valB, 'uk') : valB.localeCompare(valA, 'uk');
+                } else if (column === 'type') {
+                    valA = a.type || '';
+                    valB = b.type || '';
+                } else if (column === 'date') {
+                    valA = a.processDate ? a.processDate.getTime() : 0;
+                    valB = b.processDate ? b.processDate.getTime() : 0;
+                } else if (column === 'days') {
+                    valA = a.daysSinceProcessed;
+                    valB = b.daysSinceProcessed;
+                }
+                
+                if (valA < valB) return newDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return newDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            return sortedData;
+        }
+
+        function addTableSorting() {
+            const tables = ['no-records-table', 'processed-table'];
+            tables.forEach(tableId => {
+                const headers = document.querySelectorAll(`#${tableId} th[data-sort]`);
+                headers.forEach(header => {
+                    header.addEventListener('click', () => {
+                        const column = header.dataset.sort;
+                        if (tableId === 'no-records-table') {
+                            noRecordsData = sortData(tableId, column, noRecordsData);
+                            renderNoRecordsTable();
+                        } else {
+                            processedData = sortData(tableId, column, processedData);
+                            renderProcessedTable();
+                        }
+                    });
+                });
+            });
+        }
+
+        // Обробники подій
+        noRecordsSearchBtn.addEventListener('click', () => fetchNoRecords(noRecordsTypeFilter.value));
+        processedSearchBtn.addEventListener('click', () => {
+            const days = parseInt(daysInput.value) || 0;
+            if (days >= 0) {
+                fetchProcessed(days, processedTypeFilter.value);
+            } else {
+                alert('Введіть невід\'ємне число днів.');
+            }
+        });
+
+        // Обробники подій для звіту територій на руках
+        document.getElementById('generate-on-hands-report').addEventListener('click', generateOnHandsReport);
+        document.getElementById('sort-on-hands-publisher').addEventListener('click', () => sortOnHandsResults('publisher', 1));
+        document.getElementById('sort-on-hands-number').addEventListener('click', () => sortOnHandsResults('number', 1));
+        document.getElementById('sort-on-hands-days').addEventListener('click', () => sortOnHandsResults('daysHeld', -1));
+
+        // Debounce для фільтрів, щоб уникнути частих запитів при зміні
+        noRecordsTypeFilter.addEventListener('change', debounce(() => fetchNoRecords(noRecordsTypeFilter.value), 300));
+        processedTypeFilter.addEventListener('change', debounce(() => fetchProcessed(parseInt(daysInput.value) || 0, processedTypeFilter.value), 300));
+        daysInput.addEventListener('input', debounce(() => fetchProcessed(parseInt(daysInput.value) || 0, processedTypeFilter.value), 500));
+
+
+        // Ініціалізація
+        async function init() {
+            hideLoader();
+            
+            // Відновлюємо попередній таб з localStorage
+            const savedTab = localStorage.getItem('currentAdminTab');
+            if (savedTab) {
+                // Активуємо збережений таб
+                const tabElement = document.getElementById('tab-' + savedTab);
+                if (tabElement) {
+                    // Ховаємо всі таби
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    
+                    // Показуємо збережений таб
+                    tabElement.classList.remove('hidden');
+                    
+                    // Активуємо відповідний пункт меню
+                    const navItems = document.querySelectorAll('.nav-item');
+                    navItems.forEach(item => {
+                        if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(`'${savedTab}'`)) {
+                            item.classList.add('active');
+                        }
+                    });
+                    
+                    // Оновлюємо мобільний заголовок для збереженого табу
+                    updateMobileTitle(savedTab);
+                    
+                    // Завантажуємо дані для конкретної вкладки
+                    if (savedTab === 'territories') {
+                        await loadTerritories();
+                    } else if (savedTab === 'settings') {
+                        await loadCampaigns();
+                    }
+                }
+            } else {
+                // Якщо збереженого табу немає, завантажуємо території за замовчуванням
+                await loadTerritories();
+                // Оновлюємо мобільний заголовок для табу за замовчуванням
+                updateMobileTitle('territories');
+            }
+            
+            addTableSorting(); // Додаємо сортування після завантаження
+            // При першому відкритті вкладки "Опрацювання" дані НЕ ЗАВАНТАЖУЮТЬСЯ
+            // Користувач має натиснути кнопки "Пошук"
+        }
+
+        init();
+    </script>
+
+</body>
+
+</html>

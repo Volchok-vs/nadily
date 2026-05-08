@@ -155,7 +155,6 @@ async function createTerritoryLog(supabase, parcelId, publisherId, publisherName
     const durationText = calculateDuration(takenAt, returnedAt);
     
     // Перевіряємо чи вже є такий запис (дублікат)
-    console.log('🔍 Перевіряємо на дублікати...');
     const { data: existingLogs, error: checkError } = await supabase
         .from('territory_logs')
         .select('id')
@@ -165,6 +164,7 @@ async function createTerritoryLog(supabase, parcelId, publisherId, publisherName
     
     if (checkError) {
         console.error('❌ Помилка перевірки дублікатів:', checkError);
+        return false;
     } else if (existingLogs && existingLogs.length > 0) {
         console.log('⚠️ Дублікат виявлено! Запис з такою датою здачі вже існує.');
         return true; // Повертаємо true щоб не переривати процес здачі
@@ -186,7 +186,7 @@ async function createTerritoryLog(supabase, parcelId, publisherId, publisherName
         .insert(logData);
     
     if (error) {
-        console.error('Помилка створення запису в логах:', error);
+        console.error('❌ Помилка створення запису в логах:', error);
         return false;
     }
     

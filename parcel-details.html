@@ -673,8 +673,11 @@
             await loadHistory();
             await loadComments();
             
-            // Вмикаємо Realtime синхронізацію
-            setupRealtimeSync();
+            // Вмикаємо Realtime синхронізацію з невеликою затримкою
+            console.log('🔄 Запускаємо Realtime синхронізацію...');
+            setTimeout(() => {
+                setupRealtimeSync();
+            }, 500);
 
             document.addEventListener('change', (e) => {
                 if (e.target.id === 'editSectorCheck') {

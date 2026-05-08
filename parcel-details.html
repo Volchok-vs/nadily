@@ -578,6 +578,11 @@
             
             console.log('🔄 Налаштування Realtime синхронізації для території', parcelId);
             
+            // Перевіряємо чи Realtime ввімкнено
+            console.log('📡 Перевіряємо доступність Realtime...');
+            console.log('   - Supabase client:', !!supabase);
+            console.log('   - Realtime URL:', supabase?.realtime?.url);
+            
             realtimeSubscription = supabase
                 .channel(`parcel_${parcelId}_logs`)
                 .on('postgres_changes', 
@@ -620,11 +625,18 @@
                         }
                     }
                 )
-                .subscribe((status) => {
+                .subscribe((status, err) => {
+                    console.log('📡 Статус Realtime підписки:', status);
+                    if (err) {
+                        console.error('❌ Помилка Realtime підписки:', err);
+                    }
                     if (status === 'SUBSCRIBED') {
                         console.log('✅ Realtime підписку успішно встановлено');
+                        console.log('📡 Слухаємо зміни в territory_logs для parcel_id:', parcelId);
                     } else if (status === 'CLOSED') {
                         console.log('❌ Realtime підписку закрито');
+                    } else if (status === 'CHANNEL_ERROR') {
+                        console.error('❌ Помилка каналу Realtime - можливо потрібно ввімкнути Realtime в налаштуваннях Supabase');
                     }
                 });
         }

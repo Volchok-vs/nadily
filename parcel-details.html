@@ -570,6 +570,72 @@
         let map = null;
         let editingCommentId = null;
         let allComments = [];
+        let realtimeSubscription = null;
+
+        // Realtime синхронізація для історії опрацювання
+        function setupRealtimeSync() {
+            if (!parcelId) return;
+            
+            console.log('🔄 Налаштування Realtime синхронізації для території', parcelId);
+            
+            realtimeSubscription = supabase
+                .channel(`parcel_${parcelId}_logs`)
+                .on('postgres_changes', 
+                    { 
+                        event: 'INSERT', 
+                        schema: 'public', 
+                        table: 'territory_logs',
+                        filter: `parcel_id=eq.${parcelId}` 
+                    }, 
+                    (payload) => {
+                        console.log('📡 Отримано Realtime оновлення (INSERT):', payload);
+                        
+                        // Перевіряємо чи це стосується поточної території
+                        if (payload.new && payload.new.parcel_id === parcelId) {
+                            console.log('🔄 Автоматичне оновлення історії (новий запис)...');
+                            // Невелика затримка щоб уникнути конфліктів з основною логікою
+                            setTimeout(() => {
+                                loadHistory();
+                            }, 100);
+                        }
+                    }
+                )
+                .on('postgres_changes', 
+                    { 
+                        event: 'DELETE', 
+                        schema: 'public', 
+                        table: 'territory_logs',
+                        filter: `parcel_id=eq.${parcelId}` 
+                    }, 
+                    (payload) => {
+                        console.log('📡 Отримано Realtime оновлення (DELETE):', payload);
+                        
+                        // Перевіряємо чи це стосується поточної території
+                        if (payload.old && payload.old.parcel_id === parcelId) {
+                            console.log('🔄 Автоматичне оновлення історії (видалення запису)...');
+                            // Невелика затримка щоб уникнути конфліктів з основною логікою
+                            setTimeout(() => {
+                                loadHistory();
+                            }, 100);
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('✅ Realtime підписку успішно встановлено');
+                    } else if (status === 'CLOSED') {
+                        console.log('❌ Realtime підписку закрито');
+                    }
+                });
+        }
+
+        function cleanupRealtime() {
+            if (realtimeSubscription) {
+                realtimeSubscription.unsubscribe();
+                realtimeSubscription = null;
+                console.log('🧹 Realtime підписку очищено');
+            }
+        }
 
         async function init() {
             if (!parcelId) return (window.location.href = 'index.html');
@@ -594,6 +660,9 @@
             await loadParcelInfo();
             await loadHistory();
             await loadComments();
+            
+            // Вмикаємо Realtime синхронізацію
+            setupRealtimeSync();
 
             document.addEventListener('change', (e) => {
                 if (e.target.id === 'editSectorCheck') {
@@ -1252,6 +1321,11 @@
         }
 
         document.getElementById('backBtn').onclick = () => window.history.back();
+
+        // Очищення Realtime при закритті сторінки
+        window.addEventListener('beforeunload', () => {
+            cleanupRealtime();
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
             const dateIn = document.getElementById('manualDateIn');

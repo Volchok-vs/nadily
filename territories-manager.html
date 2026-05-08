@@ -1702,6 +1702,27 @@
                     </div>
                 </div>
 
+                <!-- 🧪 Тестова кампанія (для розробників) -->
+                <div class="campaign-card" id="test-campaign-card" style="display: none; border: 2px dashed #ff9800;">
+                    <div class="campaign-header">
+                        <h4>🧪 Тестова кампанія</h4>
+                        <div class="campaign-header-actions">
+                            <span class="campaign-status" id="test-campaign-status">Не створено</span>
+                        </div>
+                    </div>
+                    <div class="campaign-info" id="test-campaign-info">
+                        <div id="test-campaign-dates"></div>
+                        <div id="test-campaign-period"></div>
+                        <div class="campaign-controls" id="test-campaign-controls" style="display: none;">
+                            <button class="btn-edit" onclick="editTestCampaign()" title="Редагувати">✏️</button>
+                            <button class="btn-delete" onclick="deleteTestCampaign()" title="Видалити" style="background: #dc3545; color: white;">🗑️</button>
+                        </div>
+                        <div class="campaign-controls" id="test-campaign-create-controls">
+                            <button class="btn-activate" onclick="createTestCampaign()">Створити тестову</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Таблиця історії кампаній -->
                 <div id="campaign-history-container" style="margin-top: 30px;">
                     <div class="campaign-history-header" onclick="toggleCampaignHistory()">
@@ -1821,6 +1842,7 @@
     <script type="module">
         import { supabase } from "./js/config.js";
 
+        
         const userId = localStorage.getItem('userId');
         const userRole = localStorage.getItem('userRole');
 
@@ -2147,6 +2169,14 @@
 
                 // Завантажуємо збережені кастомні кампанії
                 loadCustomCampaigns();
+
+                // 🧪 Ініціалізація тестової кампанії
+                initializeTestCampaign();
+                
+                // Якщо тестова кампанія показана, завантажуємо її дані
+                if (localStorage.getItem('showTestCampaign') === 'true') {
+                    await loadTestCampaignData();
+                }
             } catch (error) {
                 console.error('Помилка ініціалізації кампаній:', error);
             }
@@ -2470,6 +2500,209 @@
                 showCreateCampaignModal(campaignName);
                 return; // Виходимо, бо модальне вікно відкривається
             }
+        }
+
+        // 🧪 Функція завантаження тестової кампанії
+        async function loadTestCampaignData() {
+            try {
+                const { data: campaigns, error } = await supabase
+                    .from('campaigns')
+                    .select('*')
+                    .eq('name', 'Тестова кампанія')
+                    .order('campaign_start', { ascending: false })
+                    .limit(1);
+
+                if (error) {
+                    console.error('Помилка завантаження тестової кампанії:', error);
+                    return;
+                }
+
+                const campaign = campaigns && campaigns.length > 0 ? campaigns[0] : null;
+                updateTestCampaignCard(campaign);
+
+            } catch (error) {
+                console.error('Помилка завантаження тестової кампанії:', error);
+            }
+        }
+
+        // 🧪 Функції для тестової кампанії
+        function initializeTestCampaign() {
+            const showTestCampaign = localStorage.getItem('showTestCampaign') === 'true';
+            const testCard = document.getElementById('test-campaign-card');
+            
+            if (testCard) {
+                testCard.style.display = showTestCampaign ? 'block' : 'none';
+                console.log(`🧪 Тестова кампанія: ${showTestCampaign ? 'показана' : 'схована'}`);
+            }
+        }
+
+        window.createTestCampaign = function createTestCampaign() {
+            // Відкриваємо модальне вікно для створення тестової кампанії
+            showTestCampaignModal(null);
+        }
+
+        window.editTestCampaign = async function editTestCampaign() {
+            try {
+                const { data: campaigns } = await supabase
+                    .from('campaigns')
+                    .select('*')
+                    .eq('name', 'Тестова кампанія')
+                    .order('campaign_start', { ascending: false })
+                    .limit(1);
+
+                if (!campaigns || campaigns.length === 0) {
+                    showToast('Тестову кампанію не знайдено', true);
+                    return;
+                }
+
+                const campaign = campaigns[0];
+                showTestCampaignModal(campaign);
+
+            } catch (error) {
+                console.error('❌ Помилка редагування тестової кампанії:', error);
+                showToast('Помилка редагування тестової кампанії', true);
+            }
+        }
+
+        window.deleteTestCampaign = async function deleteTestCampaign() {
+            if (!confirm('Ви впевнені, що хочете видалити тестову кампанію?')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('campaigns')
+                    .delete()
+                    .eq('name', 'Тестова кампанія');
+
+                if (error) throw error;
+
+                console.log('✅ Тестову кампанію видалено');
+                showToast('Тестову кампанію видалено!');
+
+                updateTestCampaignCard(null);
+
+            } catch (error) {
+                console.error('❌ Помилка видалення тестової кампанії:', error);
+                showToast('Помилка видалення тестової кампанії', true);
+            }
+        }
+
+        function showTestCampaignModal(campaignData) {
+            const modal = document.getElementById('campaignModal');
+            const title = document.getElementById('modalTitle');
+            const fields = document.getElementById('modalFields');
+
+            title.textContent = campaignData ? 'Редагування тестової кампанії' : 'Створення тестової кампанії';
+
+            const startDate = campaignData ? formatDate(campaignData.campaign_start) : formatDate(new Date());
+            const endDate = campaignData ? formatDate(campaignData.campaign_end) : formatDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+
+            fields.innerHTML = `
+                <div class="form-group">
+                    <label>Період тестової кампанії:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="date" id="testStartDate" value="${startDate}" min="2024-01-01" max="2030-12-31">
+                        <span>-</span>
+                        <input type="date" id="testEndDate" value="${endDate}" min="${startDate}" max="2030-12-31">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Опис:</label>
+                    <textarea id="testDescription">${campaignData?.description || ''}</textarea>
+                </div>
+            `;
+
+            currentCampaignName = 'Тестова кампанія';
+            currentCampaignData = campaignData;
+            isEditMode = !!campaignData;
+
+            modal.style.display = 'flex';
+
+            // Зв'язуємо дати
+            setTimeout(() => linkDateInputs('testStartDate', 'testEndDate'), 0);
+        }
+
+        function linkDateInputs(startId, endId) {
+            const startInput = document.getElementById(startId);
+            const endInput = document.getElementById(endId);
+
+            if (!startInput || !endInput) return;
+
+            startInput.addEventListener('change', function() {
+                if (this.value) {
+                    endInput.min = this.value;
+                    if (!endInput.value) {
+                        endInput.value = this.value;
+                    }
+                }
+            });
+        }
+
+        function getDurationText(startDate, endDate = null) {
+            if (!startDate) return "";
+            
+            let start = new Date(startDate);
+            let end = endDate ? new Date(endDate) : new Date();
+            
+            // Корекція року для старих даних
+            if (start.getFullYear() < 2000) {
+                start.setFullYear(start.getFullYear() + 100);
+            }
+            if (end.getFullYear() < 2000) {
+                end.setFullYear(end.getFullYear() + 100);
+            }
+            
+            // Перевіряємо чи початкова дата не пізніша за кінцеву
+            if (start > end) {
+                return "Неправильний період";
+            }
+            
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 30) {
+                return `${diffDays} дн.`;
+            } else {
+                const months = Math.floor(diffDays / 30);
+                const days = diffDays % 30;
+                if (days > 0) {
+                    return `${months} міс. ${days} дн.`;
+                } else {
+                    return `${months} міс.`;
+                }
+            }
+        }
+
+        function updateTestCampaignCard(campaignData) {
+            const statusElement = document.getElementById('test-campaign-status');
+            const datesElement = document.getElementById('test-campaign-dates');
+            const periodElement = document.getElementById('test-campaign-period');
+            const controlsElement = document.getElementById('test-campaign-controls');
+            const createControlsElement = document.getElementById('test-campaign-create-controls');
+
+            if (!campaignData) {
+                // Кампанія не існує
+                statusElement.textContent = 'Не створено';
+                datesElement.textContent = '';
+                periodElement.textContent = '';
+                controlsElement.style.display = 'none';
+                createControlsElement.style.display = 'block';
+                return;
+            }
+
+            // Оновлюємо дані картки
+            const status = getCampaignStatus(campaignData);
+            const statusText = status === 'planned' ? 'Планується' :
+                            status === 'active' ? 'Активна' :
+                            status === 'completed' ? 'Завершена' : 'Не створено';
+
+            statusElement.textContent = statusText;
+            datesElement.textContent = `Період: ${formatDate(campaignData.campaign_start)} - ${formatDate(campaignData.campaign_end)}`;
+            periodElement.textContent = getDurationText(campaignData.campaign_start, campaignData.campaign_end);
+
+            controlsElement.style.display = 'flex';
+            createControlsElement.style.display = 'none';
         }
 
         // Функції з simple-browser-script.js для роботи з кампаніями
@@ -2818,6 +3051,27 @@
                         campaign_start: formatDate(campaignStart),
                         campaign_end: formatDate(date)
                     };
+                } else if (currentCampaignName === 'Тестова кампанія') {
+                    const startDate = document.getElementById('testStartDate').value;
+                    const endDate = document.getElementById('testEndDate').value;
+                    const description = document.getElementById('testDescription').value.trim();
+
+                    if (!startDate || !endDate) {
+                        alert('Оберіть початок і кінець періоду кампанії');
+                        return;
+                    }
+
+                    if (new Date(startDate) > new Date(endDate)) {
+                        alert('Дата початку не може бути пізніше за дату кінця');
+                        return;
+                    }
+
+                    campaignData = {
+                        name: 'Тестова кампанія',
+                        description: description || 'Тестова кампанія для перевірки роботи',
+                        campaign_start: formatDate(new Date(startDate)),
+                        campaign_end: formatDate(new Date(endDate))
+                    };
                 }
 
                 let data, error;
@@ -2837,14 +3091,25 @@
                     }
                 } else {
                     // Режим створення - перевірка на дублікати
-                    const { data: existingCampaigns } = await supabase
-                        .from('campaigns')
-                        .select('*')
-                        .eq('name', campaignData.name)
-                        .eq('date_start', campaignData.date_start)
-                        .eq('date_end', campaignData.date_end);
+                    let duplicateCheck;
+                    
+                    if (currentCampaignName === 'Тестова кампанія') {
+                        // Для тестової кампанії перевіряємо тільки назву
+                        duplicateCheck = await supabase
+                            .from('campaigns')
+                            .select('*')
+                            .eq('name', campaignData.name);
+                    } else {
+                        // Для інших кампаній перевіряємо назву і дати
+                        duplicateCheck = await supabase
+                            .from('campaigns')
+                            .select('*')
+                            .eq('name', campaignData.name)
+                            .eq('date_start', campaignData.date_start)
+                            .eq('date_end', campaignData.date_end);
+                    }
 
-                    if (existingCampaigns && existingCampaigns.length > 0) {
+                    if (duplicateCheck.data && duplicateCheck.data.length > 0) {
                         alert('Кампанія з такими даними вже існує!');
                         return;
                     }
@@ -2871,6 +3136,20 @@
 
                 // Оновлюємо відображення
                 await loadCampaignsFromDB();
+                
+                // Оновлюємо тестову кампанію якщо це вона
+                if (currentCampaignName === 'Тестова кампанія') {
+                    // Перезавантажуємо дані тестової кампанії з бази
+                    const { data: testCampaigns } = await supabase
+                        .from('campaigns')
+                        .select('*')
+                        .eq('name', 'Тестова кампанія')
+                        .order('campaign_start', { ascending: false })
+                        .limit(1);
+                    
+                    const campaign = testCampaigns && testCampaigns.length > 0 ? testCampaigns[0] : null;
+                    updateTestCampaignCard(campaign);
+                }
 
             } catch (error) {
                 console.error('❌ Помилка збереження кампанії:', error);
@@ -4237,6 +4516,7 @@
         });
     </script>
 
+    <script src="js/dev-tools.js"></script>
 </body>
 
 </html>

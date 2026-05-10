@@ -158,6 +158,79 @@
             z-index: 1000;
         }
 
+        /* Стилі для кастомного пошуку вісників */
+        .publisher-search-container {
+            position: relative;
+        }
+        
+        .publisher-search-container input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        
+        .publisher-search-container input[type="text"]:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+        }
+        
+        #publisherDropdownBtn {
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        
+        .publisher-search-container:hover #publisherDropdownBtn {
+            opacity: 0.8;
+        }
+        
+        #publisherSearchResults {
+            display: none;
+            position: absolute;
+            top: 38px;
+            left: 0;
+            right: 0;
+            max-height: 260px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .publisher-option {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            transition: background-color 0.15s;
+        }
+        
+        .publisher-option:last-child {
+            border-bottom: none;
+        }
+        
+        .publisher-option:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .publisher-option:active {
+            background-color: #e9ecef;
+        }
+        
+        #selectedPublisherDisplay {
+            margin-top: 6px;
+            font-size: 0.9em;
+            color: #28a745;
+            font-weight: 500;
+        }
+        
         .modal-content {
             background: white;
             padding: 25px;
@@ -537,9 +610,17 @@
         <div class="modal-content">
             <h3>Додати запис (архів)</h3>
             <label>Вісник:</label>
-            <select id="manualPublisherSelect">
-                <option value="">Завантаження вісників...</option>
-            </select>
+            <!-- Кастомний пошук вісників -->
+            <div class="publisher-search-container">
+                <input type="hidden" id="manualPublisherSelect" value="">
+                <div style="position: relative;">
+                    <input type="text" id="publisherSearchInput" 
+                           placeholder="Введіть ім'я або прізвище..." 
+                           autocomplete="off">
+                </div>
+                <div id="publisherSearchResults"></div>
+                <div id="selectedPublisherDisplay"></div>
+            </div>
 
             <div style="display: flex; align-items: center; gap: 8px; margin: 5px 0 15px 0; font-size: 0.9em;">
                 <input type="checkbox" id="noPublisherCheck">
@@ -558,11 +639,15 @@
     </div>
 
     <script src="js/campaign-modal.js"></script>
+    <script src="temp/date-utils.js"></script>
     <script type="module">
         import { supabase } from "./js/config.js";
         import { isAdmin, currentUserId } from "./js/main.js";
         import { formatStatusHTML, getDurationText } from "./js/status-helper.js";
         import { returnParcel } from './js/parcel-logic.js';
+        
+        // Додаємо функцію getCurrentDate для логіки кампаній
+        window.getCurrentDate = () => new Date();
 
         const urlParams = new URLSearchParams(window.location.search);
         const parcelId = urlParams.get('id');
@@ -570,84 +655,6 @@
         let map = null;
         let editingCommentId = null;
         let allComments = [];
-        let realtimeSubscription = null;
-
-        // Realtime синхронізація для історії опрацювання
-        function setupRealtimeSync() {
-            if (!parcelId) return;
-            
-            console.log('🔄 Налаштування Realtime синхронізації для території', parcelId);
-            
-            // Перевіряємо чи Realtime ввімкнено
-            console.log('📡 Перевіряємо доступність Realtime...');
-            console.log('   - Supabase client:', !!supabase);
-            console.log('   - Realtime URL:', supabase?.realtime?.url);
-            
-            realtimeSubscription = supabase
-                .channel(`parcel_${parcelId}_logs`)
-                .on('postgres_changes', 
-                    { 
-                        event: 'INSERT', 
-                        schema: 'public', 
-                        table: 'territory_logs',
-                        filter: `parcel_id=eq.${parcelId}` 
-                    }, 
-                    (payload) => {
-                        console.log('📡 Отримано Realtime оновлення (INSERT):', payload);
-                        
-                        // Перевіряємо чи це стосується поточної території
-                        if (payload.new && payload.new.parcel_id === parcelId) {
-                            console.log('🔄 Автоматичне оновлення історії (новий запис)...');
-                            // Невелика затримка щоб уникнути конфліктів з основною логікою
-                            setTimeout(() => {
-                                loadHistory();
-                            }, 100);
-                        }
-                    }
-                )
-                .on('postgres_changes', 
-                    { 
-                        event: 'DELETE', 
-                        schema: 'public', 
-                        table: 'territory_logs',
-                        filter: `parcel_id=eq.${parcelId}` 
-                    }, 
-                    (payload) => {
-                        console.log('📡 Отримано Realtime оновлення (DELETE):', payload);
-                        
-                        // Перевіряємо чи це стосується поточної території
-                        if (payload.old && payload.old.parcel_id === parcelId) {
-                            console.log('🔄 Автоматичне оновлення історії (видалення запису)...');
-                            // Невелика затримка щоб уникнути конфліктів з основною логікою
-                            setTimeout(() => {
-                                loadHistory();
-                            }, 100);
-                        }
-                    }
-                )
-                .subscribe((status, err) => {
-                    console.log('📡 Статус Realtime підписки:', status);
-                    if (err) {
-                        console.error('❌ Помилка Realtime підписки:', err);
-                    }
-                    if (status === 'SUBSCRIBED') {
-                        console.log('✅ Realtime підписку успішно встановлено');
-                        console.log('📡 Слухаємо зміни в territory_logs для parcel_id:', parcelId);
-                    } else if (status === 'CLOSED') {
-                        console.log('❌ Realtime підписку закрито');
-                    } else if (status === 'CHANNEL_ERROR') {
-                        console.error('❌ Помилка каналу Realtime - можливо потрібно ввімкнути Realtime в налаштуваннях Supabase');
-                    }
-                });
-        }
-
-        function cleanupRealtime() {
-            if (realtimeSubscription) {
-                realtimeSubscription.unsubscribe();
-                realtimeSubscription = null;
-                console.log('🧹 Realtime підписку очищено');
-            }
-        }
 
         async function init() {
             if (!parcelId) return (window.location.href = 'index.html');
@@ -672,12 +679,6 @@
             await loadParcelInfo();
             await loadHistory();
             await loadComments();
-            
-            // Вмикаємо Realtime синхронізацію з невеликою затримкою
-            console.log('🔄 Запускаємо Realtime синхронізацію...');
-            setTimeout(() => {
-                setupRealtimeSync();
-            }, 500);
 
             document.addEventListener('change', (e) => {
                 if (e.target.id === 'editSectorCheck') {
@@ -862,9 +863,17 @@
 
             const pubSelect = document.getElementById('manualPublisherSelect');
             const noPubCheck = document.getElementById('noPublisherCheck');
+            const searchInput = document.getElementById('publisherSearchInput');
 
             let publisherId = pubSelect.value;
-            let publisherName = pubSelect.options[pubSelect.selectedIndex]?.text || "";
+            // Отримуємо ім'я з поля пошуку або з масиву allPublishers
+            let publisherName = searchInput.value.trim();
+            if (!publisherName && publisherId) {
+                const publisher = allPublishers.find(p => p.id == publisherId);
+                if (publisher) {
+                    publisherName = `${publisher.last_name || ''} ${publisher.name || ''}`.trim();
+                }
+            }
             let dIn = document.getElementById('manualDateIn').value;
             let dOut = document.getElementById('manualDateOut').value;
 
@@ -913,16 +922,23 @@
             }
 
             console.log("window.saveManualLog: Перевірка оновлення статусу в parcels...");
-            const { data: currentParcel } = await supabase.from('parcels').select('last_returned').eq('id', parcelId).single();
-            const dbReturnDate = currentParcel?.last_returned ? new Date(currentParcel.last_returned.split('T')[0]) : null;
-            const inputReturnDate = new Date(dOut);
-            let needsReturnUpdate = (!dbReturnDate || inputReturnDate >= dbReturnDate);
+            
+            // Перевіряємо чи є в territory_logs записи з пізнішою датою здачі
+            const { data: laterLogs } = await supabase
+                .from('territory_logs')
+                .select('returned_at')
+                .eq('parcel_id', parcelId)
+                .gt('returned_at', dOut)
+                .limit(1);
+            
+            // Якщо немає пізніших записів - наш запис найновіший, оновлюємо last_returned
+            const needsReturnUpdate = (!laterLogs || laterLogs.length === 0);
 
             if (needsReturnUpdate) {
-                console.log("window.saveManualLog: Оновлення last_returned у таблиці parcels.");
+                console.log("window.saveManualLog: Оновлення last_returned у таблиці parcels (немає пізніших записів).");
                 await supabase.from('parcels').update({ last_returned: dOut, status: 'free' }).eq('id', parcelId);
             } else {
-                console.log("window.saveManualLog: Оновлення parcels не потрібне.");
+                console.log("window.saveManualLog: Оновлення last_returned пропущено (є пізніші записи в territory_logs).");
             }
 
             showToast("Запис додано до архіву");
@@ -1201,22 +1217,129 @@
 
         window.closeCommentModal = () => document.getElementById('commentModal').classList.add('hidden');
         window.deleteComment = async (id) => { if (confirm("Видалити?")) { await supabase.from('parcel_comments').delete().eq('id', id); loadComments(); } };
+        // Змінна для зберігання всіх вісників
+        let allPublishers = [];
+
+        // Ініціалізація пошуку вісників
+        function initPublisherSearch() {
+            const searchInput = document.getElementById('publisherSearchInput');
+            const resultsDiv = document.getElementById('publisherSearchResults');
+            const hiddenInput = document.getElementById('manualPublisherSelect');
+            const displayDiv = document.getElementById('selectedPublisherDisplay');
+
+            // Очищуємо попередні обробники (видаляємо і створюємо заново)
+            const newSearchInput = searchInput.cloneNode(true);
+            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+
+            newSearchInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                filterPublishers(query);
+            });
+
+            // Клік на поле введення - toggle списку
+            newSearchInput.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const resultsDiv = document.getElementById('publisherSearchResults');
+                if (resultsDiv.style.display === 'block') {
+                    // Список відкритий - закриваємо
+                    resultsDiv.style.display = 'none';
+                } else {
+                    // Список закритий - відкриваємо з усіма вісниками
+                    renderPublisherResults(allPublishers);
+                }
+            });
+
+            // Закриваємо список при кліку поза ним
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.publisher-search-container')) {
+                    resultsDiv.style.display = 'none';
+                }
+            });
+        }
+
+        // Фільтрація вісників
+        function filterPublishers(query) {
+            const resultsDiv = document.getElementById('publisherSearchResults');
+            
+            if (!query) {
+                // При порожньому запиті закриваємо список
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            // Фільтруємо за ім'ям або прізвищем
+            const filtered = allPublishers.filter(p => {
+                const fullName = `${p.last_name || ''} ${p.name || ''}`.toLowerCase().trim();
+                return fullName.includes(query);
+            });
+
+            renderPublisherResults(filtered);
+        }
+
+        // Відображення результатів
+        function renderPublisherResults(publishers) {
+            const resultsDiv = document.getElementById('publisherSearchResults');
+            const searchInput = document.getElementById('publisherSearchInput');
+            
+            if (publishers.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">Не знайдено</div>';
+                resultsDiv.style.display = 'block';
+                return;
+            }
+
+            resultsDiv.innerHTML = publishers.map(p => `
+                <div class="publisher-option" data-id="${p.id}" data-name="${p.last_name || ''} ${p.name || ''}"
+                     style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; hover: background: #f5f5f5;">
+                    ${p.last_name || ''} ${p.name || ''}
+                </div>
+            `).join('');
+
+            // Додаємо обробники кліку на опції
+            resultsDiv.querySelectorAll('.publisher-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    selectPublisher(this.dataset.id, this.dataset.name);
+                });
+            });
+
+            resultsDiv.style.display = 'block';
+        }
+
+        // Вибір вісника
+        function selectPublisher(id, name) {
+            const hiddenInput = document.getElementById('manualPublisherSelect');
+            const searchInput = document.getElementById('publisherSearchInput');
+            const resultsDiv = document.getElementById('publisherSearchResults');
+            const displayDiv = document.getElementById('selectedPublisherDisplay');
+
+            hiddenInput.value = id;
+            searchInput.value = name.trim();
+            displayDiv.textContent = `Вибрано: ${name.trim()}`;
+            resultsDiv.style.display = 'none';
+        }
+
         window.showManualLogModal = async () => {
-            // ДОДАТИ ЦІ РЯДКИ:
+            // Очищуємо поля дат
             document.getElementById('manualDateIn').value = '';
             document.getElementById('manualDateOut').value = '';
+            
+            // Очищуємо пошук вісників
+            document.getElementById('publisherSearchInput').value = '';
+            document.getElementById('manualPublisherSelect').value = '';
+            document.getElementById('selectedPublisherDisplay').textContent = '';
+            document.getElementById('publisherSearchResults').style.display = 'none';
+            
+            // Зв'язуємо поля дат (при виборі першої, друга автоматично встановлюється)
+            linkDateInputs('manualDateIn', 'manualDateOut');
+            
             document.getElementById('manualLogModal').classList.remove('hidden');
-            const select = document.getElementById('manualPublisherSelect');
-            select.innerHTML = '<option value="">Завантаження...</option>';
+            
+            // Завантажуємо вісників
             const { data: users } = await supabase.from('publishers').select('id, name, last_name').order('last_name', { ascending: true });
             if (users) {
-                select.innerHTML = '<option value="">Оберіть вісника</option>';
-                users.forEach(u => {
-                    const opt = document.createElement('option');
-                    opt.value = u.id;
-                    opt.text = `${u.last_name || ''} ${u.name}`.trim();
-                    select.appendChild(opt);
-                });
+                allPublishers = users;
+                // Ініціалізуємо пошук
+                initPublisherSearch();
+                // Список НЕ відкриваємо автоматично - тільки при введенні тексту або кліку на кнопку
             }
         };
         window.hideManualLogModal = () => document.getElementById('manualLogModal').classList.add('hidden');
@@ -1337,11 +1460,6 @@
 
         document.getElementById('backBtn').onclick = () => window.history.back();
 
-        // Очищення Realtime при закритті сторінки
-        window.addEventListener('beforeunload', () => {
-            cleanupRealtime();
-        });
-
         document.addEventListener('DOMContentLoaded', () => {
             const dateIn = document.getElementById('manualDateIn');
             const dateOut = document.getElementById('manualDateOut');
@@ -1371,6 +1489,8 @@
 
         init();
     </script>
+
+    <script src="js/dev-tools.js"></script>
 </body>
 
 </html>

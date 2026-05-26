@@ -344,25 +344,12 @@
             font-family: sans-serif;
         }
 
-        /* Стилі нового фільтра */
-        #filter-wrapper {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 10001;
-            width: 300px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        
 
 
         /* Мобільна адаптація */
         @media (max-width: 600px) {
-            #filter-wrapper {
-                width: calc(100% - 30px);
-                top: 10px;
-                left: 10px;
-            }
-
+            
             #filter-mobile-header {
                 display: flex !important;
                 justify-content: space-between;
@@ -374,16 +361,11 @@
                 cursor: pointer;
                 margin-bottom: 5px;
             }
-
-            /* Згорнутий стан на мобільних */
-            #filter-wrapper.collapsed #filterMenu {
-                display: none;
-            }
         }
 
 
         .filter-section.inactive {
-            opacity: 0.6;
+            opacity: 0.8;
         }
 
         .sub-list {
@@ -404,6 +386,52 @@
         }
 
         /* Додай це в блок <style> твого index.html */
+
+        /* Toggle switch стилі */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #007bff;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
 
 
         #searchBox {
@@ -626,7 +654,7 @@
         .dots-filler {
             flex-grow: 1;
             border-bottom: 1px dotted #ccc;
-            margin: 0 10px;
+            margin: 0 auto;
             height: 12px;
         }
 
@@ -799,45 +827,107 @@
     </div>
 
     <div id="filterMenu">
-        <input type="text" id="searchBox" placeholder="Пошук за номером..." autocomplete="off">
-        <div class="filter-section active" id="sec-all">
-            <label class="row">
-                <input type="checkbox" id="chk-all" checked>
-                <span class="label-text">Всі дільниці</span>
-                <span class="dots-filler"></span>
-                <span class="count-badge" id="cnt-all">0</span>
+        <button id="closeFilter" type="button" title="Закрити" style="position:absolute; top:4px; right:6px; border:none; background:transparent; color:#555; font-size:30px; cursor:pointer; line-height:1; padding:0;">×</button>
+        <h4 style="margin:0 0 12px 0;">🔍 Розумний фільтр</h4>
+        
+        <!-- Toggle switch для вибору режиму -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; padding: 8px 12px; background: #f5f5f5; border-radius: 8px;">
+            <span style="font-size: 14px; font-weight: 500;">🏙️ Місто</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="modeToggle" onchange="window.toggleFilterMode()">
+                <span class="slider"></span>
             </label>
+            <span style="font-size: 14px; font-weight: 500;">🚜 Села</span>
         </div>
 
-        <div class="filter-section inactive" id="sec-mine" style="display: none;">
-            <label class="row">
-                <input type="checkbox" id="chk-mine">
-                <span class="label-text">👤 Мої дільниці</span>
-                <span class="dots-filler"></span>
-                <span class="count-badge" id="cnt-mine">0</span>
-            </label>
-            <div class="sub-list" id="sub-mine-list"></div>
+        <!-- Режим Місто -->
+        <div id="cityMode">
+            <input type="text" id="searchBox" placeholder="Введіть номер..." autocomplete="off" inputmode="numeric">
+            
+            <div class="filter-section active" id="sec-all">
+                <label class="row">
+                    <input type="checkbox" id="chk-all" checked>
+                    <span class="label-text">Всі дільниці</span>
+                    <span class="dots-filler"></span>
+                    <span class="count-badge" id="cnt-all">0</span>
+                </label>
+            </div>
+
+            <div class="filter-section inactive" id="sec-mine" style="display: none;">
+                <label class="row">
+                    <input type="checkbox" id="chk-mine">
+                    <span class="label-text">👤 Мої дільниці</span>
+                    <span class="dots-filler"></span>
+                    <span class="count-badge" id="cnt-mine">0</span>
+                </label>
+                <div class="sub-list" id="sub-mine-list"></div>
+            </div>
+
+            <div class="filter-section inactive" id="sec-free">
+                <label class="row">
+                    <input type="checkbox" id="chk-free">
+                    <span class="label-text">✅ Вільні</span>
+                    <span class="dots-filler"></span>
+                    <span class="count-badge" id="cnt-free">0</span>
+                </label>
+                <div class="sub-list" id="sub-free-list"></div>
+            </div>
+
+            <div class="filter-section inactive" id="sec-taken" style="display: none;">
+                <label class="row">
+                    <input type="checkbox" id="chk-taken">
+                    <span class="label-text">🚩 На руках</span>
+                    <span class="dots-filler"></span>
+                    <span class="count-badge" id="cnt-taken">0</span>
+                </label>
+                <div class="sub-list" id="sub-taken-list"></div>
+            </div>
         </div>
 
-        <div class="filter-section inactive" id="sec-free">
-            <label class="row">
-                <input type="checkbox" id="chk-free">
-                <span class="label-text">✅ Вільні</span>
-                <span class="dots-filler"></span>
-                <span class="count-badge" id="cnt-free">0</span>
-            </label>
-            <div class="sub-list" id="sub-free-list"></div>
+        <!-- Режим Села -->
+        <div id="villageMode" style="display: none;">
+            <select id="villageSelect" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px;">
+                <option value="">Оберіть село...</option>
+            </select>
+            
+            <div class="filter-section active" id="sec-village-all">
+                <label class="row">
+                    <input type="checkbox" id="chk-village-all" checked>
+                    <span class="label-text">Всі села</span>
+                    <span class="dots-filler"></span>
+                    <span class="count-badge" id="cnt-village-all">0</span>
+                </label>
+            </div>
+
+            <div class="filter-section inactive" id="sec-village-free">
+                <label class="row">
+                    <input type="checkbox" id="chk-village-free">
+                    <span class="label-text">✅ Вільні</span>
+                    <span class="dots-filler"></span>
+                    <span class="count-badge" id="cnt-village-free">0</span>
+                </label>
+            </div>
+
+            <div class="filter-section inactive" id="sec-village-taken" style="display: none;">
+                <label class="row">
+                    <input type="checkbox" id="chk-village-taken">
+                    <span class="label-text">🚩 На руках</span>
+                    <span class="dots-filler"></span>
+                    <span class="count-badge" id="cnt-village-taken">0</span>
+                </label>
+            </div>
+
+            <div class="filter-section inactive" id="sec-village-mine" style="display: none;">
+                <label class="row">
+                    <input type="checkbox" id="chk-village-mine">
+                    <span class="label-text">👤 Мої села</span>
+                    <span class="dots-filler"></span>
+                    <span class="count-badge" id="cnt-village-mine">0</span>
+                </label>
+            </div>
         </div>
 
-        <div class="filter-section inactive" id="sec-taken" style="display: none;">
-            <label class="row">
-                <input type="checkbox" id="chk-taken">
-                <span class="label-text">🚩 На руках</span>
-                <span class="dots-filler"></span>
-                <span class="count-badge" id="cnt-taken">0</span>
-            </label>
-            <div class="sub-list" id="sub-taken-list"></div>
-        </div>
+        <div id="adminArea"></div>
     </div>
 
     <button id="reset-focus-btn" onclick="window.resetMapFocus()">
@@ -944,6 +1034,45 @@
             // ... далі ваш код (initGeolocation, AuthControl) ...
             if (typeof initGeolocation === 'function') initGeolocation(window.map);
             new AuthControl().addTo(window.map);
+
+            // 🔍 Ініціалізація віджета зуму
+            if (typeof initZoomWidget === 'function') initZoomWidget();
+
+            // 🔍 Логіка приховування ярликів при зумі < 15 (крім сіл)
+            window.updateLabelsVisibility = function() {
+                if (!window.allParcelLayers) return;
+                const currentZoom = window.map.getZoom();
+                const showLabels = currentZoom >= 15;
+
+                // Допоміжна функція для перевірки, чи це село
+                const isVillage = (p) => (p.category || p.type || "").toLowerCase().includes('сел');
+
+                window.allParcelLayers.forEach(item => {
+                    if (item.label) {
+                        const p = item.data || {};
+                        const isVillageParcel = isVillage(p);
+
+                        // Ярлики сіл завжди видимі, незалежно від зуму
+                        if (isVillageParcel) {
+                            if (window.map.hasLayer(item.layer) && !window.map.hasLayer(item.label)) {
+                                item.label.addTo(window.map);
+                            }
+                        } else {
+                            // Для міських ділянок - залежить від зуму
+                            if (showLabels && window.map.hasLayer(item.layer)) {
+                                if (!window.map.hasLayer(item.label)) item.label.addTo(window.map);
+                            } else {
+                                if (window.map.hasLayer(item.label)) window.map.removeLayer(item.label);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Додаємо подію на зміну зуму
+            window.map.on('zoomend', updateLabelsVisibility);
+            // Первинний виклик при ініціалізації
+            updateLabelsVisibility();
         }
 
 
@@ -1056,7 +1185,7 @@
                     ✋ Взяти (Карантин)
                 </button>`;
                     } else {
-                        popupHtml += `<p style="font-size:11px; color:#888; text-align:center;">На обробці до ${qDateStr}</p>`;
+                        // Нічого не показуємо для звичайних користувачів
                     }
                 } else {
                     if (isAuth) {
@@ -1167,16 +1296,21 @@
                     });
                 }
 
-                // 9. СТВОРЕННЯ ЯРЛИКА
-                const label = L.marker(anchorPoint, {
-                    icon: L.divIcon({
-                        className: 'parcel-label',
-                        html: `<b style="color:white; text-shadow: 2px 2px 3px black;">${preparedData.name}</b>`,
-                        iconSize: [40, 20],
-                        iconAnchor: [20, 10]
-                    }),
-                    interactive: false
-                }).addTo(window.map);
+                // 9. СТВОРЕННЯ ЯРЛИКА (тільки для авторизованих користувачів)
+                let label = null;
+                const isAuth = !!localStorage.getItem('userId');
+                
+                if (isAuth) {
+                    label = L.marker(anchorPoint, {
+                        icon: L.divIcon({
+                            className: 'parcel-label',
+                            html: `<b style="color:white; text-shadow: 2px 2px 3px black;">${preparedData.name}</b>`,
+                            iconSize: [40, 20],
+                            iconAnchor: [20, 10]
+                        }),
+                        interactive: false
+                    }).addTo(window.map);
+                }
 
                 // 10. ВІДОБРАЖЕННЯ ТА РЕЄСТРАЦІЯ
                 parcelGroup.addTo(window.map);
@@ -1509,10 +1643,22 @@
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // 1. Спершу карта
+            // 1. Логування завантаження сторінки
+            import('./js/analytics.js').then(({ logPageLoad, initMapAnalytics }) => {
+                logPageLoad();
+                
+                // Ініціалізація аналітики для карти після її створення
+                setTimeout(() => {
+                    if (window.map) {
+                        initMapAnalytics(window.map);
+                    }
+                }, 1000);
+            });
+
+            // 2. Спершу карта
             initMainMap();
 
-            // 2. ОДИН РАЗ завантажуємо дані
+            // 3. ОДИН РАЗ завантажуємо дані
             await loadParcels();
 
             // 3. ОДИН РАЗ налаштовуємо пошук, коли дані вже є

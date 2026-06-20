@@ -66,7 +66,7 @@
 
         .on-hands-card .card-info {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
             gap: 0.75rem;
             margin-bottom: 1rem;
         }
@@ -574,7 +574,7 @@
             border: none;
             cursor: pointer;
             transition: background-color 0.2s ease;
-            
+
         }
 
         .filter-actions button:hover {
@@ -583,6 +583,15 @@
 
         .text-center {
             text-align: center;
+        }
+
+        .export-import-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-top: 1rem;
         }
 
         /* Візуальний роздільник для дат */
@@ -1043,63 +1052,104 @@
             margin-bottom: 1rem;
         }
 
-        /* Стилі для модального вікна */
         .modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
+            background-color: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
             align-items: center;
+            justify-content: center;
             z-index: 1000;
+            padding: 16px;
+            box-sizing: border-box;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        .modal.active {
+            display: flex;
         }
 
         .modal-content {
-            background: white;
+            background: #ffffff;
             border-radius: 12px;
-            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            background-clip: padding-box;
+            animation: modalScaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-sizing: border-box;
+        }
+
+        .modal-content.modal-sm {
             max-width: 400px;
-            max-height: 90vh;
-            overflow-y: auto;
+        }
+
+        .modal-content.modal-md {
+            max-width: 460px;
         }
 
         .modal-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 1.5rem;
-            border-bottom: 1px solid #e5e7eb;
+            justify-content: space-between;
+            padding: 18px 24px;
+            border-bottom: 1px solid #f3f4f6;
+            box-sizing: border-box;
         }
 
-        .modal-header h3 {
-            margin: 0;
-            font-size: 1.2rem;
+        .modal-title {
+            font-size: 18px;
             font-weight: 600;
-            color: #1f2937;
+            color: #111827;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .modal-icon {
+            font-size: 18px;
         }
 
         .modal-close {
-            background: none;
+            background: transparent;
             border: none;
-            font-size: 1.5rem;
+            color: #9ca3af;
+            font-size: 16px;
             cursor: pointer;
-            color: #6b7280;
-            padding: 0.25rem;
+            padding: 6px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            line-height: 1;
         }
 
         .modal-close:hover {
+            background-color: #f3f4f6;
             color: #1f2937;
         }
 
         .modal-body {
-            padding: 1.5rem;
+            padding: 24px;
+            color: #4b5563;
+            font-size: 15px;
+            line-height: 1.6;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            box-sizing: border-box;
+        }
+
+        .modal-body.text-center {
+            text-align: center;
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 18px;
         }
 
         .form-group:last-child {
@@ -1108,33 +1158,123 @@
 
         .form-group label {
             display: block;
-            font-size: 0.9rem;
+            font-size: 14px;
             font-weight: 500;
             color: #374151;
-            margin-bottom: 0.5rem;
+            margin-bottom: 6px;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         }
 
-        .form-group input,
-        .form-group textarea {
-            width: stretch;
-            padding: 0.75rem;
+        .label-optional {
+            color: #9ca3af;
+            font-size: 12px;
+            font-weight: 400;
+        }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 10px 14px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 14px;
+            color: #111827;
+            background-color: #ffffff;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         }
 
-        .form-group textarea {
-            min-height: 100px;
-            resize: vertical;
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
         .modal-footer {
+            padding: 16px 24px;
+            background-color: #f9fafb;
+            border-top: 1px solid #f3f4f6;
             display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-            padding: 1.5rem;
+            gap: 12px;
+            box-sizing: border-box;
         }
 
+        .modal-footer.footer-center {
+            justify-content: center;
+        }
+
+        .modal-footer.footer-right {
+            justify-content: flex-end;
+        }
+
+        /* Стилі для кнопок всередині модального вікна */
+        .modal-footer button,
+        .modal-footer .btn-primary,
+        .modal-footer .btn-secondary {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            min-width: 110px;
+            text-align: center;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+        }
+
+        .modal-footer .btn-secondary {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            color: #374151;
+        }
+
+        .modal-footer .btn-secondary:hover {
+            background-color: #f3f4f6;
+            border-color: #e5e7eb;
+            color: #111827;
+        }
+
+        .modal-footer .btn-success {
+            background-color: #10b981;
+            border: 1px solid #10b981;
+            color: #ffffff;
+            background-image: none;
+        }
+
+        .modal-footer .btn-success:hover {
+            background-color: #059669;
+            border-color: #059669;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes modalScaleUp {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Залишаємо старі стилі для інших компонентів */
         .btn-secondary {
             background: #6c757d;
             color: white;
@@ -1186,6 +1326,16 @@
             cursor: not-allowed;
         }
 
+        .form-group textarea {
+            width: stretch;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            min-height: 100px;
+            resize: vertical;
+        }
+
         /* Мобільні стилі для кампаній */
         @media (max-width: 768px) {
             .modal-content {
@@ -1197,9 +1347,6 @@
                 flex-direction: column;
             }
 
-            .modal-footer button {
-                width: 100%;
-            }
         }
 
 
@@ -1367,7 +1514,9 @@
             .input-date,
             .input-text {
                 width: 100%;
+                font-size: 3vw;
             }
+
         }
 
         /* Семантичні класи для розділу Опрацювання територій */
@@ -1420,6 +1569,188 @@
                 margin-left: 0;
             }
         }
+
+        /* Анімація шредера для видалення рядків */
+        .shredder-anim {
+            animation: shred 0.6s ease-in forwards;
+        }
+
+        @keyframes shred {
+            0% {
+                transform: scaleY(1) translateY(0);
+                opacity: 1;
+                filter: blur(0);
+                background-color: transparent;
+            }
+
+            30% {
+                transform: scaleY(0.8) translateY(5px);
+                opacity: 0.8;
+                filter: blur(1px);
+                background-color: rgba(239, 68, 68, 0.1);
+            }
+
+            60% {
+                transform: scaleY(0.5) translateY(10px);
+                opacity: 0.6;
+                filter: blur(2px);
+                background-color: rgba(239, 68, 68, 0.2);
+            }
+
+            100% {
+                transform: scaleY(0) translateY(15px);
+                opacity: 0;
+                filter: blur(4px);
+                background-color: rgba(239, 68, 68, 0.3);
+            }
+        }
+
+        /* Bounce ефект для рядків при зіткненні */
+        .bounce-anim {
+            animation: bounce 0.4s ease-out;
+        }
+
+        @keyframes bounce {
+            0% {
+                transform: translateY(0);
+            }
+
+            30% {
+                transform: translateY(-8px);
+            }
+
+            50% {
+                transform: translateY(4px);
+            }
+
+            70% {
+                transform: translateY(-2px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        /* Стилі для кнопки видалення при наведенні */
+        .delete-pub-btn:hover {
+            transform: scale(1.2);
+            color: #dc2626 !important;
+        }
+
+        /* --- МОДАЛКА ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ --- */
+        .confirm-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .confirm-modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .confirm-modal-box {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.25s ease;
+        }
+
+        .confirm-modal-overlay.active .confirm-modal-box {
+            transform: scale(1);
+        }
+
+        .confirm-modal-title {
+            margin-top: 0;
+            color: #333;
+            font-size: 1.25rem;
+        }
+
+        .confirm-modal-text {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin: 15px 0 25px 0;
+        }
+
+        .confirm-modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-confirm-action {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-confirm-yes {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-confirm-yes:hover {
+            background: #bd2130;
+        }
+
+        .btn-confirm-no {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-confirm-no:hover {
+            background: #d5d5d5;
+        }
+
+        .bulk-checkbox {
+            display: none;
+            /* Сховані за замовчуванням */
+            transform: scale(1.2);
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .bulk-mode .bulk-checkbox {
+            display: inline-block;
+            /* Показуємо в режимі пасхалки */
+        }
+
+        .bulk-delete-panel {
+            display: none;
+            background: #fff3f3;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bulk-mode .bulk-delete-panel {
+            display: flex;
+        }
     </style>
     <link rel="stylesheet" href="css/profile-style.css" />
     <link rel="stylesheet" href="css/responsive.css">
@@ -1437,15 +1768,16 @@
     <div class="sidebar">
         <h2>🗺️ Адмін-панель</h2>
         <div class="nav-item active" onclick="switchTab('territories')">🌍 Території</div>
+        <a href="#" class="nav-item" data-tab="publishers-admin" onclick="switchTab('publishers-admin')">
+            <i>👥</i> Користувачі
+        </a>
         <div class="nav-item" onclick="switchTab('processing')">📊 Опрацювання</div>
         <div class="nav-item" onclick="switchTab('analysis')">📈 Аналіз Територій</div>
         <div class="nav-item" onclick="switchTab('on-hands')">👐 На руках</div>
         <div class="nav-item" onclick="switchTab('export-import')">💾 Експорт та Імпорт</div>
         <div class="nav-item" onclick="switchTab('settings')">⚙️ Додаткові налаштування</div>
-        <a href="statistics-dew.html" id="statsLink" class="nav-item"
-            style="border-left: 3px solid #9b59b6; color: #9b59b6; display: none;">📊 Статистика (dev)</a>
         <a href="admin-statistics.html" id="adminStatsLink" class="nav-item"
-            style="border-left: 3px solid #667eea; color: #667eea; display: none;">📊 Статистика Адміна</a>
+            style="border-left: 3px solid #667eea; color: #667eea;">📊 Статистика Адміна</a>
         <a href="profile.html" class="nav-item">👤 Назад до Профілю</a>
         <button class="nav-item logout-btn" onclick="logout()">🏃 Вийти</button>
     </div>
@@ -1467,7 +1799,185 @@
                 <div id="territoriesList"></div>
             </div>
         </div>
+        <div id="tab-publishers-admin" class="tab-content hidden">
+            <div class="tab-header">
+                <h1 class="tab-title">👥 Керування користувачами</h1>
+            </div>
 
+            <div class="card">
+                <div class="alert alert-info"
+                    style="background-color: #e3f2fd; border-left: 5px solid #2196f3; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                    <strong>🔐 Важлива інформація щодо безпеки та паролів:</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; line-height: 1.5;">
+                        Паролі користувачів зберігаються в базі даних виключно в <strong>зашифрованому вигляді</strong>
+                        всередині ядра системи. Ніхто (навіть адміністратор) не може подивитися поточний пароль вісника.
+                    </p>
+                    <ul style="margin: 5px 0 0 0; padding-left: 20px; font-size: 14px; line-height: 1.5;">
+                        <li><strong>Скидання та генерація:</strong> Ви можете згенерувати новий випадковий пароль для
+                            вісника (1 клік по 🔑).</li>
+                        <li><strong>Що робити далі:</strong> Як тільки після генерації відкриється віконце з
+                            результатом, <strong>обов'язково скопіюйте дані та відправте їх віснику</strong> (логіном
+                            виступає його Ім'я). Після закриття вікна пароль зникне з екрана назавжди!</li>
+                        <li><strong>Якщо вісник забув пароль:</strong> Нічого страшного! Просто натисніть на іконку
+                            ключа 🔑 знову, згенеруйте новий пароль і надішліть йому свіжі дані для входу.</li>
+                    </ul>
+                </div>
+
+                <div id="bulkDeletePanel" class="bulk-delete-panel">
+                    <div style="color: #721c24; font-weight: bold;">
+                        <span id="selectedPublishersCount">0</span> вісників вибрано
+                    </div>
+                    <div>
+                        <button id="btnCancelBulk" class="btn-secondary"
+                            style="margin-right: 10px; padding: 6px 12px;">Скасувати</button>
+                        <button id="btnExecuteBulkDelete" class="btn-danger"
+                            style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">🗑️
+                            Видалити вибрані</button>
+                    </div>
+                </div>
+
+                <div class="report-table-wrapper">
+                    <table class="report-table" id="publishersAdminTable">
+                        <thead>
+                            <tr>
+                                <th id="thNameContainer">Ім'я та Прізвище</th>
+                                <th>Роль користувача</th>
+                                <th>Походження</th>
+                                <th style="text-align: center;">Пароль</th>
+                                <th id="thActionsHeader"
+                                    style="cursor: pointer; user-select: none; text-align: center;">⚙️</th>
+                            </tr>
+                        </thead>
+                        <tbody id="publishersAdminList">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="roleConfirmModal" class="modal">
+            <div class="modal-content modal-sm">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <span class="modal-icon icon-warning">⚠️</span>
+                        Зміна прав доступу
+                    </h3>
+                    <button class="modal-close" onclick="closePublisherModal('roleConfirmModal')">✕</button>
+                </div>
+                <div class="modal-body text-center">
+                    <p id="roleConfirmMessage"></p>
+                </div>
+                <div class="modal-footer footer-center">
+                    <button id="btnRoleConfirmNo" class="btn-secondary"
+                        onclick="closePublisherModal('roleConfirmModal')">Скасувати</button>
+                    <button id="btnRoleConfirmYes" class="btn-primary btn-success">Так, змінити</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="editUserNameModal" class="modal">
+            <div class="modal-content modal-md">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <span class="modal-icon">✏️</span>
+                        Редагування профілю
+                    </h3>
+                    <button class="modal-close" onclick="closePublisherModal('editUserNameModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editUserName">Ім'я</label>
+                        <input type="text" id="editUserName" placeholder="Введіть ім'я">
+                    </div>
+                    <div class="form-group">
+                        <label for="editUserLastName">Прізвище <span class="label-optional">(опціонально)</span></label>
+                        <input type="text" id="editUserLastName" placeholder="Введіть прізвище">
+                    </div>
+                    <input type="hidden" id="editUserId">
+                </div>
+                <div class="modal-footer footer-right">
+                    <button id="btnEditUserNameCancel" class="btn-secondary"
+                        onclick="closePublisherModal('editUserNameModal')">Скасувати</button>
+                    <button id="btnSaveUserName" class="btn-primary btn-success">Зберегти зміни</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="passwordResultModal" class="modal">
+            <div class="modal-content modal-md">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <span class="modal-icon">🔐</span>
+                        Дані для авторизації
+                    </h3>
+                    <button class="modal-close" onclick="closePublisherModal('passwordResultModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p>Скопіюйте ці дані та надішліть їх віснику для входу в систему:</p>
+
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
+                        <div style="margin-bottom: 12px;">
+                            <strong
+                                style="font-size: 11px; color: #64748b; display:block; letter-spacing: 0.5px; font-family: 'Segoe UI', sans-serif;">ІМ'Я
+                                (ЛОГІН):</strong>
+                            <span id="displayModalLogin"
+                                style="font-family: monospace; font-size: 15px; color: #1e293b; font-weight: bold;"></span>
+                        </div>
+                        <div>
+                            <strong
+                                style="font-size: 11px; color: #64748b; display:block; letter-spacing: 0.5px; font-family: 'Segoe UI', sans-serif;">НОВИЙ
+                                ПАРОЛЬ:</strong>
+                            <span id="displayModalPassword"
+                                style="font-family: monospace; font-size: 15px; color: #dc2626; font-weight: bold; letter-spacing: 1px;"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="justify-content: space-between; align-items: center;">
+                    <span id="copyStatusText"
+                        style="font-size: 13px; color: #28a745; font-weight: 600; opacity: 0; transition: opacity 0.2s; font-family: 'Segoe UI', sans-serif;">Скопійовано!</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="btnShareCredentials" class="btn-primary" style="background-color: #28a745;">🔗 Поділитися</button>
+                        <button id="btnCopyAuthData" class="btn-primary">📋 Копіювати дані</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="manualPasswordModal" class="modal">
+            <div class="modal-content modal-sm">
+                <div class="modal-header">
+                    <h3 class="modal-title">
+                        <span class="modal-icon">🛠️</span>
+                        Секретний пароль
+                    </h3>
+                    <button class="modal-close" onclick="closePublisherModal('manualPasswordModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="inputManualPassword">Введіть новий пароль вручну:</label>
+                        <input type="text" id="inputManualPassword" placeholder="Мінімум 8 символів (латиниця + цифри)">
+
+                        <div style="margin-top: 15px;">
+                            <div
+                                style="display:flex; justify-content:space-between; font-size:11px; color:#6b7280; margin-bottom:5px; font-family: 'Segoe UI', sans-serif;">
+                                <span id="passValidationText">Очікування вводу...</span>
+                                <span id="passPercentText">0%</span>
+                            </div>
+                            <div
+                                style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                                <div id="passwordStrengthBar"
+                                    style="width: 0%; height: 100%; background: #dc3545; transition: all 0.3s ease;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btnSaveManualPassword" class="btn-primary"
+                        style="background: #28a745; border: none; width: 100%;" disabled>Встановити цей пароль</button>
+                </div>
+            </div>
+        </div>
         <!-- ТАБ: ОПРАЦЮВАННЯ (ЗВІТ) -->
         <div id="tab-processing" class="tab-content hidden">
             <h1 class="tab-title">📊 Опрацювання територій</h1>
@@ -1709,8 +2219,21 @@
         <!-- ТАБ: ЕКСПОРТ ТА ІМПОРТ -->
         <div id="tab-export-import" class="tab-content hidden">
             <h1 class="tab-title">💾 Експорт та Імпорт</h1>
-            <div class="content-placeholder">
-                💾 Розділ буде заповнено згодом...
+            <div class="export-import-section">
+                <h2 class="section-title-lg">📊 Експорт звіту S-13</h2>
+                <p class="summary-text">
+                    Експорт звіту про опрацювання територій за службовий рік.
+                    Звіт включає дані про всі дільниці (місто та села) з історією опрацювання,
+                    включаючи інформацію про кампанії (конгрес, спец. кампанія, спомин).
+                </p>
+                <div class="filter-actions">
+                    <button onclick="exportS13FullPDF()" class="btn-primary">
+                        📄 Експорт в PDF
+                    </button>
+                    <button onclick="exportS13Excel()" class="btn-primary">
+                        📊 Експорт в Excel
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1889,7 +2412,7 @@
     </div>
 
     <!-- Модальне вікно підтвердження видалення -->
-    <div id="deleteConfirmModal" class="modal" style="display:none;">
+    <div id="deleteConfirmModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Підтвердження видалення</h3>
@@ -1907,7 +2430,7 @@
     </div>
 
     <!-- Модальне вікно для редагування/додавання кампаній -->
-    <div id="campaignModal" class="modal" style="display:none;">
+    <div id="campaignModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalTitle">Редагування кампанії</h3>
@@ -1926,23 +2449,10 @@
 
     <script type="module">
         import { supabase } from "./js/config.js";
-
+        import { showCustomConfirm } from './js/parcel-logic.js';
+        import './js/main.js';
 
         const userId = localStorage.getItem('userId');
-        const userRole = localStorage.getItem('userRole');
-
-        if (!userId || (userRole !== 'admin' && userRole !== 'super_admin')) {
-            window.location.href = 'profile.html';
-        }
-
-        // Показуємо посилання на статистику тільки для super_admin
-        if (userRole === 'super_admin') {
-            const statsLink = document.getElementById('statsLink');
-            if (statsLink) statsLink.style.display = 'flex';
-
-            const adminStatsLink = document.getElementById('adminStatsLink');
-            if (adminStatsLink) adminStatsLink.style.display = 'flex';
-        }
 
         // Глобальна змінна для фільтру територій
         let currentTerritoryFilter = 'city';
@@ -1975,7 +2485,10 @@
                 'analysis': '📈 Аналіз Територій',
                 'on-hands': '👐 Території на Руках',
                 'export-import': '💾 Експорт та Імпорт',
-                'settings': '⚙️ Додаткові Налаштування'
+                'settings': '⚙️ Додаткові Налаштування',
+                'publishers-admin': '👥 Користувачі',
+                'publishers': '👥 Користувачі',
+                'users': '👥 Користувачі'
             };
 
             if (mobileTitle && titles[tabName]) {
@@ -1983,7 +2496,7 @@
             }
         }
 
-        // Перемикання вкладок
+        // Перемикання вкладок (Оновлено для вкладки Користувачі)
         window.switchTab = (tabName) => {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -2022,9 +2535,10 @@
                 loadTerritories();
             } else if (tabName === 'settings') {
                 loadCampaigns();
-            }
-            else if (tabName === 'processing') {
+            } else if (tabName === 'processing') {
                 // НЕ ЗАВАНТАЖУЄМО АВТОМАТИЧНО, ЛИШЕ ПО КЛІКУ
+            } else if (tabName === 'publishers-admin') {
+                loadPublishersAdminList(); // <--- Наш новий виклик
             }
         };
 
@@ -2734,7 +3248,7 @@
             currentCampaignData = campaignData;
             isEditMode = !!campaignData;
 
-            modal.style.display = 'flex';
+            modal.classList.add('active');
 
             // Зв'язуємо дати
             setTimeout(() => linkDateInputs('testStartDate', 'testEndDate'), 0);
@@ -2958,7 +3472,7 @@
                 `;
             }
 
-            modal.style.display = 'flex';
+            modal.classList.add('active');
 
             // Додаємо обробники для зв'язування дат
             setTimeout(() => linkDatePickers(campaignName), 0);
@@ -3082,7 +3596,7 @@
                 `;
             }
 
-            modal.style.display = 'flex';
+            modal.classList.add('active');
 
             // Додаємо обробники для зв'язування дат
             setTimeout(() => linkDatePickers(campaignName), 0);
@@ -3091,7 +3605,7 @@
         // Закрити модальне вікно
         window.closeCampaignModal = function closeCampaignModal() {
             const modal = document.getElementById('campaignModal');
-            modal.style.display = 'none';
+            modal.classList.remove('active');
             currentCampaignName = '';
             currentCampaignData = null;
         }
@@ -3107,12 +3621,12 @@
                     const endDate = document.getElementById('congressEndDate').value;
 
                     if (!congressName || !startDate || !endDate) {
-                        alert('Заповніть всі поля');
+                        showToast('Заповніть всі поля', true);
                         return;
                     }
 
                     if (new Date(startDate) > new Date(endDate)) {
-                        alert('Дата початку не може бути пізніше за дату кінця');
+                        showToast('Дата початку не може бути пізніше за дату кінця', true);
                         return;
                     }
 
@@ -3132,12 +3646,12 @@
                     const description = document.getElementById('campaignDescription').value.trim();
 
                     if (!startDate || !endDate) {
-                        alert('Оберіть початок і кінець періоду кампанії');
+                        showToast('Оберіть початок і кінець періоду кампанії', true);
                         return;
                     }
 
                     if (new Date(startDate) > new Date(endDate)) {
-                        alert('Дата початку не може бути пізніше за дату кінця');
+                        showToast('Дата початку не може бути пізніше за дату кінця', true);
                         return;
                     }
 
@@ -3153,7 +3667,7 @@
                     const eventDate = document.getElementById('eventDate').value;
 
                     if (!eventDate) {
-                        alert('Оберіть дату проведення');
+                        showToast('Оберіть дату проведення', true);
                         return;
                     }
 
@@ -3174,12 +3688,12 @@
                     const description = document.getElementById('testDescription').value.trim();
 
                     if (!startDate || !endDate) {
-                        alert('Оберіть початок і кінець періоду кампанії');
+                        showToast('Оберіть початок і кінець періоду кампанії', true);
                         return;
                     }
 
                     if (new Date(startDate) > new Date(endDate)) {
-                        alert('Дата початку не може бути пізніше за дату кінця');
+                        showToast('Дата початку не може бути пізніше за дату кінця', true);
                         return;
                     }
 
@@ -3204,7 +3718,7 @@
 
                     if (!error) {
                         console.log('✅ Кампанію успішно оновлено:', data);
-                        alert(`Кампанію "${currentCampaignName}" успішно оновлено!`);
+                        showToast(`Кампанію "${currentCampaignName}" успішно оновлено!`, false);
                     }
                 } else {
                     // Режим створення - перевірка на дублікати
@@ -3227,7 +3741,7 @@
                     }
 
                     if (duplicateCheck.data && duplicateCheck.data.length > 0) {
-                        alert('Кампанія з такими даними вже існує!');
+                        showToast('Кампанія з такими даними вже існує!', true);
                         return;
                     }
 
@@ -3240,7 +3754,7 @@
 
                     if (!error) {
                         console.log('✅ Кампанію успішно створено:', data);
-                        alert(`Кампанію "${currentCampaignName}" успішно створено!`);
+                        showToast(`Кампанію "${currentCampaignName}" успішно створено!`, false);
                     }
                 }
 
@@ -3270,7 +3784,7 @@
 
             } catch (error) {
                 console.error('❌ Помилка збереження кампанії:', error);
-                alert(`Помилка: ${error.message}`);
+                showToast(`Помилка: ${error.message}`, true);
             }
         }
 
@@ -3278,7 +3792,7 @@
         function editCampaign(campaignName) {
             console.log(`🖊️ Редагування кампанії "${campaignName}"`);
             // TODO: Реалізувати логіку редагування кампанії
-            alert(`Редагування кампанії "${campaignName}" - функціонал буде реалізовано пізніше`);
+            showToast(`Редагування кампанії "${campaignName}" - функціонал буде реалізовано пізніше`, true);
         }
 
         // Отримання поточного теократичного року
@@ -3486,11 +4000,11 @@
 
         // Модальне вікно для кастомних кампаній
         function openCustomCampaignModal() {
-            document.getElementById('campaign-modal').style.display = 'flex';
+            document.getElementById('campaign-modal').classList.add('active');
         }
 
         function closeCustomCampaignModal() {
-            document.getElementById('campaign-modal').style.display = 'none';
+            document.getElementById('campaign-modal').classList.remove('active');
             // Очищуємо форму
             document.getElementById('custom-campaign-name').value = '';
             document.getElementById('custom-campaign-start').value = '';
@@ -3506,7 +4020,7 @@
             const description = document.getElementById('custom-campaign-description').value.trim();
 
             if (!name || !startDate || !endDate) {
-                alert('Будь ласка, заповніть всі обов\'язкові поля');
+                showToast('Будь ласка, заповніть всі обов\'язкові поля', true);
                 return;
             }
 
@@ -4389,22 +4903,9 @@
                     <td>${result.territory.category}</td>
                     <td>${result.count}</td>
                     <td>${result.history.join(', ') || '-'}</td>
-                    <td>
-                        <button onclick="viewTerritoryDetails('${result.territory.id}')" class="btn-primary">
-                            Деталі
-                        </button>
-                    </td>
+                    <td><a href="parcel-details.html?id=${result.territory.id}&from=admin">Відкрити</a></td>
                 </tr>
             `).join('');
-        }
-
-        // Функція для переходу до картки території
-        window.viewTerritoryDetails = function (territoryId) {
-            // Зберігаємо ID території в localStorage
-            localStorage.setItem('selectedTerritoryId', territoryId);
-
-            // Переходимо на сторінку територій
-            window.location.href = 'territories.html';
         }
 
         // Функція для скорочення назв кампаній
@@ -4760,6 +5261,15 @@
 
         // Ініціалізація при завантаженні сторінки
         document.addEventListener('DOMContentLoaded', async () => {
+            // Ініціалізація сесії користувача з перевіркою ролі з бази даних
+            const session = await window.initUserSession();
+
+            // Перевіряємо чи користувач є адміном
+            if (!userId || !session.isAdmin) {
+                window.location.href = 'profile.html';
+                return;
+            }
+
             // Ініціалізуємо фільтр територій та активний таб
             init();
 
@@ -4788,7 +5298,244 @@
             // Ініціалізуємо кампанії
             initializeCampaigns();
 
-            // НЕ завантажуємо історію кампаній автоматично - тільки при розгортанні
+            let publisherClickCount = 0;
+            let bulkDeleteMode = false;
+
+            // Слухач на іконку шестерні (Пасхалка 4 кліка)
+            document.getElementById('thActionsHeader').addEventListener('click', function () {
+                if (bulkDeleteMode) return; // Якщо вже увімкнено, ігноруємо
+
+                publisherClickCount++;
+
+                if (publisherClickCount === 4) {
+                    enableBulkDeleteMode();
+                    publisherClickCount = 0; // Скидаємо лічильник
+                } else {
+                    // Короткий натяк користувачу в консоль або тостом, що щось відбувається
+                    console.log(`🔮 Кліків до пасхалки: ${publisherClickCount}/4`);
+                }
+            });
+
+            function enableBulkDeleteMode() {
+                bulkDeleteMode = true;
+                document.body.classList.add('bulk-mode');
+                document.getElementById('bulkDeletePanel').style.display = 'flex';
+
+                // Додаємо чекбокс "Виділити все" в заголовок стовпця імені
+                const nameHeader = document.getElementById('thNameContainer');
+                if (nameHeader) {
+                    nameHeader.innerHTML = '<input type="checkbox" id="selectAllPublishers" style="margin-right: 8px; transform: scale(1.1); cursor: pointer;"> Ім\'я та Прізвище';
+                    document.getElementById('selectAllPublishers').addEventListener('change', function (e) {
+                        const isChecked = e.target.checked;
+                        document.querySelectorAll('.bulk-checkbox').forEach(cb => {
+                            cb.checked = isChecked;
+                        });
+                        if (typeof updateBulkCount === 'function') updateBulkCount();
+                    });
+                }
+
+                // Показуємо чекбокси в кожному рядку таблиці вісників
+                document.querySelectorAll('.bulk-checkbox').forEach(cb => {
+                    cb.style.display = 'inline-block';
+                    cb.checked = false; // Очищаємо попередні вибори
+                });
+
+                updateBulkCount();
+                if (typeof showToast === 'function') {
+                    showToast('🔓 Режим масового видалення користувачів активовано!');
+                }
+            }
+
+            function disableBulkDeleteMode() {
+                bulkDeleteMode = false;
+                document.body.classList.remove('bulk-mode');
+                document.getElementById('bulkDeletePanel').style.display = 'none';
+
+                // Повертаємо чистий текст в заголовок стовпця імені
+                const nameHeader = document.getElementById('thNameContainer');
+                if (nameHeader) nameHeader.innerHTML = 'Ім\'я та Прізвище';
+
+                document.querySelectorAll('.bulk-checkbox').forEach(cb => {
+                    cb.style.display = 'none';
+                    cb.checked = false;
+                });
+                updateBulkCount();
+            }
+
+            // Оновлення лічильника вибраних елементів
+            document.addEventListener('change', function (e) {
+                if (e.target.classList.contains('bulk-checkbox')) {
+                    updateBulkCount();
+                }
+            });
+
+            function updateBulkCount() {
+                const checkedCount = document.querySelectorAll('.bulk-checkbox:checked').length;
+                document.getElementById('selectedPublishersCount').innerText = checkedCount;
+            }
+
+            // Кнопка Скасувати
+            document.getElementById('btnCancelBulk').addEventListener('click', disableBulkDeleteMode);
+
+            // Кнопка виконання Масового видалення
+            document.getElementById('btnExecuteBulkDelete').addEventListener('click', async function () {
+                const checkedBoxes = document.querySelectorAll('.bulk-checkbox:checked');
+                if (checkedBoxes.length === 0) {
+                    if (typeof showToast === 'function') showToast('⚠️ Не вибрано жодного вісника!', true);
+                    return;
+                }
+
+                const idsToDelete = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-id'));
+
+                // Викликаємо кастомне вікно підтвердження (як у оригінальному коді)
+                const confirmBulk = await showCustomConfirm({
+                    title: "🚨 МАСОВЕ ВИДАЛЕННЯ",
+                    text: `Ви впевнені, що хочете безповоротно видалити <b>${idsToDelete.length}</b> вісників?<br>Усі їхні активні дільниці будуть автоматично повернуті та занесені в лог S-13.`,
+                    confirmText: "Так, видалити всіх",
+                    cancelText: "Ні, зупинити"
+                });
+
+                if (!confirmBulk) return;
+
+                try {
+                    // Запускаємо анімацію шредера для всіх вибраних рядків одночасно
+                    checkedBoxes.forEach(cb => {
+                        const row = cb.closest('tr');
+                        if (row) row.classList.add('shredder-anim');
+                    });
+
+                    // Викликаємо нову масову SQL-функцію в Supabase
+                    const { data, error } = await window.supabase.rpc('admin_bulk_delete_publishers', {
+                        p_target_user_ids: idsToDelete
+                    });
+
+                    if (error) throw error;
+
+                    // Видаляємо рядки з екрану після завершення анімації шредера
+                    setTimeout(() => {
+                        checkedBoxes.forEach(cb => {
+                            const row = cb.closest('tr');
+                            if (row) row.remove();
+                        });
+
+                        disableBulkDeleteMode();
+
+                        if (typeof showToast === 'function') {
+                            showToast(`✅ Масове видалення завершено успішно. Видалено вісників: ${idsToDelete.length}`);
+                        }
+                    }, 600);
+
+                } catch (err) {
+                    console.error('Помилка масового видалення:', err);
+                    // Знімаємо шредер у разі збою
+                    checkedBoxes.forEach(cb => {
+                        const row = cb.closest('tr');
+                        if (row) row.classList.remove('shredder-anim');
+                    });
+
+                    if (typeof showToast === 'function') {
+                        showToast(`❌ Помилка масового видалення: ${err.message}`, true);
+                    }
+                }
+            });
+
+            // =========================================================================
+            // ПОКРОКОВЕ ОНОВЛЕННЯ ІМЕНІ ТА ПРІЗВИЩА В ОБОХ ТАБЛИЦЯХ (profiles + publishers)
+            // =========================================================================
+            // Використовуємо делегування подій на document.body для стабільності
+            document.body.addEventListener('click', async (e) => {
+                // Діагностичний лог для відладки
+                console.log("🎯 [Global Click] Target element:", e.target, "ID:", e.target.id, "Closest button:", e.target.closest('button'));
+
+                const saveBtn = e.target.closest('#btnSaveUserName');
+                if (saveBtn) {
+                    e.preventDefault();
+                    const rawUserId = document.getElementById('editUserId').value;
+                    const newName = document.getElementById('editUserName').value.trim();
+                    const newLastName = document.getElementById('editUserLastName').value.trim();
+
+                    // Очищення та нормалізація userId
+                    const cleanUserId = String(rawUserId).trim().toLowerCase();
+
+                    console.log("🔍 [DIAGNOSTIC] Prepared payload for update:");
+                    console.log("- Target User ID:", cleanUserId, "Length:", cleanUserId.length);
+                    console.log("- New Name:", newName);
+                    console.log("- New LastName:", newLastName);
+
+                    if (!cleanUserId || cleanUserId === 'undefined' || cleanUserId === 'null' || cleanUserId === '') {
+                        console.error("❌ [Збереження імені] ID користувача не знайдено в модалці!");
+                        alert("Помилка: Відсутній ID користувача.");
+                        return;
+                    }
+
+                    if (!newName) {
+                        console.warn("⚠️ [Збереження імені] Спроба надіслати порожнє ім'я.");
+                        alert("Ім'я не може бути порожнім!");
+                        return;
+                    }
+
+                    if (typeof toggleSystemLoader === 'function') toggleSystemLoader(true);
+
+                    try {
+                        // 1. Try Profiles Update
+                        try {
+                            const { data: profData, error: profError } = await window.supabase
+                                .from('profiles')
+                                .update({ name: newName, last_name: newLastName })
+                                .eq('id', cleanUserId)
+                                .select();
+                            console.log("📊 [Profiles Try] Result:", profData, "Error:", profError);
+                        } catch (e) {
+                            console.error("❌ Exception during profiles update:", e);
+                        }
+
+                        // 2. Try Publishers Update (Completely independent!)
+                        try {
+                            const { data: pubData, error: pubError } = await window.supabase
+                                .from('publishers')
+                                .update({ name: newName, last_name: newLastName })
+                                .eq('id', cleanUserId)
+                                .select();
+                            console.log("📊 [Publishers Try] Result:", pubData, "Error:", pubError);
+                        } catch (e) {
+                            console.error("❌ Exception during publishers update:", e);
+                        }
+
+                        // КРОК 3: Локальне оновлення масиву в пам'яті сторінки
+                        if (typeof allPublishersData !== 'undefined' && Array.isArray(allPublishersData)) {
+                            const idx = allPublishersData.findIndex(u => String(u.id) === String(cleanUserId));
+                            if (idx !== -1) {
+                                allPublishersData[idx].name = newName;
+                                allPublishersData[idx].last_name = newLastName;
+                                console.log(`💻 [Локальні дані] Оновлено масив в пам'яті для індексу: ${idx}`);
+                            }
+                        }
+
+                        // КРОК 4: Закриваємо модалку
+                        const modal = document.getElementById('editUserNameModal');
+                        if (modal) {
+                            modal.classList.remove('active');
+                            console.log("🔒 [Модалка] Вікно закрито.");
+                        }
+
+                        if (typeof showToast === 'function') {
+                            showToast("Ім'я та прізвище успішно синхронізовано!");
+                        }
+
+                        // КРОК 5: Перезавантаження таблиці
+                        console.log("🔄 [Інтерфейс] Перемальовуємо таблицю вісників...");
+                        if (typeof window.loadPublishersAdminList === 'function') {
+                            await window.loadPublishersAdminList();
+                        }
+
+                    } catch (err) {
+                        console.error("❌ [Критична помилка збереження імені]:", err);
+                        alert(`Не вдалося зберегти дані. Помилка: ${err.message || err}`);
+                    } finally {
+                        if (typeof toggleSystemLoader === 'function') toggleSystemLoader(false);
+                    }
+                }
+            });
 
             // Відновлюємо попередній таб з localStorage
             const savedTab = localStorage.getItem('currentAdminTab');
@@ -4814,8 +5561,824 @@
             // Ховаємо лоадер після завантаження
             hideLoader();
         });
+
+        // =========================================================================
+        // КЕРУВАННЯ КОРИСТУВАЧАМИ ТА АВТЕНТИФІКАЦІЄЮ (ФІКС ВЕРСТКИ ТА СЕСІЇ)
+        // =========================================================================
+
+        let lastClickTime = 0;
+        let clickCount = 0;
+        let passwordClickTimer = null;
+        let selectedPublisherForAction = null;
+        let pendingRoleUpdate = null;
+
+        // Локальні обгортки для твого системного лоадера
+        function localShowLoader() {
+            const loader = document.getElementById('main-loader');
+            if (loader) {
+                loader.style.display = 'flex';
+                loader.style.opacity = '1';
+            }
+        }
+
+        function localHideLoader() {
+            const loader = document.getElementById('main-loader');
+            if (loader) {
+                loader.style.display = 'none';
+            }
+        }
+
+        window.closePublisherModal = (modalId) => {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        };
+
+        // =========================================================================
+        // КЕРУВАННЯ КОРИСТУВАЧАМИ - ФІНАЛЬНА ВЕРСІЯ
+        // =========================================================================
+
+        // Функція для керування лоадером (виправлення вашої помилки)
+        function toggleSystemLoader(show) {
+            const loader = document.getElementById('main-loader');
+            if (loader) {
+                loader.style.display = show ? 'flex' : 'none';
+            }
+        }
+
+        // Глобальна змінна для зберігання даних користувачів
+        let allPublishersData = [];
+
+        window.loadPublishersAdminList = async function () {
+            console.log("🔄 [Admin List] Початок завантаження списку вісників...");
+            toggleSystemLoader(true);
+            try {
+                const { data: publishers, error } = await window.supabase
+                    .from('publishers')
+                    .select('id, name, last_name, role, group_tag')
+                    .order('name', { ascending: true });
+
+                if (error) throw error;
+
+                allPublishersData = publishers || [];
+                console.log(`✅ [Admin List] Отримано ${allPublishersData.length} записів з бази даних.`);
+
+                const tbody = document.getElementById('publishersAdminList');
+                tbody.innerHTML = '';
+
+                // Визначаємо роль поточного адміна з глобального об'єкта сесії або localStorage
+                const localRole = localStorage.getItem('userRole');
+                const isUserSuper = (localRole === 'super-admin' || localRole === 'super_admin' || (window.userSession && window.userSession.isSuperAdmin === true));
+                console.log(`🔐 [Admin List] Права поточного користувача: SuperAdmin = ${isUserSuper}`);
+
+                publishers.forEach(pub => {
+                    const tr = document.createElement('tr');
+                    const fullName = `${pub.name || ''} ${pub.last_name || ''}`.trim() || 'Без імені';
+
+                    const isSuperAdminRole = (pub.role === 'super-admin' || pub.role === 'super_admin');
+
+                    // Якщо поточний користувач НЕ супер-адмін, то блокуємо зміну ролі для інших супер-адмінів
+                    const isSelectDisabled = !isUserSuper && isSuperAdminRole ? 'disabled' : '';
+
+                    tr.innerHTML = `
+                <td style="font-weight: 500; color: #374151; display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" class="bulk-checkbox" data-id="${pub.id}" style="margin: 0; cursor: pointer;">
+                    <span id="name-display-${pub.id}">${pub.name} ${pub.last_name || ''}</span>
+                    <button class="edit-user-name-btn" data-id="${pub.id}" data-name="${pub.name}" data-lastname="${pub.last_name || ''}" style="background: none; border: none; cursor: pointer; padding: 2px 4px; font-size: 14px; margin-left: auto;" title="Редагувати ім'я та прізвище">✏️</button>
+                </td>
+                <td>
+                    <select class="filter-select role-select" style="padding: 4px;" ${isSelectDisabled} data-id="${pub.id}" data-previous-role="${pub.role}">
+                        <option value="user" ${pub.role === 'user' ? 'selected' : ''}>user</option>
+                        <option value="admin" ${pub.role === 'admin' ? 'selected' : ''}>admin</option>
+                        <option value="super-admin" ${isSuperAdminRole ? 'selected' : ''}>super-admin</option>
+                    </select>
+                </td>
+                <td style="padding: 12px 8px;">
+                    <select class="admin-select origin-select" data-id="${pub.id}" data-previous-group="${pub.group_tag || ''}" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; background-color: #fff; cursor: pointer; font-size: 14px;">
+                        <option value="Липовець" ${pub.group_tag === 'Липовець' ? 'selected' : ''}>🏠 Липовець</option>
+                        <option value="Іллінці" ${pub.group_tag === 'Іллінці' ? 'selected' : ''}>🚗 Іллінці</option>
+                        <option value="Гості" ${pub.group_tag === 'Гості' ? 'selected' : ''}>👣 Гості</option>
+                    </select>
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn-edit-campaign" style="font-size: 1.3rem; padding: 2px 8px; border: none; background: transparent; cursor: pointer;" onclick="handlePasswordCabinetClick('${pub.id}', '${fullName}')">
+                        🔑
+                    </button>
+                </td>
+                <td style="text-align: center;">
+                    <button class="delete-pub-btn" style="font-size: 1.2rem; padding: 4px 8px; border: none; background: transparent; cursor: pointer; color: #ef4444; transition: transform 0.2s;" data-id="${pub.id}" data-name="${fullName}" onclick="handleDeletePublisher('${pub.id}', '${fullName}')">
+                        🗑️
+                    </button>
+                </td>
+            `;
+
+                    tbody.appendChild(tr);
+
+                    // Чекбокси масового вибору
+                    const checkbox = tr.querySelector('.bulk-checkbox');
+                    if (checkbox) {
+                        checkbox.addEventListener('change', () => {
+                            if (typeof updateBulkCount === 'function') updateBulkCount();
+                        });
+                    }
+                });
+
+                console.log("📋 [Admin List] Рендеринг таблиці завершено успішно.");
+
+                // ДЕЛЕГУВАННЯ ПОДІЇ CHANGE ДЛЯ SELECT РОЛІ
+                tbody.addEventListener('change', (e) => {
+                    const roleSelect = e.target.closest('.role-select');
+                    if (!roleSelect) return;
+
+                    const targetUserId = roleSelect.getAttribute('data-id');
+                    const newRole = roleSelect.value;
+                    const oldRole = roleSelect.getAttribute('data-previous-role') || roleSelect.value;
+
+                    // Отримуємо ім'я користувача з поточного рядка таблиці
+                    const nameDisplay = document.getElementById(`name-display-${targetUserId}`);
+                    const userName = nameDisplay ? nameDisplay.textContent : 'користувача';
+
+                    console.log(`🔐 [Зміна ролі] ID: ${targetUserId}, стара роль: ${oldRole}, нова роль: ${newRole}`);
+
+                    // Зберігаємо дані для підтвердження
+                    window.pendingRoleUpdate = {
+                        userId: targetUserId,
+                        newRole: newRole,
+                        oldRole: oldRole,
+                        selectElement: roleSelect,
+                        userName: userName
+                    };
+
+                    // Відкриваємо модальне вікно підтвердження
+                    const modal = document.getElementById('customConfirmModal');
+                    const title = document.getElementById('confirmModalTitle');
+                    const text = document.getElementById('confirmModalText');
+                    const confirmBtn = document.getElementById('confirmBtnYes');
+                    const cancelBtn = document.getElementById('confirmBtnNo');
+
+                    if (modal && title && text) {
+                        title.textContent = '🔐 Зміна прав доступу';
+                        text.textContent = `Ви дійсно хочете змінити роль для користувача ${userName} на '${newRole}'?`;
+                        confirmBtn.textContent = 'Так, оновити';
+                        cancelBtn.textContent = 'Скасувати';
+                        modal.style.display = 'flex';
+                    }
+                });
+
+                // ДЕЛЕГУВАННЯ ПОДІЇ CHANGE ДЛЯ SELECT ПОХОДЖЕННЯ
+                tbody.addEventListener('change', (e) => {
+                    const originSelect = e.target.closest('.origin-select');
+                    if (!originSelect) return;
+
+                    const targetUserId = originSelect.getAttribute('data-id');
+                    const newGroupTag = originSelect.value;
+                    const oldGroupTag = originSelect.getAttribute('data-previous-group') || originSelect.value;
+
+                    // Отримуємо ім'я користувача з поточного рядка таблиці
+                    const nameDisplay = document.getElementById(`name-display-${targetUserId}`);
+                    const userName = nameDisplay ? nameDisplay.textContent : 'користувача';
+
+                    console.log(`📋 [Зміна походження] ID: ${targetUserId}, старе походження: ${oldGroupTag}, нове походження: ${newGroupTag}`);
+
+                    // Зберігаємо дані для підтвердження
+                    window.pendingGroupUpdate = {
+                        userId: targetUserId,
+                        newGroupTag: newGroupTag,
+                        oldGroupTag: oldGroupTag,
+                        selectElement: originSelect,
+                        userName: userName
+                    };
+
+                    // Відкриваємо модальне вікно підтвердження
+                    const modal = document.getElementById('customConfirmModal');
+                    const title = document.getElementById('confirmModalTitle');
+                    const text = document.getElementById('confirmModalText');
+                    const confirmBtn = document.getElementById('confirmBtnYes');
+                    const cancelBtn = document.getElementById('confirmBtnNo');
+
+                    if (modal && title && text) {
+                        title.textContent = '📋 Зміна походження вісника';
+                        text.textContent = `Ви дійсно бажаєте змінити походження (групу) для користувача ${userName} на '${newGroupTag}'?`;
+                        confirmBtn.textContent = 'Так, оновити';
+                        cancelBtn.textContent = 'Скасувати';
+                        modal.style.display = 'flex';
+                    }
+                });
+
+                // Обробник кнопки скасування в модальному вікні
+                document.getElementById('confirmBtnNo').addEventListener('click', () => {
+                    const modal = document.getElementById('customConfirmModal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                    }
+
+                    // Повертаємо селект у попередній стан для ролі
+                    if (window.pendingRoleUpdate && window.pendingRoleUpdate.selectElement) {
+                        window.pendingRoleUpdate.selectElement.value = window.pendingRoleUpdate.oldRole;
+                    }
+
+                    // Повертаємо селект у попередній стан для походження
+                    if (window.pendingGroupUpdate && window.pendingGroupUpdate.selectElement) {
+                        window.pendingGroupUpdate.selectElement.value = window.pendingGroupUpdate.oldGroupTag;
+                    }
+
+                    window.pendingRoleUpdate = null;
+                    window.pendingGroupUpdate = null;
+                });
+
+                // Обробник кнопки підтвердження в модальному вікні
+                document.getElementById('confirmBtnYes').addEventListener('click', async () => {
+                    const modal = document.getElementById('customConfirmModal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                    }
+
+                    // Обробляємо оновлення ролі
+                    if (window.pendingRoleUpdate) {
+                        const { userId, newRole, oldRole, selectElement, userName } = window.pendingRoleUpdate;
+
+                        // Показуємо лоадер та відключаємо селект
+                        if (typeof toggleSystemLoader === 'function') toggleSystemLoader(true);
+                        if (selectElement) selectElement.disabled = true;
+
+                        let successCount = 0;
+                        let errorCount = 0;
+
+                        try {
+                            // 1. Update profiles table
+                            try {
+                                const { error: profError } = await window.supabase
+                                    .from('profiles')
+                                    .update({ role: newRole })
+                                    .eq('id', userId);
+                                if (profError) throw profError;
+                                console.log("✅ [Profiles] Роль успішно оновлена");
+                                successCount++;
+                            } catch (err) {
+                                console.error("❌ [Profiles] Помилка оновлення ролі:", err);
+                                errorCount++;
+                            }
+
+                            // 2. Update publishers table (with role normalization)
+                            try {
+                                const normalizedRole = newRole.replace('-', '_'); // Handles super-admin -> super_admin
+                                const { error: pubError } = await window.supabase
+                                    .from('publishers')
+                                    .update({ role: normalizedRole })
+                                    .eq('id', userId);
+                                if (pubError) throw pubError;
+                                console.log("✅ [Publishers] Роль успішно оновлена");
+                                successCount++;
+                            } catch (err) {
+                                console.error("❌ [Publishers] Помилка оновлення ролі:", err);
+                                errorCount++;
+                            }
+
+                            // Оновлюємо локальний масив даних
+                            if (typeof allPublishersData !== 'undefined' && Array.isArray(allPublishersData)) {
+                                const idx = allPublishersData.findIndex(u => String(u.id) === String(userId));
+                                if (idx !== -1) {
+                                    allPublishersData[idx].role = newRole;
+                                    console.log(`💻 [Локальні дані] Оновлено роль в масиві для індексу: ${idx}`);
+                                }
+                            }
+
+                            // Оновлюємо атрибут попередньої ролі
+                            if (selectElement) {
+                                selectElement.setAttribute('data-previous-role', newRole);
+                                selectElement.disabled = false;
+                            }
+
+                            if (successCount > 0 && errorCount === 0) {
+                                if (typeof showToast === 'function') {
+                                    showToast('Роль успішно оновлено!');
+                                } else {
+                                    alert('Роль користувача успішно оновлено!');
+                                }
+                            } else if (successCount > 0) {
+                                if (typeof showToast === 'function') {
+                                    showToast('Роль оновлено частково (деякі оновлення не вдалося)', true);
+                                } else {
+                                    alert('Роль оновлено частково (деякі оновлення не вдалося)');
+                                }
+                            } else {
+                                throw new Error('Не вдалося оновити роль в жодній таблиці');
+                            }
+                        } catch (err) {
+                            console.error('❌ [Критична помилка оновлення ролі]:', err);
+                            // Відкат значення селекту
+                            if (selectElement) {
+                                selectElement.value = oldRole;
+                                selectElement.disabled = false;
+                            }
+                            if (typeof showToast === 'function') {
+                                showToast('Помилка оновлення ролі: ' + err.message, true);
+                            } else {
+                                alert('Помилка оновлення ролі: ' + err.message);
+                            }
+                            // Перезавантажуємо таблицю для відновлення актуального стану
+                            window.loadPublishersAdminList();
+                        } finally {
+                            if (typeof toggleSystemLoader === 'function') toggleSystemLoader(false);
+                            window.pendingRoleUpdate = null;
+                        }
+                    }
+
+                    // Обробляємо оновлення походження
+                    if (window.pendingGroupUpdate) {
+                        const { userId, newGroupTag, oldGroupTag, selectElement, userName } = window.pendingGroupUpdate;
+
+                        // Показуємо лоадер та відключаємо селект
+                        if (typeof toggleSystemLoader === 'function') toggleSystemLoader(true);
+                        if (selectElement) selectElement.disabled = true;
+
+                        try {
+                            // Update publishers table
+                            const { error } = await window.supabase
+                                .from('publishers')
+                                .update({ group_tag: newGroupTag })
+                                .eq('id', userId);
+
+                            if (error) throw error;
+
+                            console.log("✅ [Publishers] Походження успішно оновлено");
+
+                            // Оновлюємо локальний масив даних
+                            if (typeof allPublishersData !== 'undefined' && Array.isArray(allPublishersData)) {
+                                const idx = allPublishersData.findIndex(u => String(u.id) === String(userId));
+                                if (idx !== -1) {
+                                    allPublishersData[idx].group_tag = newGroupTag;
+                                    console.log(`💻 [Локальні дані] Оновлено походження в масиві для індексу: ${idx}`);
+                                }
+                            }
+
+                            // Оновлюємо атрибут попереднього походження
+                            if (selectElement) {
+                                selectElement.setAttribute('data-previous-group', newGroupTag);
+                                selectElement.disabled = false;
+                            }
+
+                            if (typeof showToast === 'function') {
+                                showToast('Походження успішно оновлено!');
+                            } else {
+                                alert('Походження вісника успішно оновлено!');
+                            }
+                        } catch (err) {
+                            console.error('❌ [Критична помилка оновлення походження]:', err);
+                            // Відкат значення селекту
+                            if (selectElement) {
+                                selectElement.value = oldGroupTag;
+                                selectElement.disabled = false;
+                            }
+                            if (typeof showToast === 'function') {
+                                showToast('Помилка оновлення походження: ' + err.message, true);
+                            } else {
+                                alert('Помилка оновлення походження: ' + err.message);
+                            }
+                            // Перезавантажуємо таблицю для відновлення актуального стану
+                            window.loadPublishersAdminList();
+                        } finally {
+                            if (typeof toggleSystemLoader === 'function') toggleSystemLoader(false);
+                            window.pendingGroupUpdate = null;
+                        }
+                    }
+                });
+
+                // ДЕЛЕГУВАННЯ КЛІКУ НА ОЛІВЕЦЬ
+                tbody.addEventListener('click', (e) => {
+                    const editBtn = e.target.closest('.edit-user-name-btn');
+                    if (!editBtn) return;
+
+                    const userId = editBtn.getAttribute('data-id');
+                    const userName = editBtn.getAttribute('data-name');
+                    const userLastName = editBtn.getAttribute('data-lastname');
+
+                    console.log(`✏️ [Клік] Редагування для ID: ${userId} (${userName} ${userLastName})`);
+
+                    document.getElementById('editUserId').value = userId;
+                    document.getElementById('editUserName').value = userName || '';
+                    document.getElementById('editUserLastName').value = userLastName || '';
+
+                    const modal = document.getElementById('editUserNameModal');
+                    if (modal) {
+                        modal.classList.add('active');
+                        console.log("🔓 [Модалка] Вікно редагування імені відкрито.");
+                    } else {
+                        console.error("❌ [Помилка] Елемент #editUserNameModal не знайдено!");
+                    }
+                });
+
+            } catch (err) {
+                console.error('❌ [Admin List Помилка завантаження]:', err);
+            } finally {
+                toggleSystemLoader(false);
+            }
+        };
+        window.handleRoleChange = async function (userId, fullName, selectElement) {
+            const newRole = selectElement.value;
+            const oldRole = selectElement.getAttribute('data-previous-role') || selectElement.value;
+
+            // Зберігаємо старе значення для відкату
+            selectElement.setAttribute('data-previous-role', oldRole);
+
+            // ПРЯМИЙ ЗАПИТ до Supabase Auth для отримання актуальної ролі
+            const { data: { session } } = await window.supabase.auth.getSession();
+
+            // Перевіряємо роль з localStorage (де її тримає ваш config.js)
+            const currentRole = localStorage.getItem('userRole');
+            const isSuperAdmin = (currentRole === 'super-admin' || currentRole === 'super_admin');
+
+            console.log("Debug: Current LocalStorage Role:", currentRole, "Is SuperAdmin:", isSuperAdmin);
+
+            // Логіка перевірки
+            if (newRole === 'super-admin' && !isSuperAdmin) {
+                alert('Помилка: Ви не маєте прав супер-адміна для цієї дії.');
+                // Повертаємо селект у попередній стан
+                selectElement.value = oldRole;
+                return;
+            }
+
+            // Якщо все добре — показуємо модалку підтвердження
+            pendingRoleUpdate = { userId, newRole, oldRole, selectElement };
+            const msg = document.getElementById('roleConfirmMessage');
+            msg.innerHTML = `Ви дійсно бажаєте змінити роль для <strong>${fullName}</strong> на <strong>"${newRole}"</strong>? Це вплине на його права доступу в системі.`;
+            document.getElementById('roleConfirmModal').classList.add('active');
+        };
+
+        window.handleDeletePublisher = async function (userId, fullName) {
+            const row = document.querySelector(`button[data-id="${userId}"]`).closest('tr');
+
+            // Перший крок підтвердження
+            const firstConfirm = await showCustomConfirm({
+                title: "Видалення вісника",
+                text: `Ви впевнені, що хочете видалити вісника <b>${fullName}</b>?`,
+                confirmText: "Так, видалити",
+                cancelText: "Скасувати"
+            });
+
+            if (!firstConfirm) return;
+
+            // Другий крок підтвердження
+            const secondConfirm = await showCustomConfirm({
+                title: "⚠️ ВАЖЛИВЕ ПОПЕРЕДЖЕННЯ",
+                text: "Усі активні дільниці цього вісника будуть автоматично <b>ЗДАНІ</b> в систему.<br>Продовжити видалення?",
+                confirmText: "Продовжити",
+                cancelText: "Ні, зупинити"
+            });
+
+            if (!secondConfirm) return;
+
+            // Додаємо клас шредера для анімації
+            row.classList.add('shredder-anim');
+
+            try {
+
+                const { error } = await window.supabase.rpc('admin_delete_publisher', {
+                    p_target_user_id: userId
+                });
+
+                if (error) throw error;
+
+                // 3. Анімація відскоку (bounce ефект) для рядків нижче, яка вже була налаштована
+                const tbody = row.parentElement;
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const rowIndex = rows.indexOf(row);
+
+                rows.slice(rowIndex + 1).forEach((r, i) => {
+                    setTimeout(() => {
+                        r.classList.add('bounce-anim');
+                        setTimeout(() => r.classList.remove('bounce-anim'), 400);
+                    }, i * 50);
+                });
+
+                // 4. Видаляємо рядок з екрану після завершення шредера
+                setTimeout(() => {
+                    row.remove();
+                    if (typeof showToast === 'function') {
+                        showToast(`✅ Вісника ${fullName} успішно видалено. Дільниці автоматично прораховані за днями та здані.`);
+                    }
+                }, 600);
+
+            } catch (err) {
+                console.error('Помилка видалення:', err);
+                // Якщо база повернула помилку — скасовуємо анімацію і повертаємо рядок до ладу
+                row.classList.remove('shredder-anim');
+                if (typeof showToast === 'function') {
+                    showToast(`❌ Помилка видалення: ${err.message}`, true);
+                } else {
+                    alert('Помилка видалення: ' + err.message);
+                }
+            }
+        };
+
+        document.getElementById('btnRoleConfirmYes').addEventListener('click', async () => {
+            if (!pendingRoleUpdate) return;
+            window.closePublisherModal('roleConfirmModal');
+            localShowLoader();
+
+            const { userId, newRole, oldRole, selectElement } = pendingRoleUpdate;
+            let successCount = 0;
+            let errorCount = 0;
+
+            try {
+                // 1. Update profiles table
+                try {
+                    const { error: profError } = await window.supabase
+                        .from('profiles')
+                        .update({ role: newRole })
+                        .eq('id', userId);
+                    if (profError) throw profError;
+                    console.log("✅ [Profiles] Роль успішно оновлена");
+                    successCount++;
+                } catch (err) {
+                    console.error("❌ [Profiles] Помилка оновлення ролі:", err);
+                    errorCount++;
+                }
+
+                // 2. Update publishers table (with role normalization)
+                try {
+                    const normalizedRole = newRole.replace('-', '_'); // Handles super-admin -> super_admin
+                    const { error: pubError } = await window.supabase
+                        .from('publishers')
+                        .update({ role: normalizedRole })
+                        .eq('id', userId);
+                    if (pubError) throw pubError;
+                    console.log("✅ [Publishers] Роль успішно оновлена");
+                    successCount++;
+                } catch (err) {
+                    console.error("❌ [Publishers] Помилка оновлення ролі:", err);
+                    errorCount++;
+                }
+
+                // Оновлюємо локальний масив даних
+                if (typeof allPublishersData !== 'undefined' && Array.isArray(allPublishersData)) {
+                    const idx = allPublishersData.findIndex(u => String(u.id) === String(userId));
+                    if (idx !== -1) {
+                        allPublishersData[idx].role = newRole;
+                        console.log(`💻 [Локальні дані] Оновлено роль в масиві для індексу: ${idx}`);
+                    }
+                }
+
+                // Оновлюємо атрибут попередньої ролі
+                if (selectElement) {
+                    selectElement.setAttribute('data-previous-role', newRole);
+                }
+
+                if (successCount > 0 && errorCount === 0) {
+                    if (typeof showToast === 'function') {
+                        showToast('Роль успішно оновлено!');
+                    } else {
+                        alert('Роль користувача успішно оновлено!');
+                    }
+                } else if (successCount > 0) {
+                    if (typeof showToast === 'function') {
+                        showToast('Роль оновлено частково (деякі оновлення не вдалося)', true);
+                    } else {
+                        alert('Роль оновлено частково (деякі оновлення не вдалося)');
+                    }
+                } else {
+                    throw new Error('Не вдалося оновити роль в жодній таблиці');
+                }
+            } catch (err) {
+                console.error('❌ [Критична помилка оновлення ролі]:', err);
+                // Відкат значення селекту
+                if (selectElement) {
+                    selectElement.value = oldRole;
+                }
+                if (typeof showToast === 'function') {
+                    showToast('Помилка оновлення ролі: ' + err.message, true);
+                } else {
+                    alert('Помилка оновлення ролі: ' + err.message);
+                }
+                // Перезавантажуємо таблицю для відновлення актуального стану
+                window.loadPublishersAdminList();
+            } finally {
+                localHideLoader();
+                pendingRoleUpdate = null;
+            }
+        });
+
+
+        window.handlePasswordCabinetClick = function (userId, publisherName) {
+            const currentTime = Date.now();
+            const timeDiff = currentTime - lastClickTime;
+
+            if (timeDiff < 400) clickCount += 1;
+            else clickCount = 1;
+            lastClickTime = currentTime;
+            selectedPublisherForAction = { userId, publisherName };
+
+            if (clickCount === 4) {
+                clickCount = 0;
+                clearTimeout(passwordClickTimer);
+                openManualPasswordModal(userId, publisherName);
+                return;
+            }
+
+            clearTimeout(passwordClickTimer);
+            passwordClickTimer = setTimeout(() => {
+                if (clickCount > 0 && clickCount < 4) {
+                    processAutoPassword(userId, publisherName);
+                }
+                clickCount = 0;
+            }, 400);
+        };
+
+        function processAutoPassword(userId, publisherName) {
+            const generatedPassword = generateRandomPassword();
+            changeUserPassword(userId, publisherName, generatedPassword);
+        }
+
+        function generateRandomPassword() {
+            const digits = '0123456789';
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+            let pool = [];
+
+            // 1. Обов'язково беремо 6 випадкових цифр
+            for (let i = 0; i < 6; i++) {
+                pool.push(digits.charAt(Math.floor(Math.random() * digits.length)));
+            }
+
+            // 2. Обов'язково беремо 2 випадкові літери
+            for (let i = 0; i < 2; i++) {
+                pool.push(letters.charAt(Math.floor(Math.random() * letters.length)));
+            }
+
+            // 3. Алгоритм Фішера-Єйтса для ідеального випадкового перемішування
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                // Міняємо елементи місцями
+                const temp = pool[i];
+                pool[i] = pool[j];
+                pool[j] = temp;
+            }
+
+            return pool.join('');
+        }
+
+        async function changeUserPassword(userId, publisherName, password) {
+            localShowLoader();
+            try {
+                const { error } = await supabase.rpc('admin_change_user_password', {
+                    target_user_id: userId,
+                    new_password: password
+                });
+
+                if (error) throw error;
+
+                document.getElementById('displayModalLogin').innerText = publisherName;
+                document.getElementById('displayModalPassword').innerText = password;
+                document.getElementById('passwordResultModal').classList.add('active');
+            } catch (err) {
+                console.error('Помилка зміни пароля:', err);
+                alert('Не вдалося змінити пароль: ' + (err.message || err));
+            } finally {
+                localHideLoader();
+            }
+        }
+
+        function openManualPasswordModal(userId, publisherName) {
+            selectedPublisherForAction = { userId, publisherName };
+            const input = document.getElementById('inputManualPassword');
+            input.value = 'Pass123!';
+            updatePasswordStrengthBar('Pass123!');
+            document.getElementById('manualPasswordModal').classList.add('active');
+            input.focus();
+        }
+
+        document.getElementById('inputManualPassword').addEventListener('input', function (e) {
+            updatePasswordStrengthBar(e.target.value);
+        });
+
+        function updatePasswordStrengthBar(pass) {
+            const bar = document.getElementById('passwordStrengthBar');
+            const text = document.getElementById('passValidationText');
+            const percentText = document.getElementById('passPercentText');
+            const saveBtn = document.getElementById('btnSaveManualPassword');
+
+            if (!pass) {
+                bar.style.width = '0%';
+                bar.style.backgroundColor = '#dc3545';
+                text.innerText = 'Очікування вводу...';
+                percentText.innerText = '0%';
+                saveBtn.disabled = true;
+                return;
+            }
+
+            let score = 0;
+            let msgs = [];
+            if (pass.length >= 8) score += 40; else msgs.push(`${8 - pass.length} зн.`);
+            if (/[a-zA-Z]/.test(pass)) score += 30; else msgs.push('букву');
+            if (/[0-9]/.test(pass)) score += 30; else msgs.push('цифру');
+
+            bar.style.width = score + '%';
+            percentText.innerText = score + '%';
+            const hue = (score / 100) * 120;
+            bar.style.backgroundColor = `hsl(${hue}, 85%, 45%)`;
+
+            if (pass.length >= 8) {
+                saveBtn.disabled = false;
+            } else {
+                saveBtn.disabled = true;
+            }
+
+            if (score === 100) {
+                text.innerText = '⚡ Норми виконано!';
+                text.style.color = '#28a745';
+            } else {
+                text.innerText = 'Потрібно: ' + msgs.join(', ');
+                text.style.color = '#dc3545';
+            }
+        }
+
+        document.getElementById('btnSaveManualPassword').addEventListener('click', async () => {
+            const pass = document.getElementById('inputManualPassword').value;
+            if (!selectedPublisherForAction || pass.length < 8) {
+                alert('Пароль повинен містити мінімум 8 символів.');
+                return;
+            }
+            window.closePublisherModal('manualPasswordModal');
+            await changeUserPassword(selectedPublisherForAction.userId, selectedPublisherForAction.publisherName, pass);
+        });
+
+        document.getElementById('btnCopyAuthData').addEventListener('click', () => {
+            const name = document.getElementById('displayModalLogin').innerText;
+            const pass = document.getElementById('displayModalPassword').innerText;
+            const text = `Привіт! Твої дані для входу в Карти Дільниць:\nІм'я: ${name}\nПароль: ${pass}`;
+            navigator.clipboard.writeText(text).then(() => {
+                const status = document.getElementById('copyStatusText');
+                status.style.opacity = '1';
+                setTimeout(() => status.style.opacity = '0', 2000);
+            }).catch(() => alert('Скопіюйте текст вручну з картки.'));
+        });
+
+        // Обробник кнопки Поділитися з Web Share API
+        document.getElementById('btnShareCredentials').addEventListener('click', async () => {
+            const name = document.getElementById('displayModalLogin').innerText;
+            const pass = document.getElementById('displayModalPassword').innerText;
+            const text = `Привіт! Твої дані для входу в Карти Дільниць:\nІм'я: ${name}\nПароль: ${pass}`;
+
+            // Перевіряємо підтримку Web Share API
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Дані для входу в Карти Дільниць',
+                        text: text
+                    });
+                    console.log('📤 Дані успішно надіслано через Web Share API');
+                } catch (err) {
+                    console.error('❌ Помилка Web Share API:', err);
+                    // Fallback на копіювання в буфер обміну
+                    copyToClipboard(text);
+                }
+            } else {
+                // Fallback для десктопу - копіювання в буфер обміну
+                copyToClipboard(text);
+            }
+        });
+
+        // Функція для копіювання в буфер обміну
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const status = document.getElementById('copyStatusText');
+                status.style.opacity = '1';
+                setTimeout(() => status.style.opacity = '0', 2000);
+                console.log('📋 Дані скопійовано в буфер обміну');
+            }).catch(() => {
+                alert('Скопіюйте текст вручну з картки.');
+            });
+        }
+
+        // Надійна перевірка прав супер-адміна
+        window.isUserSuperAdmin = function () {
+            // 1. Перевіряємо localStorage (найшвидший спосіб)
+            const localRole = localStorage.getItem('userRole');
+
+            // 2. Перевіряємо глобальний об'єкт, якщо він існує
+            const sessionRole = window.userSession ? window.userSession.isSuperAdmin : false;
+
+            return (localRole === 'super-admin' || localRole === 'super_admin' || sessionRole === true);
+        };
+
     </script>
 
+    <!-- КАСТОМНЕ ВІКНО ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ -->
+    <div id="customConfirmModal"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 9999;">
+        <div class="confirm-modal-box"
+            style="background: white; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;">
+            <h3 id="confirmModalTitle" class="confirm-modal-title">Підтвердження</h3>
+            <p id="confirmModalText" class="confirm-modal-text">Ви впевнені?</p>
+            <div class="confirm-modal-buttons">
+                <button id="confirmBtnNo" class="btn-confirm-action btn-confirm-no">Скасувати</button>
+                <button id="confirmBtnYes" class="btn-confirm-action btn-confirm-yes">Видалити</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/s13-export.js"></script>
     <script src="js/dev-tools.js"></script>
 </body>
 

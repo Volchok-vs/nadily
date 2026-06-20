@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="uk">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вхід у систему територій</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -15,29 +15,42 @@
             height: 100vh;
             margin: 0;
         }
+
         .login-card {
             background: white;
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
             text-align: center;
+            box-sizing: border-box;
         }
+
         .login-card h2 {
-            margin-bottom: 25px;
+            margin-bottom: 10px;
             color: #333;
         }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
         .input-group {
             margin-bottom: 20px;
             text-align: left;
+            position: relative;
         }
+
         .input-group label {
             display: block;
             margin-bottom: 5px;
             color: #666;
             font-size: 14px;
         }
+
         .input-group input {
             width: 100%;
             padding: 12px;
@@ -45,7 +58,87 @@
             border-radius: 6px;
             box-sizing: border-box;
             font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
+
+        .input-group input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.1);
+        }
+
+        /* Випадаючий список */
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-height: 180px;
+            overflow-y: auto;
+            margin-top: 2px;
+            padding: 0;
+            list-style: none;
+            box-sizing: border-box;
+        }
+
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 15px;
+            color: #333;
+            border-bottom: 1px solid #f1f3f5;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover {
+            background-color: #f8f9fa;
+            color: #007bff;
+        }
+
+        .autocomplete-item .last-name {
+            font-size: 13px;
+            color: #666;
+            font-weight: normal;
+        }
+
+        /* Банер обраного користувача */
+        .selected-user-banner {
+            background: #e7f1ff;
+            color: #004085;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+        }
+
+        .btn-change-user {
+            background: none;
+            border: none;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: underline;
+            padding: 0;
+        }
+
         .btn-login {
             background-color: #007bff;
             color: white;
@@ -57,16 +150,25 @@
             font-weight: bold;
             cursor: pointer;
             transition: background 0.3s;
+            margin-top: 10px;
         }
+
         .btn-login:hover {
             background-color: #0056b3;
         }
+
         .error-msg {
             color: #dc3545;
             margin-top: 15px;
             font-size: 14px;
             display: none;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+            text-align: center;
         }
+
         .back-link {
             display: block;
             margin-top: 20px;
@@ -77,120 +179,290 @@
 
         .password-wrapper {
             width: 100%;
-        }
-
-        .password-wrapper input {
-            box-sizing: border-box; /* Щоб padding не розширював поле */
+            position: relative;
+            display: flex;
+            align-items: center;
         }
 
         #togglePassword:hover {
-            color: #007bff; /* Колір при наведенні */
+            color: #007bff;
         }
 
-        /* Прибираємо стандартну синю рамку при натисканні на кнопку */
         #togglePassword:focus {
             outline: none;
         }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="login-card">
-    <h2>Вхід для вісників</h2>
-    
-    <div class="input-group">
-        <label for="name">Прізвище та Ім'я</label>
-        <input type="text" id="name" placeholder="Наприклад: Петренко Іван" required>
-    </div>
+    <form class="login-card" id="loginForm" onsubmit="return false;">
+        <h2>Вхід для вісників</h2>
+        <div class="subtitle" id="formSubtitle">Почніть вводити ваше ім'я</div>
 
-    <div class="input-group">
-        <label for="password">Пароль (Секретний ключ)</label>
-        <div class="password-wrapper" style="position: relative; display: flex; align-items: center;">
-            <input type="password" id="password" placeholder="Введіть ваш ключ" required 
-                style="width: 100%; padding-right: 45px;"> 
-            <button type="button" id="togglePassword" 
-                    style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; font-size: 20px; line-height: 1; padding: 5px; color: #666; user-select: none;">
-                🔒
-            </button>
+        <div id="step-name-container" class="input-group">
+            <label for="search-user-field">Ваше Ім'я</label>
+            <input type="text" id="search-user-field" placeholder="Введіть мінімум 3 літери імені..." autocomplete="off"
+                required>
+            <ul id="autocomplete-list" class="autocomplete-dropdown hidden"></ul>
         </div>
-    </div>
 
-    <button class="btn-login" onclick="handleLogin()">УВІЙТИ</button>
-    
-    <div id="error" class="error-msg">Невірне ім'я або пароль.</div>
-    
-    <a href="index.html" class="back-link">← Повернутися до карти</a>
-</div>
+        <div id="step-password-container" class="hidden">
+            <div class="selected-user-banner">
+                <span id="selectedUserLabel">Вісник: </span>
+                <button type="button" class="btn-change-user" id="btnBackToName">Змінити</button>
+            </div>
 
-<script type="module">
-    // Імпортуємо клієнт (якщо ви використовуєте ES модулі, інакше використовуйте вікно)
-   import { supabase } from "./js/config.js"; // Просто імпортуємо готову "розетку"
-   
-    async function handleLogin() {
-        const name = document.getElementById('name').value.trim();
-        const key = document.getElementById('password').value.trim();
+            <div id="dynamic-password-root"></div>
+
+            <button type="submit" class="btn-login" id="submitLogin">УВІЙТИ</button>
+        </div>
+
+        <div id="error" class="error-msg"></div>
+
+        <a href="index.html" class="back-link">← Повернутися до карти</a>
+    </form>
+
+    <script type="module">
+        import { supabase } from "./js/config.js";
+
+        let chosenEmail = '';
+        let chosenFullName = '';
+        let debounceTimer;
+
+        // DOM елементи
+        const nameInput = document.getElementById('search-user-field');
+        const autocompleteList = document.getElementById('autocomplete-list');
+        const stepNameContainer = document.getElementById('step-name-container');
+        const stepPasswordContainer = document.getElementById('step-password-container');
+        const selectedUserLabel = document.getElementById('selectedUserLabel');
+        const formSubtitle = document.getElementById('formSubtitle');
         const errorDiv = document.getElementById('error');
+        const dynamicPasswordRoot = document.getElementById('dynamic-password-root');
+        const btnBackToName = document.getElementById('btnBackToName');
+        const submitBtn = document.getElementById('submitLogin');
 
-        if (!name || !key) {
-            alert("Заповніть усі поля");
-            return;
+        // Пошук імені на льоту (від 3 літер + пауза 400мс)
+        if (nameInput) {
+            nameInput.addEventListener('input', (e) => {
+                const searchVal = e.target.value.trim();
+
+                clearTimeout(debounceTimer);
+                errorDiv.style.display = 'none';
+
+                if (searchVal.length < 3) {
+                    autocompleteList.classList.add('hidden');
+                    return;
+                }
+
+                debounceTimer = setTimeout(async () => {
+                    await fetchProfilesDropdown(searchVal);
+                }, 400);
+            });
         }
 
-        try {
-            // Шукаємо користувача в таблиці publishers
-            const { data, error } = await supabase
-                .from('publishers')
-                .select('id, name, role, secret_key')
-                .eq('name', name)
-                .eq('secret_key', key)
-                .single();
+        // КРОК 1: Адаптований пошук через безпечне дзеркало
+        async function fetchProfilesDropdown(searchTerm) {
+            try {
+                // Запитуємо ПІБ та вже існуючий email прямо з нашого дзеркала
+                const { data: profiles, error } = await supabase
+                    .from('login_autocompletion_mirror')
+                    .select('name, last_name, email')
+                    .or(`name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`)
+                    .limit(6);
 
-            if (error || !data) {
-                errorDiv.style.display = 'block';
+                if (error) throw error;
+
+                if (!profiles || profiles.length === 0) {
+                    autocompleteList.classList.add('hidden');
+                    return;
+                }
+
+                autocompleteList.innerHTML = '';
+                autocompleteList.classList.remove('hidden');
+
+                profiles.forEach(profile => {
+                    const fullUaName = `${profile.name || ''} ${profile.last_name || ''}`.trim();
+                    const li = document.createElement('li');
+                    li.className = 'autocomplete-item';
+
+                    // Виводимо Ім'я жирним, а Прізвище як уточнення збоку
+                    li.innerHTML = `
+                        <strong>${profile.name || ''}</strong>
+                        <span class="last-name">${profile.last_name || ''}</span>
+                    `;
+
+                    li.addEventListener('click', () => {
+                        // При кліку передаємо існуючий email з бази та повне ім'я для банера
+                        selectUser(profile.email, fullUaName, null);
+                    });
+
+                    autocompleteList.appendChild(li);
+                });
+
+            } catch (err) {
+                console.error("Помилка автопідбору:", err.message);
+            }
+        }
+
+        // КРОК 2: Користувача обрано (БЕЗ прихованих забагованих інпутів!)
+        function selectUser(email, fullName, role) {
+            chosenEmail = email;
+            chosenFullName = fullName;
+
+            autocompleteList.classList.add('hidden');
+            stepNameContainer.classList.add('hidden');
+
+            // Чиста структура без прихованих полів username, які тригерили автопідміну браузера
+            dynamicPasswordRoot.innerHTML = `
+                <div class="input-group">
+                    <label for="password">Пароль</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Введіть ваш password" autocomplete="current-password" required style="width: 100%; padding-right: 45px;">
+                        <button type="button" id="togglePassword" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; font-size: 20px; line-height: 1; padding: 5px; color: #666; user-select: none;">🔒</button>
+                    </div>
+                </div>
+            `;
+
+            stepPasswordContainer.classList.remove('hidden');
+            formSubtitle.textContent = "Введіть пароль для підтвердження входу";
+
+            selectedUserLabel.textContent = fullName;
+
+            initPasswordToggle();
+
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) passwordInput.focus();
+
+            submitBtn.setAttribute('data-role', role);
+        }
+
+        // Око/Замок для пароля
+        function initPasswordToggle() {
+            const toggleBtn = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            if (toggleBtn && passwordInput) {
+                toggleBtn.addEventListener('click', () => {
+                    const isPassword = passwordInput.getAttribute('type') === 'password';
+                    passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                    toggleBtn.textContent = isPassword ? '👁️' : '🔒';
+                });
+            }
+        }
+
+        // Кнопка зміни імені
+        function resetToNameStep() {
+            chosenEmail = '';
+            chosenFullName = '';
+            dynamicPasswordRoot.innerHTML = '';
+
+            stepPasswordContainer.classList.add('hidden');
+            stepNameContainer.classList.remove('hidden');
+            formSubtitle.textContent = "Почніть вводити ваше ім'я";
+
+            nameInput.value = '';
+            nameInput.focus();
+        }
+
+        // КРОК 3: Авторизація виключно за обраною поштою
+        async function handleSignIn() {
+            errorDiv.style.display = 'none';
+            const passwordInput = document.getElementById('password');
+            if (!passwordInput) return;
+
+            const passwordVal = passwordInput.value.trim();
+
+            if (!passwordVal) {
+                showError("Будь ласка, введіть ваш пароль");
                 return;
             }
 
-            // Якщо успішно — зберігаємо дані в пам'ять браузера (localStorage)
-            localStorage.setItem('userId', data.id);
-            localStorage.setItem('userName', data.name);
-            localStorage.setItem('userRole', data.role);
-            localStorage.setItem('userKey', data.secret_key);
+            try {
+                // Залізобетонно беремо саме ту пошту, яку клікнули у випадаючому списку!
+                const finalEmail = chosenEmail.toLowerCase().trim();
 
-            // Перенаправляємо в кабінет або на головну карту з ключем
-            window.location.href = `index.html?key=${data.secret_key}`;
+                console.log("Спроба входу для пошти:", finalEmail);
 
-        } catch (err) {
-            console.error(err);
-            alert("Сталася помилка при вході");
+                if (!finalEmail) {
+                    showError("Помилка визначення користувача. Перезавантажте сторінку.");
+                    return;
+                }
+
+                // Надсилаємо чистий запит до Supabase
+                const { data: authResult, error } = await supabase.auth.signInWithPassword({
+                    email: finalEmail,
+                    password: passwordVal
+                });
+
+                if (error) {
+                    console.error("Помилка Supabase Auth:", error.message);
+                    showError("Невірний пароль. Спробуйте ще раз.");
+                    return;
+                }
+
+                const sessionUser = authResult.user;
+
+                // БЕЗПЕЧНЕ ЗЧИТУВАННЯ: Спочатку беремо роль з JWT-токена (app_metadata),
+                // якщо там порожньо — з бази профілів, інакше ставимо базову 'user'
+                const userRole = sessionUser.app_metadata?.user_role || submitBtn.getAttribute('data-role') || 'user';
+
+                // Записуємо дані в локальне сховище
+                localStorage.setItem('userId', sessionUser.id);
+
+                // Якщо хочете бачити на кнопці карти тільки "Василь" (без "1"),
+                // беремо перше слово з повного імені користувача
+                const firstNameOnly = chosenFullName.split(' ')[0];
+                localStorage.setItem('userName', firstNameOnly);
+
+                localStorage.setItem('userRole', userRole);
+                localStorage.setItem('userKey', 'authenticated_session');
+
+                console.log(`Авторизовано успішно! Безпечна роль: ${userRole}`);
+                window.location.href = "index.html";
+
+            } catch (err) {
+                showError(`Технічна помилка: ${err.message}`);
+            }
         }
-    }
 
-    // Дозволяємо вхід натисканням Enter
-    document.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLogin();
-    });
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
 
-    // Робимо функцію доступною для кнопки
-    window.handleLogin = handleLogin;
+        // Закриття списку при кліку повз нього
+        document.addEventListener('click', (e) => {
+            if (e.target !== nameInput && e.target !== autocompleteList) {
+                autocompleteList.classList.add('hidden');
+            }
+        });
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const passwordInput = document.getElementById('password');
-        const toggleBtn = document.getElementById('togglePassword');
+        // Ініціалізація подій
+        function initEvents() {
+            if (submitBtn) submitBtn.addEventListener('click', handleSignIn);
+            if (btnBackToName) btnBackToName.addEventListener('click', resetToNameStep);
 
-        if (toggleBtn && passwordInput) {
-            toggleBtn.addEventListener('click', () => {
-                // Перевіряємо поточний тип
-                const isPassword = passwordInput.getAttribute('type') === 'password';
-                
-                // Змінюємо тип
-                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
-                
-                // Змінюємо іконку (Око -> Перекреслене око або замок)
-                toggleBtn.textContent = isPassword ? '👁️' : '🔒';
+            document.getElementById('loginForm').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!stepPasswordContainer.classList.contains('hidden')) {
+                        handleSignIn();
+                    }
+                }
             });
         }
-    });
-</script>
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initEvents);
+        } else {
+            initEvents();
+        }
+    </script>
 
 </body>
+
 </html>

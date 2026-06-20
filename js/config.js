@@ -1,13 +1,32 @@
 // js/config.js
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const supabaseUrl = "https://modsgjjtwxbdnlycvifp.supabase.co";
-const supabaseKey = "sb_publishable_dbMty7e93fQwcZWdu_xeqw_3PUPc_3D";
+const supabaseUrl = "https://ofgkxoteuyldkwasydwp.supabase.co";
+const supabaseKey = "sb_publishable_vUKrMriTZUzGve5JnhS_MQ_tvQ1fTQK";
 
-// Створюємо клієнт
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Чистимо та зчитуємо роль з локального сховища
+const currentUserId = localStorage.getItem('userId') || '';
+let userRole = localStorage.getItem('userRole') || ''; 
 
-// Додатково прикріплюємо до window, щоб старі скрипти (не модулі) теж працювали
+// Нормалізуємо роль: якщо на фронтенді вона записана як super_admin, приводимо до super-admin для бази
+if (userRole === 'super_admin') {
+  userRole = 'super-admin';
+}
+
+// Створюємо клієнт, передаючи захищені заголовки для RLS політик
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  global: {
+    headers: {
+      'X-Publisher-Id': currentUserId,
+      'X-User-Role': userRole
+    }
+  },
+  auth: {
+    persistSession: true, // Зберігає системну сесію авторизації в браузері
+    autoRefreshToken: true // Автоматично оновлює токени безпеки
+  }
+});
+
 window.supabase = supabase;
 
-console.log("Supabase ініціалізовано через config.js");
+console.log(`Supabase авторизовано! Роль в заголовках: ${userRole}`);

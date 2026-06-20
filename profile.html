@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="css/profile-style.css" />
     <link rel="stylesheet" href="css/responsive.css">
 </head>
@@ -28,9 +27,6 @@
         <div id="adminMenu" class="hidden">
             <div class="nav-item" onclick="switchTab('group-cards')">👥 Вісники</div>
             <div class="nav-item" onclick="switchTab('all-territories')">📋 S-13</div>
-            <a href="statistics-dew.html" id="statsLink" class="nav-item nav-stats hidden">
-                📊 Статистика
-            </a>
             <a href="admin-statistics.html" class="nav-item nav-admin">
                 📈 Адмін статистика
             </a>
@@ -54,11 +50,13 @@
             </div>
 
             <div class="card campaign-card">
-                <div id="campaignHeader" onclick="toggleCampaignInfo()" style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; cursor:pointer;">
+                <div id="campaignHeader" onclick="toggleCampaignInfo()"
+                    style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; cursor:pointer;">
                     <h3 style="margin:0; display:flex; align-items:center; gap:10px;">
                         🗓️ Кампанії
                     </h3>
-                    <span id="campaignHeaderText" style="font-size:0.95rem; color:#1976d2; display:flex; align-items:center; gap:6px;">
+                    <span id="campaignHeaderText"
+                        style="font-size:0.95rem; color:#1976d2; display:flex; align-items:center; gap:6px;">
                         <span id="campaignHeaderIcon" style="font-size:1.1rem;">＋</span>
                         <span id="campaignHeaderLabel">Розгорнути</span>
                     </span>
@@ -72,9 +70,11 @@
             </div>
 
             <div class="card" id="historyCard">
-                <div id="historyHeader" onclick="toggleHistoryInfo()" style="display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer;">
+                <div id="historyHeader" onclick="toggleHistoryInfo()"
+                    style="display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer;">
                     <h3 style="margin:0; display:flex; align-items:center; gap:10px;">📜 Історія опрацювань</h3>
-                    <span id="historyHeaderText" style="font-size:0.95rem; color:#1976d2; display:flex; align-items:center; gap:6px;">
+                    <span id="historyHeaderText"
+                        style="font-size:0.95rem; color:#1976d2; display:flex; align-items:center; gap:6px;">
                         <span id="historyHeaderIcon" style="font-size:1.1rem;">＋</span>
                         <span id="historyHeaderLabel">Розгорнути</span>
                     </span>
@@ -122,35 +122,30 @@
             <div class="modal-container">
                 <h2 class="modal-title">Новий вісник</h2>
 
-                <!-- ТЕПЕР ІМ'Я ПЕРШЕ -->
                 <div class="modal-form-group">
                     <label class="modal-label">Ім'я</label>
                     <input type="text" id="newPubFirstName"
                         oninput="validateUniqueName('newPubFirstName', 'newPubLastName')" placeholder="Наприклад: Тарас"
-                        class="modal-input">
+                        class="modal-input" autocomplete="off">
                 </div>
 
-                <!-- ТЕПЕР ПРІЗВИЩЕ ДРУГЕ -->
                 <div class="modal-form-group">
                     <label id="labelLastName" class="modal-label">Прізвище (необов'язково)</label>
-                    <input type="text" id="newPubLastName" placeholder="Наприклад: Шевченко"
-                        class="modal-input">
+                    <input type="text" id="newPubLastName" placeholder="Наприклад: Шевченко" class="modal-input"
+                        autocomplete="off">
                 </div>
 
                 <div class="modal-form-group">
                     <label class="modal-label">Походження</label>
-                    <select id="newPubGroupTag" class="modal-select">
+                    <select id="newPubGroupTag" class="modal-select" autocomplete="off">
                         <option value="Липовець">🏠 Липовець</option>
                         <option value="Іллінці">🚗 Іллінці</option>
                         <option value="Гості">👣 Гості</option>
                     </select>
                 </div>
 
-                <div class="modal-form-group-large">
-                    <label class="modal-label">Логін (необов'язково)</label>
-                    <input type="text" id="newPubLogin" placeholder="Наприклад: taras77"
-                        class="modal-input">
-                </div>
+                <!-- КОНТЕЙНЕР ДЛЯ ВИВОДУ ПОМИЛОК ВСЕРЕДИНІ МОДАЛКИ -->
+                <div id="modalErrorMsg" class="modal-error-message hidden"></div>
 
                 <div class="modal-buttons">
                     <button onclick="closeAddPublisherModal()" class="modal-btn modal-btn-cancel">Скасувати</button>
@@ -172,7 +167,6 @@
                     <h3 class="admin-card-title">👤 Основні дані</h3>
 
                     <div class="admin-grid">
-                        <!-- Поля вводу (залишаються без змін) -->
                         <div class="form-group">
                             <label class="form-label">Ім'я та Прізвище</label>
                             <div class="input-row">
@@ -192,7 +186,6 @@
                             </select>
                         </div>
 
-                        <!-- НОВИЙ БЛОК КНОПОК В ОДИН РЯДОК -->
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                             <button id="save-main-data-btn" class="btn-admin btn-main" style="flex: 2; margin: 0;">
                                 Оновити профіль
@@ -206,65 +199,10 @@
                     </div>
                 </div>
 
-                <div class="admin-card secondary">
-                    <h3 class="admin-card-title gray">🔐 Безпека та Роль</h3>
-
-                    <div class="security-row">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="unlock-role-check"> 🔓 Редагувати роль
-                        </label>
-                        <select id="user-role-select" class="admin-select" disabled>
-                            <option value="user">User (Користувач)</option>
-                            <option value="admin">Admin (Адміністратор)</option>
-                            <option value="super_admin" id="opt-super-admin">Super Admin (Розробник)</option>
-                        </select>
-                    </div>
-
-                    <div id="auth-info-section">
-                        <label class="switch-container">
-                            <span>👁️ Показати дані для входу</span>
-                            <input type="checkbox" id="show-auth-toggle">
-                        </label>
-
-                        <div id="auth-data-display" class="auth-display-box">
-                            <p><b>Вісник:</b> <span id="display-name" style="color: #1565C0; font-weight: bold;"></span>
-                            </p>
-
-                            <p>
-                                <b>Логін:</b>
-                                <input type="text" id="edit-login" class="admin-input"
-                                    style="width: 140px; display: inline-block; padding: 4px 8px;" disabled>
-                                <label class="checkbox-label" style="display: inline-flex; margin-left: 5px;">
-                                    <input type="checkbox" id="unlock-login-check"> ✏️
-                                </label>
-                            </p>
-
-                            <div class="password-reset-zone">
-                                <p><b>Пароль:</b> <span id="display-pass" style="font-family: monospace;">••••••</span>
-                                </p>
-                                <label class="warning-label">
-                                    <input type="checkbox" id="unlock-gen-check"> Дозволити зміну пароля
-                                </label>
-                                <button id="gen-pass-btn" class="btn-admin"
-                                    style="margin-top: 8px; padding: 8px; font-size: 12px;" disabled>
-                                    🔄 Згенерувати новий пароль
-                                </button>
-                            </div>
-
-                            <button id="copy-auth-btn" class="btn-admin btn-success">📋 Копіювати доступ</button>
-                        </div>
-                    </div>
-
-                    <button id="save-user-settings" class="btn-admin btn-warning" style="margin-top: 15px;">
-                        Зберегти всі налаштування доступу
-                    </button>
-                </div>
             </div>
         </div>
 
         <div id="tab-all-territories" class="tab-content hidden">
-
-
             <h1 class="table-title">📋 Записи про опрацювання</h1>
 
             <div class="origin-tabs">
@@ -297,12 +235,40 @@
 
     </div>
 
+    <!-- КАСТОМНЕ ВІКНО ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ -->
+    <div id="customConfirmModal"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; z-index: 9999;">
+        <div class="confirm-modal-box"
+            style="background: white; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;">
+            <h3 id="confirmModalTitle" class="confirm-modal-title">Підтвердження</h3>
+            <p id="confirmModalText" class="confirm-modal-text">Ви впевнені?</p>
+            <div class="confirm-modal-buttons">
+                <button id="confirmBtnNo" class="btn-confirm-action btn-confirm-no">Скасувати</button>
+                <button id="confirmBtnYes" class="btn-confirm-action btn-confirm-yes">Видалити</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/campaign-modal.js"></script>
     <script type="module">
-        import { supabase } from "./js/config.js"; // Просто імпортуємо готову "розетку"
-        import { returnParcel } from './js/parcel-logic.js';
+        import { supabase } from "./js/config.js";
+        import { returnParcel, showCustomConfirm, triggerReturnParcelWithCustomModal } from './js/parcel-logic.js';
+        import './js/main.js';
 
-        // ВСТАВЛЯТИ СЮДИ
+        // --- ФУНКЦІЯ СТВОРЕННЯ КАСТОМНИХ ТОСТІВ ---
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${isError ? 'error' : ''}`;
+            toast.innerHTML = `<span>${isError ? '❌' : '✅'}</span> ${message}`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+        window.showToast = showToast;
+
         function getGroupEmoji(tag) {
             const emojis = {
                 'Липовець': '🏠',
@@ -313,11 +279,10 @@
         }
 
         const userId = localStorage.getItem('userId');
-        const userRole = localStorage.getItem('userRole');
+        const userRole = window.getUserRole();
 
         if (!userId) window.location.href = 'index.html';
 
-        // Функція перемикання меню
         window.toggleSidebar = () => {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
@@ -327,7 +292,6 @@
             }
         };
 
-        // Функція оновлення мобільного заголовка
         function updateMobileTitle(tabName) {
             const mobileTitle = document.getElementById('mobile-title');
             const titles = {
@@ -342,40 +306,30 @@
             }
         }
 
-        // 2. Єдина функція для перемикання вкладок
         window.switchTab = (tabName) => {
-            // --- 1. Логіка перемикання контенту ---
-            // Ховаємо всі вкладки
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-
-            // Знімаємо активність з усіх пунктів меню
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-            // Показуємо потрібну вкладку
             const activeTab = document.getElementById('tab-' + tabName) || document.getElementById(tabName);
             if (activeTab) {
                 activeTab.classList.remove('hidden');
 
-                // --- 2. РОЗУМНЕ ОНОВЛЕННЯ АДРЕСИ (ЗБЕРЕЖЕННЯ uId) ---
                 const urlParams = new URLSearchParams(window.location.search);
                 const uId = urlParams.get('uId');
 
                 let newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?tab=' + tabName;
 
-                // Якщо ми в деталях вісника і маємо ID — додаємо його назад в URL
                 if (tabName === 'user-details' && uId) {
                     newUrl += `&uId=${uId}`;
                 }
 
                 window.history.pushState({ path: newUrl }, '', newUrl);
 
-                // --- 3. Додаткові дії для вкладок ---
                 if (tabName === 'all-territories') {
                     loadAllTerritoriesGrid();
                 }
             }
 
-            // --- 4. Логіка закриття меню на мобілках (з Блоку 1) ---
             if (window.innerWidth <= 768) {
                 const sidebar = document.querySelector('.sidebar');
                 const overlay = document.querySelector('.sidebar-overlay');
@@ -385,56 +339,49 @@
                 }
             }
 
-            // --- 5. Оновлення мобільного заголовка ---
             updateMobileTitle(tabName);
         };
 
         window.logout = () => {
-            // 1. Очищуємо всі дані користувача
             localStorage.clear();
-            // 2. Перенаправляємо на карту (index.html)
-            // Тепер після виходу користувач побачить карту як звичайний відвідувач
             window.location.href = 'index.html';
         };
 
-        // Робимо функцію глобальною для onclick у HTML
         window.returnParcel = (id, name) => {
-            returnParcel(id, name, supabase, async () => {
-                // Тут ми просто викликаємо функцію завантаження даних, 
-                // яка вже є у вас на сторінці профілю (зазвичай це loadUserParcels)
+            console.log('🔄 Виклик window.returnParcel для дільниці:', id, name);
+            triggerReturnParcelWithCustomModal(id, name, supabase, async () => {
                 if (typeof loadUserParcels === 'function') {
                     await loadUserParcels();
                 } else {
-                    // Якщо назва інша, просто викличте ту функцію, що заповнює ваш список
-                    location.reload(); // як запасний варіант
+                    location.reload();
                 }
             });
         };
 
+        // Експортуємо функції в window для глобального доступу
+        window.showCustomConfirm = showCustomConfirm;
+        window.triggerReturnParcelWithCustomModal = triggerReturnParcelWithCustomModal;
+        console.log('✅ Функції showCustomConfirm та triggerReturnParcelWithCustomModal додані в window');
 
+        let currentSortCol = 'name';
+        let sortAsc = true;
 
-        let currentSortCol = 'name'; // Початкове сортування за назвою
-        let sortAsc = true;         // Напрямок за зростанням
+        let currentTerritoryTab = 'city';
 
-        let currentTerritoryTab = 'city'; // Початковий режим для реєстру S-13
-
-        // Функція перемикання сортування
         window.toggleSort = (column) => {
             if (currentSortCol === column) {
-                sortAsc = !sortAsc; // Змінюємо напрямок
+                sortAsc = !sortAsc;
             } else {
                 currentSortCol = column;
-                sortAsc = true;     // Нова колонка — завжди спочатку за зростанням
+                sortAsc = true;
             }
 
-            // Оновлюємо іконки
             document.getElementById('sort-icon-name').innerText = '↕';
             document.getElementById('sort-icon-count').innerText = '↕';
             const activeIcon = document.getElementById(`sort-icon-${column}`);
             activeIcon.innerText = sortAsc ? '↑' : '↓';
             activeIcon.style.color = '#007bff';
 
-            // Сортуємо дані
             allUsers.sort((a, b) => {
                 let valA, valB;
                 if (column === 'name') {
@@ -450,9 +397,7 @@
                 return 0;
             });
 
-            // Отримуємо поточний активний фільтр (місто), щоб перемалювати список
             const activeBtn = document.querySelector('.origin-tab-btn.active');
-            // Витягуємо назву міста або 'active' з onclick або тексту
             const filter = activeBtn.innerText.includes('Липовець') ? 'Липовець' :
                 activeBtn.innerText.includes('Іллінці') ? 'Іллінці' :
                     activeBtn.innerText.includes('Гості') ? 'Гості' : 'active';
@@ -460,7 +405,6 @@
             renderPublishersList(filter);
         };
 
-        // Функція для оновлення видимості табів на основі наявності вісників
         function updateTabsVisibility() {
             const groups = ['Липовець', 'Іллінці', 'Гості'];
 
@@ -478,7 +422,6 @@
             });
         }
 
-        // Оновіть вашу функцію filterByOrigin, щоб вона враховувала сортування
         window.filterByOrigin = (origin) => {
             document.querySelectorAll('.origin-tab-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -489,73 +432,62 @@
             renderPublishersList(origin);
         };
 
-        // Робимо функцію доступною для HTML-атрибутів oninput
         window.validateUniqueName = validateUniqueName;
 
-        // Функція перемикання табів у реєстрі S-13
         window.switchTerritoryTab = function (type) {
             currentTerritoryTab = type;
-
-            // Візуал кнопок
             document.querySelectorAll('.origin-tabs .origin-tab-btn').forEach(btn => btn.classList.remove('active'));
             event.currentTarget.classList.add('active');
-
-            // Перемальовуємо таблицю
             loadAllTerritoriesGrid();
         };
 
-        // --- 2. ОСНОВНА ЛОГІКА ТА ІНІЦІАЛІЗАЦІЯ ---
         async function init() {
+            // Ініціалізація сесії користувача з перевіркою ролі з бази даних
+            const session = await window.initUserSession();
+
             if (!userId) return (window.location.href = 'index.html');
 
-            // Ховаємо лоадер після завантаження сторінки
             hideLoader();
 
-            // Якщо завантажуємо сторінку з параметром tab=all-territories, створюємо легенду
             setTimeout(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const tab = urlParams.get('tab');
 
                 if (tab === 'all-territories') {
-                    console.log('🔄 Сторінка завантажена на вкладці S-13, створюємо легенду...');
                     setTimeout(() => {
                         createColorLegend();
                     }, 1000);
                 }
             }, 500);
 
-            // === 1. ДОДАЙТЕ ЦЕЙ БЛОК ДЛЯ ФІЛЬТРІВ ТУТ ===
             document.querySelectorAll('.tab-filter').forEach(btn => {
                 btn.onclick = () => {
-                    // Видаляємо активний клас у всіх кнопок і додаємо натиснутій
                     document.querySelectorAll('.tab-filter').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
 
-                    // Викликаємо перемальовування списку
                     if (typeof renderPublishersList === 'function') {
                         renderPublishersList();
                     }
                 };
             });
-            // ===========================================
 
-            // Отримуємо повне ім'я з бази даних
             const { data: userData } = await supabase.from('publishers').select('name, last_name').eq('id', userId).single();
             const fullName = userData ? `${userData.name || ''} ${userData.last_name || ''}`.trim() : (localStorage.getItem('userName') || 'Користувач');
             document.getElementById('userName').innerText = fullName;
-            document.getElementById('displayRole').innerText = userRole === 'super_admin' ? 'Супер Адмін' : (userRole === 'admin' ? 'Адміністратор' : 'Вісник');
 
-            if (userRole === 'admin' || userRole === 'super_admin') {
+            // Використовуємо session для перевірки ролі
+            document.getElementById('displayRole').innerText = session.isSuperAdmin ? 'Супер  Адмін' : (session.isAdmin ? 'Адміністратор' : 'Вісник');
+
+            if (session.isAdmin) {
                 const adminMenu = document.getElementById('adminMenu');
                 if (adminMenu) adminMenu.classList.remove('hidden');
-                if (userRole === 'super_admin') {
+                if (session.isSuperAdmin) {
                     document.getElementById('devLink').style.display = 'flex';
                     const statsLink = document.getElementById('statsLink');
                     if (statsLink) statsLink.style.display = 'flex';
                 }
                 loadGroupStats();
 
-                // Оновлюємо видимість табів після завантаження даних
                 setTimeout(() => {
                     if (typeof updateTabsVisibility === 'function') {
                         updateTabsVisibility();
@@ -567,7 +499,6 @@
             loadMyHistory();
             loadCampaignInfo();
 
-            // ОБРОБКА ПАРАМЕТРІВ URL
             const urlParams = new URLSearchParams(window.location.search);
             const tab = urlParams.get('tab');
             const uId = urlParams.get('uId');
@@ -590,28 +521,20 @@
 
             hideLoader();
         }
-        // Функція для плавного зникнення лоадера
+
         function hideLoader() {
             const loader = document.getElementById('main-loader');
             if (loader) {
                 loader.style.opacity = '0';
-                setTimeout(() => loader.remove(), 300); // Повністю видаляємо з DOM
+                setTimeout(() => loader.remove(), 300);
             }
         }
-
-        // --- 3. ДОПОМІЖНІ ФУНКЦІЇ ДЛЯ РЕЄСТРУ ---
 
         function getTheocraticYearText() {
             const now = new Date();
             const currentYear = now.getFullYear();
-
-            // Визначаємо стартовий рік (якщо вересень або пізніше — поточний, інакше — попередній)
             const startYear = (now.getMonth() >= 8) ? currentYear : currentYear - 1;
-
-            // Отримуємо наступний рік і беремо від нього останні дві цифри
             const nextYearShort = (startYear + 1).toString().slice(-2);
-
-            // Повертаємо у форматі 2025/26
             return `${startYear}/${nextYearShort}`;
         }
 
@@ -621,14 +544,12 @@
             return (now.getMonth() >= 8) ? new Date(currentYear, 8, 1) : new Date(currentYear - 1, 8, 1);
         }
 
-
-        // Ця функція формує бланк S-13. Вона групує дані з логів по ID дільниці.
         async function loadAllTerritoriesGrid() {
             const tHead = document.getElementById('tHead');
             const tBody = document.getElementById('tBody');
             if (!tHead || !tBody) return;
 
-            let hasCampaignInTable = false; // Прапорець для легенди
+            let hasCampaignInTable = false;
 
             const rangeStart = getTheocraticStart();
             const titleText = currentTerritoryTab === 'city' ? 'опрацювання міста' : 'опрацювання сіл';
@@ -636,7 +557,6 @@
             const titleElement = document.querySelector('#tab-all-territories .table-title');
             if (titleElement) titleElement.innerHTML = `📋 Записи про ${titleText} ${getTheocraticYearText()}`;
 
-            // Завантаження даних
             const rangeStartISO = rangeStart.toISOString();
 
             const [parcelsRes, logsRes] = await Promise.all([
@@ -652,13 +572,11 @@
                 return;
             }
 
-            // ФІЛЬТРАЦІЯ: Відокремлюємо місто від сіл
             let parcels = parcelsRes.data.filter(p => {
                 if (currentTerritoryTab === 'city') return p.category !== 'Село';
                 return p.category === 'Село';
             });
 
-            // Сортування
             parcels.sort((a, b) => {
                 const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
                 const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
@@ -710,7 +628,6 @@
                 const tr1 = document.createElement('tr');
                 const tr2 = document.createElement('tr');
 
-                // Додаємо стиль: якщо дата є, робимо її червоною
                 const lastDoneStyle = lastDoneDate !== "-" ? "color: #d32f2f; font-weight: bold;" : "";
 
                 let tr1Html = `
@@ -731,11 +648,9 @@
                     const dIn = s ? new Date(s.in).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.') : '';
                     const dOut = (s && s.out) ? new Date(s.out).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '.') : '';
 
-                    // Визначаємо колір фону для кампанії
                     let campaignStyle = '';
                     if (s && s.campaign_id) {
-                        hasCampaignInTable = true; // Знайдено запис з кампанією
-                        // Визначаємо тип кампанії за назвою
+                        hasCampaignInTable = true;
                         if (s.campaign_name && s.campaign_name.toLowerCase().includes('конгрес')) {
                             campaignStyle = 'background-color: rgba(233, 196, 106, 0.5); color: #5C4B1B;';
                         } else if (s.campaign_name && (s.campaign_name.toLowerCase().includes('спец. кампанія') || s.campaign_name.toLowerCase().includes('спеціальна'))) {
@@ -745,7 +660,6 @@
                         }
                     }
 
-                    // Перевірка для синього кольору: взято до початку теократичного року, а здано після
                     let inDateStyle = '';
                     if (s && s.in) {
                         const takenDate = new Date(s.in);
@@ -769,25 +683,19 @@
                 tBody.appendChild(tr2);
             });
 
-            // Керування легендою на основі зібраних даних
             createColorLegend(hasCampaignInTable);
         }
         window.loadAllTerritoriesGrid = loadAllTerritoriesGrid;
 
-        // --- ЗАФАРБОВУВАННЯ КЛІТИНОК КАМПАНІЙ (вбудоване в таблицю) ---
-
-        // Функція керування видимістю легенди кольорів
         function createColorLegend(hasCampaign = null) {
             const legend = document.getElementById('campaign-color-legend');
             if (!legend) return;
 
-            // Якщо ми передали результат перевірки під час рендеру — використовуємо його
             if (hasCampaign !== null) {
                 legend.style.display = hasCampaign ? 'flex' : 'none';
                 return;
             }
 
-            // Запасний варіант: перевіряємо DOM (якщо викликано не з loadAllTerritoriesGrid)
             const tBody = document.getElementById('tBody');
             if (!tBody) {
                 legend.style.display = 'none';
@@ -802,16 +710,12 @@
             legend.style.display = hasCampaignCells ? 'flex' : 'none';
         }
 
-        // Автоматичний запуск зафарбовування після завантаження таблиці (тільки для вкладки S-13)
         const originalLoadAllTerritoriesGrid = loadAllTerritoriesGrid;
         window.loadAllTerritoriesGrid = async function (...args) {
             await originalLoadAllTerritoriesGrid.apply(this, args);
 
-            // Перевіряємо чи ми на вкладці S-13 перед запуском оновлення фарбування
             const activeTab = document.querySelector('.nav-item.active');
             if (activeTab && activeTab.textContent.includes('S-13')) {
-                // Запускаємо фарбування (якщо воно є в campaign-modal.js)
-                // Легенда вже оновлена всередині loadAllTerritoriesGrid
                 setTimeout(() => {
                     if (typeof highlightCampaignCells === 'function') {
                         highlightCampaignCells();
@@ -821,17 +725,52 @@
         };
 
         async function loadMyParcels() {
-            const { data } = await supabase.from('parcels').select('*').eq('taken_by_id', userId).eq('status', 'taken');
-            renderParcelList(data, 'myParcels', true);
+            const userId = localStorage.getItem('userId');
+            console.log("🔍 [Профіль] Починаємо завантаження дільниць для користувача UUID:", userId);
+
+            if (!userId) {
+                console.error("❌ [Профіль] Помилка: userId відсутній у localStorage!");
+                return;
+            }
+
+            try {
+                // Прямий чистий запит, заголовки підтягнуться з config.js автоматично
+                const { data, error } = await supabase
+                    .from('parcels')
+                    .select('*')
+                    .eq('taken_by_id', userId)
+                    .eq('status', 'taken');
+
+                if (error) {
+                    console.error("❌ [Профіль] Помилка запиту до Supabase:", error);
+                    return;
+                }
+
+                console.log("📊 [Профіль] Отримані дільниці з бази даних:", data);
+
+                if (!data || data.length === 0) {
+                    console.warn("⚠️ [Профіль] База повернула 0 дільниць для користувача:", userId);
+                }
+
+                // Перевіряємо наявність функції рендерингу
+                if (typeof renderParcelList === 'function') {
+                    renderParcelList(data, 'myParcels', true);
+                } else if (typeof displayMyParcels === 'function') {
+                    displayMyParcels(data);
+                } else {
+                    console.error("❌ [Профіль] Не знайдено функцію для рендерингу списку дільниць!");
+                }
+
+            } catch (err) {
+                console.error("❌ [Профіль] Критична помилка в loadMyParcels:", err);
+            }
         }
 
-        // --- ІСТОРІЯ ОПРАЦЮВАНЬ КОРИСТУВАЧА ---
         async function loadMyHistory() {
             const historyDiv = document.getElementById('myHistory');
             if (!historyDiv) return;
 
             try {
-                // Отримуємо всі логи де користувач був вісником
                 const { data: logs, error } = await supabase
                     .from('territory_logs')
                     .select('*, parcels(name, category)')
@@ -850,7 +789,6 @@
                     return;
                 }
 
-                // Створюємо таблицю
                 let html = `
                     <div class="table-wrapper">
                         <table class="history-table" style="width: 100%; border-collapse: collapse;">
@@ -897,7 +835,6 @@
             }
         }
 
-        // --- КАМПАНІЇ НА СТОРІНЦІ ПРОФІЛЮ ---
         let campaignInfoLoaded = false;
         let campaignHasActive = false;
         let campaignPreviewLoaded = false;
@@ -1071,18 +1008,14 @@
             }
         };
 
-        // --- СПИСОК ГРУПИ (ВИПРАВЛЕНО: Прізвища на першому місці + захист від апострофів) ---
-        // Глобальна змінна для зберігання даних (кеш)
         let allUsers = [];
 
         async function loadGroupStats() {
-            // 1. Отримуємо користувачів
             const { data: users, error: uErr } = await supabase
                 .from('publishers')
                 .select('id, name, last_name, group_tag')
                 .order('last_name', { ascending: true });
 
-            // 2. Отримуємо взяті картки
             const { data: parcels, error: pErr } = await supabase
                 .from('parcels')
                 .select('taken_by_id')
@@ -1093,33 +1026,26 @@
                 return;
             }
 
-            // 3. Об'єднуємо дані: додаємо кожному користувачу кількість його карток
             allUsers = users.map(user => ({
                 ...user,
                 parcelCount: parcels.filter(p => p.taken_by_id === user.id).length
             }));
 
-            // Показуємо "Всі активні" за замовчуванням при завантаженні
             renderPublishersList('active');
         }
 
-        // Окрема функція для малювання списку (її можна викликати при натисканні на таби)
         function renderPublishersList(currentFilter = 'active') {
             const listBody = document.getElementById('publishersList');
             if (!listBody) return;
 
             listBody.innerHTML = '';
 
-            // Фільтруємо масив allUsers
             const filteredUsers = allUsers.filter(user => {
                 if (currentFilter === 'active') return user.parcelCount > 0;
-                if (currentFilter === 'all') return true; // якщо захочете додати кнопку "Всі"
-
-                // Фільтрація за містом (Липовець, Іллінці, Гості)
+                if (currentFilter === 'all') return true;
                 return user.group_tag === currentFilter;
             });
 
-            // Оновлюємо видимість табів на основі наявності вісників
             updateTabsVisibility();
 
             filteredUsers.forEach(user => {
@@ -1137,24 +1063,19 @@
             });
         }
 
-        // --- ДЕТАЛІ ВІСНИКА (БЕЗ ЗМІН) ---
         async function showUserDetails(uId, uName) {
-            // 1. Оновлюємо URL, щоб він містив ID вісника
             const newUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?tab=user-details&uId=${uId}`;
             window.history.pushState({ path: newUrl }, '', newUrl);
 
-            // Далі ваш старий код без змін...
             window.switchTab('user-details');
             document.getElementById('detailUserName').innerText = uName;
 
-            // Завантаження дільниць
             const { data: parcels } = await supabase.from('parcels').select('*').eq('taken_by_id', uId).eq('status', 'taken');
             renderParcelList(parcels, 'detailUserParcels', false);
 
-            // Завантаження даних профілю
             const { data: userData, error } = await supabase
                 .from('publishers')
-                .select('*') // Тут важливо, щоб підтягнулися всі поля, включаючи last_name
+                .select('*')
                 .eq('id', uId)
                 .single();
 
@@ -1167,8 +1088,7 @@
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            const role = localStorage.getItem('userRole');
-            const isAdmin = (role === 'admin' || role === 'super_admin');
+            const isAdmin = window.checkIsAdmin();
 
             if (!parcels || parcels.length === 0) {
                 container.innerHTML = '<p style="color:gray;">Немає активних дільниць.</p>';
@@ -1179,7 +1099,6 @@
                 const days = Math.floor((new Date() - new Date(p.taken_at)) / (1000 * 60 * 60 * 24));
                 const showReturnBtn = isMyCard || isAdmin;
 
-                // ПРАВКА: Перевіряємо категорію дільниці
                 const prefix = p.category === 'Село' ? ': ' : ' №';
 
                 return `
@@ -1200,37 +1119,8 @@
             }).join('');
         }
 
-        // Функція генерації пароля (6 цифр + 2 букви)
-        function generatePassword() {
-            const digits = "0123456789";
-            const letters = "abcdefghijklmnopqrstuvwxyz";
-
-            let chars = [];
-
-            // Додаємо 6 випадкових цифр
-            for (let i = 0; i < 6; i++) {
-                chars.push(digits.charAt(Math.floor(Math.random() * digits.length)));
-            }
-
-            // Додаємо 2 випадкові букви
-            for (let i = 0; i < 2; i++) {
-                chars.push(letters.charAt(Math.floor(Math.random() * letters.length)));
-            }
-
-            // Тасування Фішера-Єйтса (Fisher-Yates Shuffle) для максимальної випадковості
-            for (let i = chars.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [chars[i], chars[j]] = [chars[j], chars[i]];
-            }
-
-            return chars.join('');
-        }
-
-        // Глобальна змінна для відстеження поточного користувача в адмінці
         let currentTargetUserId = null;
 
-        // Функція валідації "на льоту"
-        // Функція валідації "на льоту"
         function validateUniqueName(nameInputId, lastNameInputId) {
             const nameInput = document.getElementById(nameInputId);
             const lastNameInput = document.getElementById(lastNameInputId);
@@ -1242,13 +1132,11 @@
                 return;
             }
 
-            // Перевірка: чи є в базі (allUsers) таке ім'я (крім поточного користувача)
             const nameExists = allUsers.some(u =>
                 u.name.toLowerCase() === firstName && u.id !== currentTargetUserId
             );
 
             if (nameExists) {
-                // Якщо ім'я вже зайняте, виділяємо поле і просимо прізвище[cite: 1]
                 nameInput.style.borderColor = "#ff9800";
                 lastNameInput.placeholder = "⚠️ Прізвище обов'язкове (двійник)";
                 lastNameInput.style.backgroundColor = "#fff8e1";
@@ -1259,129 +1147,47 @@
             }
         }
 
-        async function initAdminPanel(targetUserId, targetUserData) {
-            const currentRole = localStorage.getItem('userRole');
-            if (currentRole !== 'admin' && currentRole !== 'super_admin') return;
+        // --- ЛОГІКА КАСТОМНОГО CONFIRM-ВІКНА ДЛЯ ВИДАЛЕННЯ ---
+        // Функція showCustomConfirm тепер імпортується з js/parcel-logic.js
 
-            // ВАЖЛИВО: Встановлюємо ID для глобальної перевірки імен
+        async function initAdminPanel(targetUserId, targetUserData) {
+            if (!window.checkIsAdmin()) return;
+
             currentTargetUserId = targetUserId;
 
             document.getElementById('admin-settings-block').style.display = 'block';
 
-            // Отримуємо елементи
-            const roleSelect = document.getElementById('user-role-select');
-            const roleCheck = document.getElementById('unlock-role-check');
-            const loginInput = document.getElementById('edit-login');
-            const loginCheck = document.getElementById('unlock-login-check');
-            const genCheck = document.getElementById('unlock-gen-check');
-            const genBtn = document.getElementById('gen-pass-btn');
             const editLastName = document.getElementById('edit-pub-last-name');
             const editFirstName = document.getElementById('edit-pub-first-name');
             const editGroupTag = document.getElementById('edit-pub-group-tag');
-
-            // Очищуємо старі дані перед показом нових
-            document.getElementById('auth-data-display').style.display = 'none';
-            document.getElementById('display-name').innerText = '';
-            document.getElementById('display-pass').innerText = '••••••';
-
-            // Заповнюємо новими даними конкретного вісника
-            roleSelect.value = targetUserData.role || 'user';
-            loginInput.value = targetUserData.login || '';
             editLastName.value = targetUserData.last_name || '';
             editFirstName.value = targetUserData.name || '';
             editGroupTag.value = targetUserData.group_tag || 'Липовець';
 
-            // Скидаємо чекбокси редагування
-            roleCheck.checked = false;
-            roleSelect.disabled = true;
-            loginCheck.checked = false;
-            loginInput.disabled = true;
-            genCheck.checked = false;
-            genBtn.disabled = true;
-
-            // Обмеження для Адміна
-            if (currentRole === 'admin') {
-                const optSA = document.getElementById('opt-super-admin');
-                if (optSA) optSA.disabled = true;
-            }
-
-            // ЛОГІКА АКТИВАЦІЇ ПОЛІВ ЧЕРЕЗ ЧЕКБОКСИ
-            roleCheck.onchange = () => {
-                roleSelect.disabled = !roleCheck.checked;
-                roleSelect.style.background = roleCheck.checked ? "#fff" : "#eee";
-            };
-
-            loginCheck.onchange = () => {
-                loginInput.disabled = !loginCheck.checked;
-                loginInput.style.background = loginCheck.checked ? "#fff" : "#eee";
-            };
-
-            genCheck.onchange = () => {
-                genBtn.disabled = !genCheck.checked;
-                genBtn.style.background = genCheck.checked ? "#cfd8dc" : "#eceff1";
-            };
-
-            const authToggle = document.getElementById('show-auth-toggle');
-            const authDisplay = document.getElementById('auth-data-display');
-
-            authToggle.onchange = () => {
-                if (authToggle.checked) {
-                    document.getElementById('display-name').innerText = targetUserData.name || '';
-                    document.getElementById('display-pass').innerText = targetUserData.secret_key || '';
-                    authDisplay.style.display = 'block';
-                } else {
-                    authDisplay.style.display = 'none';
-                }
-            };
-
-            // Генерація пароля
-            genBtn.onclick = () => {
-                const newPass = generatePassword();
-                document.getElementById('display-pass').innerText = newPass;
-            };
-
-            // Копіювання
-            document.getElementById('copy-auth-btn').onclick = () => {
-                const nameForLogin = document.getElementById('display-name').innerText;
-                const customLogin = document.getElementById('edit-login').value.trim();
-                const pass = document.getElementById('display-pass').innerText;
-                const finalLogin = customLogin ? customLogin : nameForLogin;
-
-                let textParts = [`Логін: ${finalLogin}`, `Пароль: ${pass}`];
-                navigator.clipboard.writeText(textParts.join('\n')).then(() => {
-                    alert("Дані для входу скопійовано!");
-                });
-            };
-
-            // Збереження БЕЗПЕКИ (Роль, Логін, Пароль)
-            document.getElementById('save-user-settings').onclick = async () => {
-                const updateData = {};
-                if (roleCheck.checked) updateData.role = roleSelect.value;
-                if (loginCheck.checked) updateData.login = loginInput.value;
-
-                const currentDisplayedPass = document.getElementById('display-pass').innerText;
-                if (genCheck.checked && currentDisplayedPass !== targetUserData.secret_key) {
-                    updateData.secret_key = currentDisplayedPass;
-                }
-
-                if (Object.keys(updateData).length === 0) {
-                    alert("Нічого не змінено (активуйте чекбокси)");
-                    return;
-                }
-
-                const { error } = await supabase.from('publishers').update(updateData).eq('id', targetUserId);
-                if (!error) { alert("Дані безпеки оновлено!"); location.reload(); }
-            };
-
-            // --- ЛОГІКА ВИДАЛЕННЯ (Ваша оригінальна з поверненням дільниць) ---
+            // --- МОДЕРНІЗОВАНЕ ВИДАЛЕННЯ ВІСНИКА ЧЕРЕЗ КАСТОМНІ ВІКНА ---
             const deleteBtn = document.getElementById('delete-user-btn');
             if (deleteBtn) {
                 deleteBtn.onclick = async () => {
                     const uName = targetUserData.name;
                     const uLastName = targetUserData.last_name || '';
 
-                    if (!confirm(`Ви впевнені, що хочете видалити вісника ${uLastName} ${uName}?`)) return;
-                    if (!confirm(`УВАГА: Всі дільниці вісника будуть автоматично ЗДАНІ. Продовжити?`)) return;
+                    // Перший крок підтвердження
+                    const firstConfirm = await showCustomConfirm({
+                        title: "Видалення вісника",
+                        text: `Ви впевнені, що хочете видалити вісника <b>${uLastName} ${uName}</b>?`,
+                        confirmText: "Так, видалити",
+                        cancelText: "Скасувати"
+                    });
+                    if (!firstConfirm) return;
+
+                    // Другий крок підтвердження
+                    const secondConfirm = await showCustomConfirm({
+                        title: "⚠️ ВАЖЛИВЕ ПОПЕРЕДЖЕННЯ",
+                        text: "Усі активні дільниці цього вісника будуть автоматично <b>ЗДАНІ</b> в систему.<br>Продовжити видалення?",
+                        confirmText: "Продовжити",
+                        cancelText: "Ні, зупинити"
+                    });
+                    if (!secondConfirm) return;
 
                     try {
                         const { data: activeParcels, error: fetchError } = await supabase
@@ -1402,106 +1208,161 @@
                         const { error: deleteError } = await supabase.from('publishers').delete().eq('id', targetUserId);
                         if (deleteError) throw deleteError;
 
-                        alert(`Вісника ${uLastName} ${uName} видалено.`);
-                        window.location.href = window.location.pathname + '?tab=group-cards';
+                        showToast(`Вісника ${uLastName} ${uName} видалено.`);
+                        setTimeout(() => {
+                            window.location.href = window.location.pathname + '?tab=group-cards';
+                        }, 1200);
                     } catch (err) {
-                        alert("Сталася помилка при видаленні: " + err.message);
+                        showToast("Сталася помилка при видаленні: " + err.message, true);
                     }
                 };
             }
 
-            // --- ОНОВЛЕНО: ЛОГІКА ОНОВЛЕННЯ ОСНОВНИХ ДАНИХ (З перевіркою імені) ---
             const saveMainDataBtn = document.getElementById('save-main-data-btn');
             if (saveMainDataBtn) {
                 saveMainDataBtn.onclick = async () => {
-                    const newName = editFirstName.value.trim(); // Ім'я першим[cite: 1]
+                    const newName = editFirstName.value.trim();
                     const newLastName = editLastName.value.trim();
                     const newGroupTag = editGroupTag.value;
 
                     if (!newName) {
-                        alert("Ім'я не може бути порожнім");
+                        showToast("Ім'я не може бути порожнім", true);
                         return;
                     }
 
-                    // Перевірка на конфлікт імен[cite: 1]
                     const nameExists = allUsers.some(u =>
                         u.name.toLowerCase() === newName.toLowerCase() && u.id !== targetUserId
                     );
 
                     if (nameExists && !newLastName) {
-                        alert(`Вісник з ім'ям "${newName}" вже є в системі. Будь ласка, вкажіть прізвище.`);
+                        showToast(`Вісник з ім'ям "${newName}" вже є в системі. Будь ласка, вкажіть прізвище.`, true);
                         return;
                     }
 
                     const { error } = await supabase.from('publishers').update({
                         name: newName,
-                        last_name: newLastName || null, // Якщо пусте — пишемо null[cite: 1]
+                        last_name: newLastName || null,
                         group_tag: newGroupTag
                     }).eq('id', targetUserId);
 
                     if (!error) {
-                        alert("Дані вісника оновлено!");
-                        const activeTab = document.querySelector('.tab-content:not(.hidden)')?.id || 'group-cards';
-                        window.location.href = window.location.pathname + '?tab=' + activeTab;
+                        showToast("Дані вісника оновлено!");
+                        setTimeout(() => {
+                            const activeTab = document.querySelector('.tab-content:not(.hidden)')?.id || 'group-cards';
+                            window.location.href = window.location.pathname + '?tab=' + activeTab;
+                        }, 1200);
                     } else {
-                        alert("Помилка: " + error.message);
+                        showToast("Помилка: " + error.message, true);
                     }
                 };
             }
         }
 
+        // Ініціалізація сторінки
+        (async () => {
+            await init();
+        })();
 
-
-        init();
-
-        // --- КЕРУВАННЯ ВІСНИКАМИ ---
+        // --- КЕРУВАННЯ ВІСНИКАМИ (МОДАЛКА ТА ВАЛІДАЦІЯ ПОМИЛОК) ---
 
         window.openAddPublisherModal = () => {
             const modal = document.getElementById('addPublisherModal');
             modal.style.display = 'flex';
+            // Очищуємо інпути при відкритті модалки
+            document.getElementById('newPubFirstName').value = '';
+            document.getElementById('newPubLastName').value = '';
+            document.getElementById('newPubGroupTag').selectedIndex = 0;
         };
 
         window.closeAddPublisherModal = () => {
             document.getElementById('addPublisherModal').style.display = 'none';
             document.getElementById('newPubLastName').value = '';
             document.getElementById('newPubFirstName').value = '';
-            document.getElementById('newPubLogin').value = '';
+
+            // Скидаємо і ховаємо текст помилки
+            const errBox = document.getElementById('modalErrorMsg');
+            if (errBox) {
+                errBox.textContent = '';
+                errBox.classList.add('hidden');
+                errBox.classList.remove('animate-error-text');
+                errBox.style.fontWeight = 'normal';
+            }
+
             const tagSelect = document.getElementById('newPubGroupTag');
             if (tagSelect) tagSelect.selectedIndex = 0;
         };
 
-        // Оновлена функція збереження нового вісника[cite: 1]
-        window.saveNewPublisher = async () => {
-            const firstName = document.getElementById('newPubFirstName').value.trim();
-            const lastName = document.getElementById('newPubLastName').value.trim();
-            const login = document.getElementById('newPubLogin').value.trim();
-            const groupTag = document.getElementById('newPubGroupTag').value;
+        window.saveNewPublisher = async function () {
+            const firstNameEl = document.getElementById('newPubFirstName');
+            const lastNameEl = document.getElementById('newPubLastName');
+            const groupTagEl = document.getElementById('newPubGroupTag') || document.getElementById('newPublisherGroup') || document.getElementById('newPubGroup');
+            const loader = document.getElementById('modal-loader');
 
-            if (!firstName) return alert("Будь ласка, введіть ім'я");
-
-            // Перевірка на дублікат імені перед записом[cite: 1]
-            const nameExists = allUsers.some(u => u.name.toLowerCase() === firstName.toLowerCase());
-
-            if (nameExists && !lastName) {
-                return alert(`Вісник з ім'ям "${firstName}" вже є. Для збереження обов'язково вкажіть прізвище.`);
+            if (!firstNameEl) {
+                console.error("Елемент 'newPubFirstName' не знайдено в HTML!");
+                return;
             }
 
-            const { error } = await supabase.from('publishers').insert([{
-                name: firstName, // Ім'я - основний ідентифікатор[cite: 2]
-                last_name: lastName || null,
-                login: login || null,
-                group_tag: groupTag,
-                role: 'user'
-            }]);
+            const firstName = (firstNameEl.value || '').trim();
+            const lastName = lastNameEl ? (lastNameEl.value || '').trim() : '';
+            const groupTag = groupTagEl ? (groupTagEl.value || null) : null;
 
-            if (!error) {
-                alert("Вісника додано!");
-                location.reload();
-            } else {
-                alert("Помилка: " + error.message);
+            if (!firstName) {
+                if (typeof showModalError === 'function') showModalError("Ім'я є обов'язковим!");
+                else alert("Ім'я є обов'язковим!");
+                return;
+            }
+
+            if (loader) loader.classList.remove('hidden');
+
+            try {
+                const { data, error } = await supabase.rpc('admin_create_publisher', {
+                    p_name: firstName,
+                    p_last_name: lastName || null,
+                    p_group_tag: groupTag,
+                    p_role: 'user',
+                    p_password: 'Pass123!'
+                });
+
+                if (error) {
+                    console.error('RPC admin_create_publisher error:', error);
+                    if (typeof showModalError === 'function') showModalError('Помилка: ' + (error.message || JSON.stringify(error)));
+                    else alert('Помилка: ' + (error.message || JSON.stringify(error)));
+                    return;
+                }
+
+                if (data && data.success) {
+                    if (firstNameEl) firstNameEl.value = '';
+                    if (lastNameEl) lastNameEl.value = '';
+                    if (groupTagEl && groupTagEl.selectedIndex !== undefined) groupTagEl.selectedIndex = 0;
+
+                    const loginEmail = data.login_email || '';
+
+                    if (typeof showToast === 'function') {
+                        showToast(`Вісника успішно додано! Пошта для входу: ${loginEmail}`);
+                    } else {
+                        alert(`Вісника успішно додано! Пошта для входу: ${loginEmail}`);
+                    }
+
+                    const modal = document.getElementById('addPublisherModal');
+                    if (modal) modal.style.display = 'none';
+
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    const msg = data && data.message ? data.message : 'Невідома помилка при створенні';
+                    if (typeof showModalError === 'function') showModalError('Помилка: ' + msg);
+                    else alert('Помилка: ' + msg);
+                }
+            } catch (err) {
+                console.error('Помилка створення вісника:', err);
+                if (typeof showModalError === 'function') showModalError('Помилка: ' + (err && err.message ? err.message : err));
+                else alert('Помилка: ' + (err && err.message ? err.message : err));
+            } finally {
+                if (loader) loader.classList.add('hidden');
             }
         };
-
 
     </script>
 

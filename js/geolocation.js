@@ -1,26 +1,23 @@
 /**
  * Модуль для роботи з геолокацією користувача на карті Leaflet.
- * Додає синю точку, коло точності та інформаційне віконце.
- */
-/**
- * Модуль для роботи з геолокацією користувача на карті Leaflet.
+ * Адаптовано під розмір дисплея користувача.
  */
 export function initGeolocation(map) {
     let userLocationMarker = null;
     let userAccuracyCircle = null;
     let accuracyBox = null;
-    let hideTimer = null; // Таймер для автоматичного приховування
-    let countdownInterval = null; // Інтервал для відліку секунд
+    let hideTimer = null;
+    let countdownInterval = null;
 
     const createAccuracyBox = () => {
         accuracyBox = L.DomUtil.create('div', 'accuracy-info-box');
-        
+
         Object.assign(accuracyBox.style, {
             position: 'fixed',
             bottom: '25px',
             left: '50%',
             transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
             color: '#fff',
             padding: '8px 18px',
             borderRadius: '25px',
@@ -39,56 +36,166 @@ export function initGeolocation(map) {
 
     createAccuracyBox();
 
-    window.locateMe = function() {
-        map.locate({
-            setView: true,
-            maxZoom: 17,
-            enableHighAccuracy: true 
-        });
+    // 📐 Функція для розрахунку адаптивного padding відносно розміру екрана
+    const getAdaptivePadding = () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        if (width < 600) {
+            return [Math.round(height * 0.05), Math.round(width * 0.05)];
+        } else if (width < 1024) {
+            return [Math.round(height * 0.08), Math.round(width * 0.08)];
+        } else {
+            return [50, 50];
+        }
     };
 
-    map.on('locationfound', function(e) {
+    // 🔴 ВИПРАВЛЕНО ДЛЯ iOS PWA: Запит робиться миттєво
+    window.locateMe = function () {
+        // 1. Перевірка HTTPS (обов'язково для iOS Standalone)
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+            alert("Геолокація на iOS працює тільки через HTTPS з'єднання.");
+            return;
+        }
+
+        // 2. Ініціюємо запит Leaflet з оптимізацією під iOS Standalone / PWA
+        map.locate({
+            setView: false,
+            maxZoom: 18,
+            enableHighAccuracy: false, // Вкрай важливо для iOS PWA: вимикає примусовий запит до GPS-чіпа, який блокується пісочницею
+            timeout: 15000,            // Даємо додаткові 5 секунд для прокидання геопозиціонування в ізольованому режимі
+            maximumAge: 60000          // 60000 мс (1 хв): дозволяє iOS використати закешовані координати пристрою замість збою
+        });
+
+        // 3. Відображаємо плашку пошуку ПІСЛЯ запуску запиту
+        if (accuracyBox) {
+            accuracyBox.style.display = 'block';
+            accuracyBox.style.opacity = '1';
+            accuracyBox.innerHTML = `🛰️ Пошук GPS-супутників...`;
+        }
+    };
+
+    map.on('locationfound', function (e) {
         const radius = e.accuracy;
 
-        // Очищення попередніх таймерів, якщо натиснули кнопку повторно
         if (hideTimer) clearTimeout(hideTimer);
         if (countdownInterval) clearInterval(countdownInterval);
 
+        // 🔴 1. Спочатку обов'язково видаляємо старе коло точності з карти!
         if (userLocationMarker) {
             map.removeLayer(userLocationMarker);
             map.removeLayer(userAccuracyCircle);
+            userLocationMarker = null;
+            userAccuracyCircle = null;
         }
 
-        // Логіка відліку (наприклад, 7 секунд)
-        let secondsLeft = 7;
-        accuracyBox.style.display = 'block';
-        accuracyBox.style.opacity = '1';
+        // --- 1. ОДЕРЖУЄМО ID РЕКОМЕНДОВАНИХ ДІЛЯНОК З URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const recommendParam = urlParams.get('recommend_ids');
+        const recommendedIds = recommendParam ? recommendParam.split(',').map(id => id.trim()) : [];
 
-        const updateText = (sec) => {
-            accuracyBox.innerHTML = `📡 Точність: ±${radius.toFixed(1)} м <span style="margin-left:8px; opacity:0.6; font-size:11px;">(${sec}с)</span>`;
-        };
+        // --- 2. ЗБИРАЄМО ШАРИ ---
+        let targetLayers = [];
 
-        updateText(secondsLeft);
+        if (recommendedIds.length > 0) {
+            if (window.allParcelLayers && Array.isArray(window.allParcelLayers)) {
+                window.allParcelLayers.forEach(item => {
+                    const rawId = item.id ?? item.parcelId ?? item.layer?.options?.id ?? item.layer?.feature?.id;
+                    const itemId = String(rawId || '').trim();
 
-        // Запуск зворотного відліку
-        countdownInterval = setInterval(() => {
-            secondsLeft--;
-            if (secondsLeft > 0) {
-                updateText(secondsLeft);
-            } else {
-                clearInterval(countdownInterval);
+                    if (itemId && recommendedIds.includes(itemId)) {
+                        if (item.layer) targetLayers.push(item.layer);
+                    }
+                });
             }
-        }, 1000);
 
-        // Автоматичне зникнення через встановлений час
-        hideTimer = setTimeout(() => {
-            accuracyBox.style.opacity = '0';
-            setTimeout(() => {
-                accuracyBox.style.display = 'none';
-            }, 500); // Час на завершення CSS-анімації
-        }, secondsLeft * 1000);
+            if (targetLayers.length === 0 && window.allParcelsGroup) {
+                window.allParcelsGroup.eachLayer(parentLayer => {
+                    const layersToCheck = typeof parentLayer.eachLayer === 'function' ? [] : [parentLayer];
+                    if (typeof parentLayer.eachLayer === 'function') {
+                        parentLayer.eachLayer(sub => layersToCheck.push(sub));
+                    }
+                    layersToCheck.forEach(layer => {
+                        if (layer instanceof L.Circle || layer instanceof L.CircleMarker) {
+                            return;
+                        }
 
-        // Візуалізація на карті
+                        const rawId = layer.options?.id ?? layer.feature?.id ?? layer.feature?.properties?.id ?? parentLayer.options?.id;
+                        const layerId = String(rawId || '').trim();
+
+                        if (layerId && recommendedIds.includes(layerId)) {
+                            targetLayers.push(layer);
+                        }
+                    });
+                });
+            }
+
+            console.log(`🎯 [Geolocation] Знайдено рекомендованих об’єктів: ${targetLayers.length} з ${recommendedIds.length}`);
+        } else {
+            console.log('🌐 [Geolocation] Загальний режим (без фільтрації).');
+        }
+
+        // --- 3. АДАПТИВНЕ ПОЗИЦІОНУВАННЯ ПІД ДИСПЛЕЙ ---
+        const bounds = L.latLngBounds([]);
+        bounds.extend(e.latlng);
+
+        const hasRecommendations = recommendedIds.length > 0;
+
+        if (hasRecommendations && targetLayers.length > 0) {
+            targetLayers.forEach(layer => {
+                if (typeof layer.getBounds === 'function') {
+                    bounds.extend(layer.getBounds());
+                } else if (typeof layer.eachLayer === 'function') {
+                    layer.eachLayer(sub => {
+                        if (typeof sub.getBounds === 'function') bounds.extend(sub.getBounds());
+                    });
+                } else if (typeof layer.getLatLng === 'function') {
+                    bounds.extend(layer.getLatLng());
+                }
+            });
+        }
+
+        if (hasRecommendations && bounds.isValid()) {
+            const padding = typeof getAdaptivePadding === 'function' ? getAdaptivePadding() : [50, 50];
+
+            map.fitBounds(bounds, {
+                padding: padding,
+                maxZoom: 16,
+                animate: false
+            });
+        } else {
+            map.setView(e.latlng, 16, { animate: false });
+        }
+
+        // --- 4. МАРКЕРИ ГЕОЛОКАЦІЇ ---
+        let secondsLeft = 7;
+        if (typeof accuracyBox !== 'undefined' && accuracyBox) {
+            accuracyBox.style.display = 'block';
+            accuracyBox.style.opacity = '1';
+
+            const updateText = (sec) => {
+                accuracyBox.innerHTML = `📡 Точність1: ±${radius.toFixed(1)} м <span style="margin-left:8px; opacity:0.6; font-size:11px;">(${sec}с)</span>`;
+            };
+
+            updateText(secondsLeft);
+
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft > 0) {
+                    updateText(secondsLeft);
+                } else {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+
+            hideTimer = setTimeout(() => {
+                accuracyBox.style.opacity = '0';
+                setTimeout(() => {
+                    accuracyBox.style.display = 'none';
+                }, 500);
+            }, secondsLeft * 1000);
+        }
+
         userAccuracyCircle = L.circle(e.latlng, radius, {
             color: '#136aec',
             fillColor: '#136aec',
@@ -107,11 +214,27 @@ export function initGeolocation(map) {
         }).addTo(map);
     });
 
-    map.on('locationerror', function(e) {
+    map.on('locationerror', function (e) {
         if (accuracyBox) accuracyBox.style.display = 'none';
-        const errorMsg = (e.code === 1) 
-            ? "Доступ до геолокації заборонено."
-            : "Помилка GPS: " + e.message;
+
+        let errorMsg = "Помилка визначення місцезнаходження.";
+
+        switch (e.code) {
+            case 1:
+                errorMsg = "Доступ до геолокації заборонено. Відкрийте Налаштування iPhone -> Приватність -> Служби геопозиції та увімкніть дозвіл для Safari.";
+                break;
+            case 2:
+                errorMsg = "Не вдалося отримати сигнал GPS. Перевірте, чи увімкнено геопозицію в системі та чи ви не в приміщенні.";
+                break;
+            case 3:
+                errorMsg = "Час очікування GPS вичерпано. Переконайся, що ви перебуваєте на відкритій місцевості.";
+                break;
+            default:
+                errorMsg = "Помилка GPS: " + e.message;
+        }
+
         alert(errorMsg);
     });
+
+    
 }

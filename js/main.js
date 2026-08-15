@@ -1,6 +1,6 @@
 // main.js
 
-
+//import { initOfflineDownloadControl } from './offline-menu.js';
 // Безпечна ініціалізація глобальних змінних з fallback значеннями
 // Це дозволяє синхронним перевіркам працювати до завершення асинхронного виклику до бази
 window.userRole = localStorage.getItem('userRole') || 'user';
@@ -70,6 +70,9 @@ window.initUserSession = async () => {
             window.isAdmin = cachedIsAdmin;
             window.isSuperAdmin = cachedIsSuperAdmin;
 
+            // ✅ Оновлюємо UI карти за кешованими даними
+            if (window.authControl) window.authControl.update();
+
             return { role: cachedRole, isAdmin: cachedIsAdmin, isSuperAdmin: cachedIsSuperAdmin };
         }
 
@@ -92,6 +95,11 @@ window.initUserSession = async () => {
         localStorage.setItem('userRole', role);
         localStorage.setItem('userName', window.userFullName);
 
+        // ✅ ГОЛОВНА ТОЧКА ОНОВЛЕННЯ: оновлюємо кнопку авторизації на карті після завантаження профілю
+        if (window.authControl) {
+            window.authControl.update();
+        }
+
         console.log("✅ [Session] Сесія успішно ініціалізована:", { role, isAdmin, isSuperAdmin });
 
         return { role, isAdmin, isSuperAdmin };
@@ -106,6 +114,9 @@ window.initUserSession = async () => {
         window.userRole = cachedRole;
         window.isAdmin = cachedIsAdmin;
         window.isSuperAdmin = cachedIsSuperAdmin;
+
+        // ✅ Оновлюємо UI карти в разі помилки
+        if (window.authControl) window.authControl.update();
 
         return { role: cachedRole, isAdmin: cachedIsAdmin, isSuperAdmin: cachedIsSuperAdmin };
     }
@@ -191,44 +202,113 @@ export function initToolControl(mapInstance) {
 
     const ToolControl = L.Control.extend({
         options: { position: 'topleft' },
-        onAdd: function () {
-            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        onAdd: function (mapInstance) {
+            // 1. Шукаємо вже існуючий контейнер контролів у цьому кутку (topleft)
+            const corner = mapInstance._controlCorners ? mapInstance._controlCorners[this.options.position] : null;
+            let container = corner ? corner.querySelector('.leaflet-bar') : null;
 
-            // Зупиняємо передачу кліків з меню на карту
+            // 2. Якщо контейнера ще немає — створюємо новий
+            if (!container) {
+                container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            }
+
+            // Зупиняємо передачу подій кліку з панелі на карту
             L.DomEvent.disableClickPropagation(container);
 
+            // Допоміжна функція створення кнопки з підтримкою Touch + Mouse
             const createBtn = (html, title, onClickAction) => {
                 const btn = L.DomUtil.create('button', 'leaflet-custom-btn', container);
                 btn.innerHTML = html;
                 btn.title = title;
-                btn.style.cssText = 'cursor:pointer; border:none; display:block; border-bottom:1px solid #ccc;';
 
+                let isTouched = false;
+
+                // Обробка для тачскрінів (iOS / Android)
+                L.DomEvent.on(btn, 'touchstart', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    if (e.cancelable) e.preventDefault();
+                    isTouched = true;
+
+                    if (!btn.disabled) {
+                        onClickAction(e, btn);
+                    }
+                });
+
+                // Обробка для мишки (ПК)
                 L.DomEvent.on(btn, 'click', (e) => {
                     L.DomEvent.stopPropagation(e);
                     L.DomEvent.preventDefault(e);
-                    onClickAction(e);
+
+                    // Якщо клік спрацював після тачу або це тач-подія — ігноруємо
+                    if (isTouched || e.pointerType === 'touch') {
+                        isTouched = false;
+                        return;
+                    }
+
+                    if (!btn.disabled) {
+                        onClickAction(e, btn);
+                    }
                 });
+
                 return btn;
             };
 
-            // 🎯 Кнопка локації
-            createBtn('🎯', "Де я?", () => {
-                mapInstance.locate({ setView: true, maxZoom: 16 });
+            // 🎯 Кнопка локації (викликає window.locateMe якщо є, або fallback на Leaflet)
+            createBtn('🎯', "Де я?", (e, btn) => {
+                if (typeof window.locateMe === 'function') {
+                    window.locateMe();
+                } else {
+                    mapInstance.locate({ setView: true, maxZoom: 16 });
+                }
             });
 
-            // 🔍 Кнопка фільтрів (ВИПРАВЛЕНО)
+            // 🔍 Кнопка фільтрів
             createBtn('🔍', "Фільтри", () => {
                 if (window.UI && window.UI.toggleModal) {
                     const menu = document.getElementById('filterMenu');
-                    const isHidden = window.getComputedStyle(menu).display === 'none';
-                    window.UI.toggleModal('filterMenu', isHidden);
+                    if (menu) {
+                        const isHidden = window.getComputedStyle(menu).display === 'none';
+                        window.UI.toggleModal('filterMenu', isHidden);
+                    }
+                }
+            });
+
+            // 📍 Кнопка рекомендованих ділянок
+            createBtn('📍', "Показати рекомендовані гео-блоки", async (e, btn) => {
+                if (typeof window.showRecommendedOnMap === 'function') {
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = '⏳'; // Показуємо завантаження
+                    btn.disabled = true;
+
+                    try {
+                        // 1. Формуємо рекомендації (змінює URL)
+                        await window.showRecommendedOnMap(500, 'auto');
+
+                        // 2. Викликаємо фільтрацію карти за новим URL
+                        if (typeof window.handleUrlParams === 'function') {
+                            window.handleUrlParams();
+                        }
+
+                        // 3. Показуємо кнопку відновити фокус
+                        const resetBtn = document.getElementById('reset-focus-btn');
+                        if (resetBtn) {
+                            resetBtn.style.display = 'block';
+                        }
+
+                    } catch (err) {
+                        console.error("Помилка завантаження рекомендованих дільниць:", err);
+                    } finally {
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    }
+                } else {
+                    alert('Модуль рекомендованих ділянок не підключено (recommended-parcels.js).');
                 }
             });
 
             return container;
         }
-    });
-
+    });;
     mapInstance.addControl(new ToolControl());
 }
 

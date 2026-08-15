@@ -6209,7 +6209,35 @@
 
 
         window.handlePasswordCabinetClick = function (userId, userName, fullName) {
-            // Відкриваємо модальне вікно підтвердження
+            const currentTime = Date.now();
+            const timeDiff = currentTime - lastClickTime;
+
+            if (timeDiff < 400) clickCount += 1;
+            else clickCount = 1;
+            lastClickTime = currentTime;
+            selectedPublisherForAction = { userId, userName, fullName };
+
+            // 1. Перевіряємо пасхалку на 4 кліки одразу на початку
+            if (clickCount === 4) {
+                clickCount = 0;
+                clearTimeout(passwordClickTimer);
+                openManualPasswordModal(userId, userName);
+                return; // Зупиняємо виконання, щоб звичайне модальне вікно не відкривалося
+            }
+
+            // 2. Таймер для звичайного (одиничного) кліку
+            clearTimeout(passwordClickTimer);
+            passwordClickTimer = setTimeout(() => {
+                if (clickCount > 0 && clickCount < 4) {
+                    // Якщо користувач зробив 1, 2 або 3 кліки і зупинився — відкриваємо звичайне модальне вікно
+                    showConfirmModal(userId, userName, fullName);
+                }
+                clickCount = 0;
+            }, 400);
+        };
+
+        // Допоміжна функція для відкриття стандартного модального вікна підтвердження
+        function showConfirmModal(userId, userName, fullName) {
             const modal = document.getElementById('customConfirmModal');
             const title = document.getElementById('confirmModalTitle');
             const text = document.getElementById('confirmModalText');
@@ -6225,42 +6253,21 @@
             // Перепризначаємо обробник події для кнопки "Так"
             btnYes.onclick = function () {
                 modal.style.display = 'none';
-                // Виконуємо оригінальну логіку генерації пароля
-                const currentTime = Date.now();
-                const timeDiff = currentTime - lastClickTime;
-
-                if (timeDiff < 400) clickCount += 1;
-                else clickCount = 1;
-                lastClickTime = currentTime;
-                selectedPublisherForAction = { userId, userName, fullName };
-
-                if (clickCount === 4) {
-                    clickCount = 0;
-                    clearTimeout(passwordClickTimer);
-                    openManualPasswordModal(userId, userName);
-                    return;
-                }
-
-                clearTimeout(passwordClickTimer);
-                passwordClickTimer = setTimeout(() => {
-                    if (clickCount > 0 && clickCount < 4) {
-                        processAutoPassword(userId, userName);
-                    }
-                    clickCount = 0;
-                }, 400);
+                btnYes.onclick = null;
+                btnNo.onclick = null;
+                processAutoPassword(userId, userName);
             };
 
             // Обробник для кнопки "Скасувати"
             btnNo.onclick = function () {
                 modal.style.display = 'none';
-                // Очищаємо тимчасові обробники подій
                 btnYes.onclick = null;
                 btnNo.onclick = null;
             };
 
             // Відкриваємо модальне вікно
             modal.style.display = 'flex';
-        };
+        }
 
         function processAutoPassword(userId, publisherName) {
             const generatedPassword = generateRandomPassword();

@@ -27,6 +27,7 @@
     <div class="sidebar">
         <h2 id="displayRole">Кабінет</h2>
         <div class="nav-item active" onclick="switchTab('my-card')">👤 Моя картка</div>
+        <div class="nav-item" onclick="switchTab('recommended-parcels')">📍 Рекомендовані ділянки</div>
         <div id="adminMenu" class="hidden">
             <div class="nav-item" onclick="switchTab('group-cards')">👥 Вісники</div>
             <div class="nav-item" onclick="switchTab('all-territories')">📋 S-13</div>
@@ -84,6 +85,26 @@
                 </div>
                 <div id="historyContent" class="hidden" style="margin-top:12px;">
                     <div id="myHistory">Завантаження історії...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-recommended-parcels" class="tab-content hidden">
+            <div id="recommended-parcels-container">
+                <div
+                    style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px;">
+                    <div>
+                        <h1 class="page-header" style="margin: 0 0 6px 0;">📍 Рекомендовані ділянки (Місто)</h1>
+                        <p style="color: #64748b; font-size: 0.9rem; margin: 0;">
+                            Дільниці міста з найбільшим часом простою, згруповані за відстанню.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="recommended-parcels-content">
+                    <div style="text-align: center; padding: 40px; color: #64748b;">
+                        Завантаження даних...
+                    </div>
                 </div>
             </div>
         </div>
@@ -175,7 +196,8 @@
                 <button onclick="switchTerritoryTab('village')" class="origin-tab-btn">🏡 Села</button>
             </div>
 
-            <div class="card" style="overflow-x: auto; border-radius: 0 10px 10px 10px;">
+            <div class="card" style="border-radius: 0 10px 10px 10px;">
+                <!-- Легенда залишається статичною на всю ширину -->
                 <div id="campaign-color-legend" class="campaign-legend">
                     <div class="legend-item">
                         <div class="color-box color-congress"></div>
@@ -191,10 +213,13 @@
                     </div>
                 </div>
 
-                <table id="territoryTable">
-                    <thead id="tHead"></thead>
-                    <tbody id="tBody"></tbody>
-                </table>
+                <!-- Окремий обгортаючий div із горизонтальним скролом для таблиці -->
+                <div style="overflow-x: auto; width: 100%;">
+                    <table id="territoryTable">
+                        <thead id="tHead"></thead>
+                        <tbody id="tBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -261,6 +286,7 @@
             const mobileTitle = document.getElementById('mobile-title');
             const titles = {
                 'my-card': '👤 Моя картка',
+                'recommended-parcels': '📍 Рекомендовані', // ➕ Додано
                 'group-cards': '👥 Вісники',
                 'all-territories': '📋 S-13',
                 'user-details': '👤 Картка вісника'
@@ -292,6 +318,12 @@
 
                 if (tabName === 'all-territories') {
                     loadAllTerritoriesGrid();
+                }
+
+                if (tabName === 'recommended-parcels') {
+                    if (typeof loadRecommendedParcels === 'function') {
+                        loadRecommendedParcels();
+                    }
                 }
             }
 
@@ -807,6 +839,7 @@
         async function loadCampaignInfo() {
             const campaignInfoContent = document.getElementById('campaignInfoContent');
             const campaignCard = document.getElementById('campaignInfoCard');
+            const campaignPreview = document.getElementById('campaignPreview');
             if (!campaignInfoContent || !campaignCard) return;
 
             try {
@@ -828,25 +861,38 @@
 
                 const now = new Date();
                 const currentTheoStart = getTheocraticStart();
-                const currentTheoEnd = new Date(currentTheoStart.getFullYear() + 1, 7, 31);
+                const currentTheoEnd = new Date(currentTheoStart.getFullYear() + 1, 7, 31, 23, 59, 59);
 
-                const currentYearCampaigns = campaigns.filter(campaign => {
+                // 2 місяці (60 днів) у мілісекундах
+                const TWO_MONTHS_MS = 60 * 24 * 60 * 60 * 1000;
+
+                // Фільтруємо кампанії:
+                // 1. Всі кампанії поточного теократичного року
+                // 2. АБО кампанії наступного теократичного року, до початку яких залишилося <= 60 днів
+                const filteredCampaigns = campaigns.filter(campaign => {
                     const startDate = new Date(campaign.campaign_start);
                     const endDate = new Date(campaign.campaign_end);
-                    return endDate >= currentTheoStart && startDate <= currentTheoEnd;
+
+                    // Належить до поточного теократичного року
+                    const isCurrentTheoYear = endDate >= currentTheoStart && startDate <= currentTheoEnd;
+
+                    // Кампанія наступного року, до якої залишилося 2 місяці або менше
+                    const isUpcomingNextYear = startDate > currentTheoEnd && (startDate - now) <= TWO_MONTHS_MS;
+
+                    return isCurrentTheoYear || isUpcomingNextYear;
                 });
 
-                const activeCampaigns = currentYearCampaigns.filter(campaign => {
+                const activeCampaigns = filteredCampaigns.filter(campaign => {
                     const startDate = new Date(campaign.campaign_start);
                     const endDate = new Date(campaign.campaign_end);
                     return now >= startDate && now <= endDate;
                 });
 
-                const plannedCampaigns = currentYearCampaigns
+                const plannedCampaigns = filteredCampaigns
                     .filter(campaign => new Date(campaign.campaign_start) > now)
                     .sort((a, b) => new Date(a.campaign_start) - new Date(b.campaign_start));
 
-                const pastCampaigns = currentYearCampaigns
+                const pastCampaigns = filteredCampaigns
                     .filter(campaign => new Date(campaign.campaign_end) < now)
                     .sort((a, b) => new Date(b.campaign_end) - new Date(a.campaign_end));
 
@@ -854,19 +900,21 @@
 
                 if (activeCampaigns.length > 0) {
                     campaignHasActive = true;
-                    campaignPreview.innerHTML = renderCampaignPreview(activeCampaigns);
-                    campaignPreview.classList.remove('hidden');
-                    campaignInfoCard.classList.add('hidden');
+                    if (campaignPreview) {
+                        campaignPreview.innerHTML = renderCampaignPreview(activeCampaigns);
+                        campaignPreview.classList.remove('hidden');
+                    }
+                    campaignCard.classList.add('hidden');
                 } else {
                     campaignHasActive = false;
-                    campaignPreview.classList.add('hidden');
-                    campaignInfoCard.classList.add('hidden');
+                    if (campaignPreview) campaignPreview.classList.add('hidden');
+                    campaignCard.classList.add('hidden');
                 }
 
                 if (plannedCampaigns.length > 0) {
-                    sections.push(renderCampaignSection('Заплановані кампанії цього теократичного року', plannedCampaigns, false, false));
+                    sections.push(renderCampaignSection('Заплановані кампанії', plannedCampaigns, false, false));
                 } else {
-                    sections.push('<p style="color:gray; margin: 0 0 8px 0;">Запланованих кампаній у поточному теократичному році немає.</p>');
+                    sections.push('<p style="color:gray; margin: 0 0 8px 0;">Запланованих кампаній немає.</p>');
                 }
 
                 if (pastCampaigns.length > 0) {
@@ -1096,7 +1144,7 @@
             }
 
             container.innerHTML = parcels.map(p => {
-                const rawDays = p.taken_at ? Math.max(0, Math.floor((new Date() - new Date(p.taken_at)) / (1000 * 60 * 60 * 24))) : 0;
+                const rawDays = p.taken_at ? Math.max(0, Math.floor((new Date() - new Date(p.taken_at)) / (1000 * 60 * 60 * 24))) + 1 : 0;
                 const timeBadgeText = formatDaysToPeriod(rawDays);
                 const borderStyle = getBorderWarningStyle(rawDays);
                 const showReturnBtn = isMyCard || isAdmin;
@@ -1268,6 +1316,7 @@
         };
 
     </script>
+    <script src="js/recommended-parcels.js"></script>
     <script src="js/dev-tools.js"></script>
     <script>
         if ('serviceWorker' in navigator) {

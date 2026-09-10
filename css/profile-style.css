@@ -179,7 +179,7 @@ body {
 /* Таблиці та списки */
 table {
     border-collapse: collapse;
-    margin-top: 15px;
+    margin: 15px
 }
 
 th,
@@ -576,12 +576,6 @@ h3 {
     background: #218838;
 }
 
-/* Стилізація таблиці */
-.publishers-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
 .publishers-table th,
 .publishers-table td {
     padding: 12px;
@@ -660,6 +654,15 @@ h3 {
     max-width: 100%;
     overflow-x: auto;
     overflow-y: visible;
+}
+
+span#campaignHeaderText, span#historyHeaderText {
+    font-size: 0.95rem;
+    color: #1976d2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
 }
 
 #tab-my-card > .card:not(:last-child) {
@@ -853,7 +856,7 @@ h3 {
 
     .card {
         margin: 0 0 20px 0 !important;
-        padding: 15px !important;
+        padding: 15px 0 !important;
     }
 
     .tab-header {
@@ -1082,4 +1085,19 @@ h3 {
 
 .btn-confirm-no:hover {
     background: #d5d5d5;
+}
+.btn-export {
+    white-space: nowrap;
+    padding: 5px 10px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.btn-export:hover {
+    background: #218838;
 }

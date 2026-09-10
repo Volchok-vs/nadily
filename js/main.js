@@ -215,51 +215,23 @@ export function initToolControl(mapInstance) {
             // Зупиняємо передачу подій кліку з панелі на карту
             L.DomEvent.disableClickPropagation(container);
 
-            // Допоміжна функція створення кнопки з підтримкою Touch + Mouse
+            // Допоміжна функція створення кнопки
             const createBtn = (html, title, onClickAction) => {
                 const btn = L.DomUtil.create('button', 'leaflet-custom-btn', container);
                 btn.innerHTML = html;
                 btn.title = title;
 
-                let isTouched = false;
-
-                // Обробка для тачскрінів (iOS / Android)
-                L.DomEvent.on(btn, 'touchstart', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    if (e.cancelable) e.preventDefault();
-                    isTouched = true;
-
-                    if (!btn.disabled) {
-                        onClickAction(e, btn);
-                    }
-                });
-
-                // Обробка для мишки (ПК)
                 L.DomEvent.on(btn, 'click', (e) => {
                     L.DomEvent.stopPropagation(e);
                     L.DomEvent.preventDefault(e);
-
-                    // Якщо клік спрацював після тачу або це тач-подія — ігноруємо
-                    if (isTouched || e.pointerType === 'touch') {
-                        isTouched = false;
-                        return;
-                    }
-
-                    if (!btn.disabled) {
-                        onClickAction(e, btn);
-                    }
+                    onClickAction(e, btn);
                 });
-
                 return btn;
             };
 
-            // 🎯 Кнопка локації (викликає window.locateMe якщо є, або fallback на Leaflet)
-            createBtn('🎯', "Де я?", (e, btn) => {
-                if (typeof window.locateMe === 'function') {
-                    window.locateMe();
-                } else {
-                    mapInstance.locate({ setView: true, maxZoom: 16 });
-                }
+            // 🎯 Кнопка локації
+            createBtn('🎯', "Де я?", () => {
+                mapInstance.locate({ setView: true, maxZoom: 16 });
             });
 
             // 🔍 Кнопка фільтрів
@@ -308,7 +280,7 @@ export function initToolControl(mapInstance) {
 
             return container;
         }
-    });;
+    });
     mapInstance.addControl(new ToolControl());
 }
 

@@ -236,5 +236,24 @@ export function initGeolocation(map) {
         alert(errorMsg);
     });
 
-    
+    document.addEventListener('DOMContentLoaded', function () {
+        // Знаходимо вашу кнопку за її ID (замініть 'locate-btn' на реальний ID вашої кнопки)
+        const locateBtn = document.getElementById('locate-btn');
+
+        if (locateBtn) {
+            // Обробка для тачскрінів (iPhone / iPad)
+            locateBtn.addEventListener('touchstart', function (e) {
+                e.preventDefault(); // Запобігає затримці та подвійному кліку на iOS
+                window.locateMe();
+            }, { passive: false });
+
+            // Обробка для звичайних комп'ютерів (мишка)
+            locateBtn.addEventListener('click', function (e) {
+                // Перевіряємо, щоб на тач-пристроях не зпрацьовувало двічі
+                if (e.pointerType !== 'touch') {
+                    window.locateMe();
+                }
+            });
+        }
+    });
 }

@@ -7,6 +7,7 @@
     <title>Менеджер Територій</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="css/profile-style.css" />
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -1685,6 +1686,10 @@
         <button class="mobile-nav-toggle-new" onclick="toggleSidebar()">☰</button>
         <div class="mobile-title" id="mobile-title">🌍 Території</div>
     </div>
+    <!-- Окрема кнопка "Назад" для PWA-режиму -->
+    <button class="pwa-back-btn" onclick="window.history.back()">
+    ← Назад
+    </button>
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
     <div class="sidebar">
         <h2>🗺️ Адмін-панель</h2>
@@ -2506,6 +2511,13 @@
             }
         };
 
+        
+
+        // Змінні для збереження стану
+        let onHandsResults = [];
+        let onHandsPublishers = new Map();
+        let sortOrders = { publisher: 1, number: 1, daysHeld: -1 }; // Напрямок сортування
+
         // Допоміжна функція для форматування днів у період (роки, місяці, дні)
         function formatDaysToPeriod(days) {
             const years = Math.floor(days / 365);
@@ -2520,7 +2532,8 @@
             return parts.join(' ');
         }
 
-        // Функція для аналізу територій на руках
+        // Функція для аналізу та завантаження територій на руках
+        // Функція для аналізу та завантаження територій на руках
         async function generateOnHandsReport() {
             const reportContainer = document.getElementById('on-hands-report');
             const summaryContainer = document.getElementById('on-hands-summary');
@@ -2528,59 +2541,121 @@
             const progressFill = document.getElementById('on-hands-progress-fill');
             const progressText = document.getElementById('on-hands-progress-text');
 
-            reportContainer.innerHTML = '<p>Очікування пошуку...</p>';
-            summaryContainer.innerHTML = "";
-            progressContainer.style.display = 'block';
-            if (progressFill) progressFill.style.width = '0%';
-            if (progressText) progressText.innerText = 'Прогрес: 0%';
+            // Отримання значень з фільтрів
+            const minDaysThreshold = parseInt(document.getElementById('on-hands-days-threshold')?.value) || 0;
+            const publisherFilter = document.getElementById('on-hands-publisher-filter')?.value.trim().toLowerCase() || '';
 
+            reportContainer.innerHTML = '<p>Очікування пошуку...</p>';
+            if (summaryContainer) {
+                summaryContainer.innerHTML = `<p class="summary-text">Загальна кількість територій на руках: <span id="on-hands-count">0</span></p>`;
+            }
+            
+            if (progressContainer) progressContainer.style.display = 'block';
+            if (progressFill) progressFill.style.width = '30%';
+            if (progressText) progressText.innerText = 'Завантаження даних...';
+
+            // Очищення попередніх даних
             onHandsResults = [];
             onHandsPublishers.clear();
 
             try {
+                // Отримуємо всі території з бази
                 const { data: territories, error } = await supabase
                     .from('parcels')
                     .select('*');
 
                 if (error) throw error;
 
-                console.log('📊 Отримано територій з бази:', territories.length);
-                const statusCounts = {};
-                territories.forEach(t => {
-                    statusCounts[t.status] = (statusCounts[t.status] || 0) + 1;
-                });
-                console.log('📈 Розподіл статусів територій:', statusCounts);
+                console.log("Завантажено територій з бази:", territories.length, territories);
 
-                // Далі логіка формування звіту...
+                if (progressFill) progressFill.style.width = '70%';
+                if (progressText) progressText.innerText = 'Обробка даних...';
+
+                const today = new Date();
+
+                territories.forEach(t => {
+                    // 1. Пошук імені вісника за всіма можливими полями системи (з урахуванням taken_by)
+                    const publisherName = t.taken_by || t.current_publisher || t.publisher || t.assignee || t.user_name;
+                    
+                    // 2. Пошук дати отримання (з урахуванням taken_at)
+                    const dateTakenRaw = t.taken_at || t.date_taken || t.assigned_at || t.created_at;
+
+                    // 3. ПЕРЕВІРКА СТАТУСУ:
+                    // Дільниця вважається на руках, якщо status === 'taken' АБО (є ім'я вісника і статус не free)
+                    const status = String(t.status || '').toLowerCase();
+                    const isTakenStatus = status === 'taken' || status === 'reserved' || status === 'on_hands';
+                    const isFreeStatus = status === 'free' || status === 'available' || status === 'null' || status === '';
+
+                    // Якщо дільниця вільна і немає вісника — пропускаємо
+                    if (isFreeStatus && !publisherName) return;
+
+                    // Якщо статус не 'taken' і немає вісника — пропускаємо
+                    if (!isTakenStatus && !publisherName) return;
+
+                    // Назва для відображення (якщо ім'я відсутнє в базі)
+                    const displayName = publisherName || 'Вісник не вказаний';
+
+                    // 4. Розрахунок днів на руках
+                    const dateTaken = dateTakenRaw ? new Date(dateTakenRaw) : today;
+                    const diffTime = Math.abs(today - dateTaken);
+                    const daysHeld = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                    // Фільтрація за мінімальною кількістю днів
+                    if (daysHeld < minDaysThreshold) return;
+
+                    // Фільтрація за іменем вісника
+                    if (publisherFilter && !displayName.toLowerCase().includes(publisherFilter)) return;
+
+                    // Збереження даних
+                    const count = onHandsPublishers.get(displayName) || 0;
+                    onHandsPublishers.set(displayName, count + 1);
+
+                    onHandsResults.push({
+                        id: t.id,
+                        number: t.number || t.parcel_number || t.name || String(t.id),
+                        publisher: displayName,
+                        dateTaken: dateTakenRaw,
+                        daysHeld: daysHeld,
+                        formattedPeriod: formatDaysToPeriod(daysHeld)
+                    });
+                });
+
+                if (progressFill) progressFill.style.width = '100%';
+                
+                console.log("Знайдено територій на руках:", onHandsResults.length, onHandsResults);
+                renderOnHandsReport();
+
             } catch (err) {
                 console.error("Помилка отримання даних: ", err);
                 reportContainer.innerHTML = '<p style="color:red;">Сталася помилка завантаження даних.</p>';
             } finally {
-                progressContainer.style.display = 'none';
+                setTimeout(() => {
+                    if (progressContainer) progressContainer.style.display = 'none';
+                }, 400);
             }
         }
 
         // Функція для рендерингу звіту
         function renderOnHandsReport() {
             const reportContainer = document.getElementById('on-hands-report');
-            const summaryContainer = document.getElementById('on-hands-summary');
             const countElement = document.getElementById('on-hands-count');
 
+            if (countElement) {
+                countElement.textContent = onHandsResults.length;
+            }
+
             reportContainer.innerHTML = "";
-            summaryContainer.innerHTML = `<p class="summary-text">Загальна кількість територій на руках: <span id="on-hands-count">${onHandsResults.length}</span></p>`;
 
             if (onHandsResults.length === 0) {
-                reportContainer.innerHTML = '<p class="text-center">Немає територій на руках.</p>';
+                reportContainer.innerHTML = '<p class="text-center">Немає територій, що відповідають критеріям.</p>';
                 return;
             }
 
-            // Створюємо красиві картки для результатів
             const fragment = document.createDocumentFragment();
             onHandsResults.forEach((result, index) => {
                 const entry = document.createElement("div");
                 entry.className = "on-hands-card";
 
-                // Визначаємо клас для бейджа днів
                 let daysClass = 'days-low';
                 if (result.daysHeld > 90) daysClass = 'days-high';
                 else if (result.daysHeld > 30) daysClass = 'days-medium';
@@ -2619,24 +2694,30 @@
 
         // Функції сортування
         function sortOnHandsByPublisher() {
+            sortOrders.publisher *= -1;
             onHandsResults.sort((a, b) => {
-                const countA = onHandsPublishers.get(a.publisher) || 0;
-                const countB = onHandsPublishers.get(b.publisher) || 0;
-                return countB !== countA ? countB - countA : a.publisher.localeCompare(b.publisher, "uk");
+                return sortOrders.publisher * a.publisher.localeCompare(b.publisher, "uk");
             });
             renderOnHandsReport();
         }
 
-        function sortOnHandsResults(key, order) {
+        function sortOnHandsResults(key) {
+            sortOrders[key] *= -1;
+            const order = sortOrders[key];
+
             onHandsResults.sort((a, b) => {
-                if (key === "publisher") return order * a.publisher.localeCompare(b.publisher, "uk");
-                if (key === "number") return order * (parseInt(a.number.replace(/\D/g, '')) || 0 - (parseInt(b.number.replace(/\D/g, '')) || 0));
-                if (key === "daysHeld") return order * (a.daysHeld - b.daysHeld);
+                if (key === "number") {
+                    const numA = parseInt(String(a.number).replace(/\D/g, '')) || 0;
+                    const numB = parseInt(String(b.number).replace(/\D/g, '')) || 0;
+                    return order * (numA - numB);
+                }
+                if (key === "daysHeld") {
+                    return order * (a.daysHeld - b.daysHeld);
+                }
                 return 0;
             });
             renderOnHandsReport();
         }
-
         // Глобальний кеш територій
         let cachedTerritories = [];
 
@@ -4475,11 +4556,7 @@
             }
         });
 
-        // Обробники подій для звіту територій на руках
-        document.getElementById('generate-on-hands-report').addEventListener('click', generateOnHandsReport);
-        document.getElementById('sort-on-hands-publisher').addEventListener('click', () => sortOnHandsResults('publisher', 1));
-        document.getElementById('sort-on-hands-number').addEventListener('click', () => sortOnHandsResults('number', 1));
-        document.getElementById('sort-on-hands-days').addEventListener('click', () => sortOnHandsResults('daysHeld', -1));
+        
 
         // Event listener для аналізу територій за період
         document.getElementById('period-search-btn').addEventListener('click', generatePeriodAnalysis);
@@ -5421,7 +5498,24 @@
                 if (typeof window.loadPublishersAdminList === 'function') await window.loadPublishersAdminList();
             }
 
+
             addTableSorting(); // Додаємо сортування після завантаження
+
+            // Кнопка "Пошук"
+            document.getElementById('generate-on-hands-report')?.addEventListener('click', generateOnHandsReport);
+
+            // Кнопки сортування
+            document.getElementById('sort-on-hands-publisher')?.addEventListener('click', sortOnHandsByPublisher);
+            document.getElementById('sort-on-hands-number')?.addEventListener('click', () => sortOnHandsResults('number'));
+            document.getElementById('sort-on-hands-days')?.addEventListener('click', () => sortOnHandsResults('daysHeld'));
+
+            // Автоматичне виконання пошуку при натисканні Enter у фільтрах
+            document.getElementById('on-hands-days-threshold')?.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') generateOnHandsReport();
+            });
+            document.getElementById('on-hands-publisher-filter')?.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') generateOnHandsReport();
+            });
 
             // Ховаємо лоадер після завантаження
             if (typeof hideLoader === 'function') hideLoader();

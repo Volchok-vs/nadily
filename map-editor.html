@@ -118,7 +118,7 @@
         #output {
             position: absolute;
             bottom: 10px;
-            left: 10px;
+            left: 60px;
             z-index: 1000;
             background: rgba(0,0,0,0.7);
             color: #0f0;
@@ -627,22 +627,48 @@
         if (error) return;
 
         data.forEach(p => {
-            L.geoJSON(p.geom, {
-                onEachFeature: function (f, layer) {
-                    f.properties = { 
-                        name: p.name, 
+            if (!p.geom) return;
+
+            // Функція для додавання шару та налаштування
+            const processGeometry = (geometry, subIndex = null) => {
+                const layer = L.GeoJSON.geometryToLayer(geometry);
+                
+                // Формуємо унікальний ID для частин MultiPolygon, якщо це необхідно
+                const featureId = p.id;
+                
+                const f = {
+                    type: "Feature",
+                    geometry: geometry,
+                    properties: {
+                        name: p.name,
                         category: p.category || "Приватний сектор",
-                        labelPos: p.label_pos 
+                        labelPos: p.label_pos
+                    },
+                    id: featureId
+                };
+
+                layer.feature = f;
+                layer.databaseId = p.id;
+
+                drawnItems.addLayer(layer);
+                window.setupLayer(layer, f);
+            };
+
+            // Якщо геометрія MultiPolygon — розбиваємо на окремі Polygon
+            if (p.geom.type === 'MultiPolygon') {
+                p.geom.coordinates.forEach((polyCoords) => {
+                    const singlePolyGeom = {
+                        type: 'Polygon',
+                        coordinates: polyCoords
                     };
-                    f.id = p.id; 
-                    layer.databaseId = p.id; 
-                    layer.feature = f;
-                    drawnItems.addLayer(layer);
-                    window.setupLayer(layer, f);
-                }
-            });
+                    processGeometry(singlePolyGeom);
+                });
+            } else {
+                processGeometry(p.geom);
+            }
         });
-        document.getElementById('output').innerText = "Завантажено ділянок: " + data.length;
+
+        document.getElementById('output').innerText = "Завантажено ділянок: " + drawnItems.getLayers().length;
     }
 
     // Налаштування малювання

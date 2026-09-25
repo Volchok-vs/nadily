@@ -8,6 +8,40 @@ window.generateTakenParcelsReportDirect = async function() {
         return;
     }
 
+    // Допоміжна функція для форматування тривалості (Днів, Місяців, Років)
+    function formatDuration(startDate) {
+        if (!startDate) return "—";
+        const start = new Date(startDate);
+        const end = new Date();
+
+        if (isNaN(start.getTime())) return "—";
+
+        // Якщо дата з майбутнього або помилкова
+        if (start > end) return "0 дн.";
+
+        let years = end.getFullYear() - start.getFullYear();
+        let months = end.getMonth() - start.getMonth();
+        let days = end.getDate() - start.getDate();
+
+        if (days < 0) {
+            months--;
+            const prevMonthLastDay = new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+            days += prevMonthLastDay;
+        }
+
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+
+        const parts = [];
+        if (years > 0) parts.push(`${years} р.`);
+        if (months > 0) parts.push(`${months} міс.`);
+        if (days > 0 || parts.length === 0) parts.push(`${days} дн.`);
+
+        return parts.join(' ');
+    }
+
     try {
         const { data: parcels, error } = await supabase
             .from('parcels')
@@ -33,7 +67,8 @@ window.generateTakenParcelsReportDirect = async function() {
                 takenAtFormatted: isValidDate 
                     ? dateObj.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' }) 
                     : "—",
-                takenTimestamp: isValidDate ? dateObj.getTime() : 0
+                takenTimestamp: isValidDate ? dateObj.getTime() : 0,
+                durationText: isValidDate ? formatDuration(rawDate) : "—"
             };
         });
 
@@ -116,13 +151,7 @@ window.generateTakenParcelsReportDirect = async function() {
                 </div>
                 <div class="report-table-wrapper">
                     <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 40%;">Назва ділянки</th>
-                                <th style="width: 30%;">Дата отримання</th>
-                                <th style="width: 30%;">Вісник</th>
-                            </tr>
-                        </thead>
+                        <thead id="table-head"></thead>
                         <tbody id="table-body"></tbody>
                     </table>
                 </div>
@@ -134,12 +163,33 @@ window.generateTakenParcelsReportDirect = async function() {
 
         const renderReport = function() {
             const period = document.getElementById('period').value;
+            const thead = document.getElementById('table-head');
             const tbody = document.getElementById('table-body');
             const emptyMsg = document.getElementById('empty-msg');
             const countInfo = document.getElementById('count-info');
 
             const now = Date.now();
             const ONE_DAY = 86400000;
+
+            // Формуємо шапку таблиці залежно від обраного періоду
+            if (period === 'all') {
+                thead.innerHTML = `
+                    <tr>
+                        <th style="width: 30%;">Назва ділянки</th>
+                        <th style="width: 20%;">Дата отримання</th>
+                        <th style="width: 25%;">Час</th>
+                        <th style="width: 25%;">Вісник</th>
+                    </tr>
+                `;
+            } else {
+                thead.innerHTML = `
+                    <tr>
+                        <th style="width: 40%;">Назва ділянки</th>
+                        <th style="width: 30%;">Дата отримання</th>
+                        <th style="width: 30%;">Вісник</th>
+                    </tr>
+                `;
+            }
 
             const filtered = rawTableData.filter(item => {
                 if (period === 'all') return true;
@@ -155,11 +205,20 @@ window.generateTakenParcelsReportDirect = async function() {
                 emptyMsg.style.display = 'none';
                 filtered.forEach(item => {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><b>${item.name}</b></td>
-                        <td>${item.takenAtFormatted}</td>
-                        <td>${item.assignee}</td>
-                    `;
+                    if (period === 'all') {
+                        tr.innerHTML = `
+                            <td><b>${item.name}</b></td>
+                            <td>${item.takenAtFormatted}</td>
+                            <td><span style="color: #0284c7; font-weight: 500;">${item.durationText}</span></td>
+                            <td>${item.assignee}</td>
+                        `;
+                    } else {
+                        tr.innerHTML = `
+                            <td><b>${item.name}</b></td>
+                            <td>${item.takenAtFormatted}</td>
+                            <td>${item.assignee}</td>
+                        `;
+                    }
                     tbody.appendChild(tr);
                 });
             }

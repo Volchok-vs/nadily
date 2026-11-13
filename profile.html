@@ -1295,56 +1295,59 @@
       }
 
       function renderParcelList(parcels, containerId, isMyCard) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
+            const container = document.getElementById(containerId);
+            if (!container) return;
 
-        const isAdmin = window.checkIsAdmin ? window.checkIsAdmin() : false;
+            const role = localStorage.getItem('userRole');
+            const isAdmin = (role === 'admin' || role === 'super_admin');
 
-        if (!parcels || parcels.length === 0) {
-          container.innerHTML =
-            '<p style="color:gray;">Немає активних дільниць.</p>';
-          return;
-        }
+            if (!parcels || parcels.length === 0) {
+                container.innerHTML = '<p style="color:gray;">Немає активних дільниць.</p>';
+                return;
+            }
 
-        container.innerHTML = parcels
-          .map((p) => {
-            const rawDays = p.taken_at
-              ? Math.max(
-                  0,
-                  Math.floor(
-                    (new Date() - new Date(p.taken_at)) / (1000 * 60 * 60 * 24),
-                  ),
-                )
-              : 0;
-            const timeBadgeText = formatDaysToPeriod(rawDays);
-            const borderStyle = getBorderWarningStyle(rawDays);
-            const showReturnBtn = isMyCard || isAdmin;
+            container.innerHTML = parcels.map(p => {
+                const rawDays = p.taken_at
+                    ? Math.max(
+                        0,
+                        Math.floor(
+                            (new Date() - new Date(p.taken_at)) / (1000 * 60 * 60 * 24),
+                        ),
+                    )
+                    : 0;
+                
+                const timeBadgeText = formatDaysToPeriod(rawDays);
+                const borderStyle = getBorderWarningStyle(rawDays);
+                const showReturnBtn = isMyCard || isAdmin;
 
-            const prefix = p.category === "Село" ? ": " : " №";
-            const badgeStyle =
-              rawDays >= 90 ? "background: #ff6b6b; color: white;" : "";
+                const prefix = p.category === 'Село' ? ': ' : ' №';
+                const badgeStyle = rawDays >= 90 ? "background: #ff6b6b; color: white;" : "";
 
-            return `
-                <div style="${borderStyle} padding:15px; margin-bottom:10px; border-radius:8px; cursor:pointer; border: 1px solid #eee;"
-                    onclick="window.location.href='parcel-details.html?id=${p.id}&from=${isMyCard ? "my" : "all"}'">
-                    <div style="display:flex; justify-content:space-between;">
-                        <strong>Дільниця${prefix}${p.name}</strong>
-                        <span class="badge" style="${badgeStyle}">${timeBadgeText}</span>
+                // Умова: якщо дільниця на руках 4 місяці або більше (приблизно 120 днів)
+                const isOverdueLong = rawDays >= 120;
+                const warningIcon = isOverdueLong 
+                    ? `<span title="Територія вже довго на руках (${timeBadgeText})" style="margin-right: 6px; font-size: 1.1rem; cursor: help;">⚠️</span>` 
+                    : '';
+
+                return `
+                    <div style="${borderStyle} padding:15px; margin-bottom:10px; border-radius:8px; cursor:pointer; border: 1px solid #eee;" 
+                         onclick="window.location.href='parcel-details.html?id=${p.id}&from=${isMyCard ? 'my' : 'all'}'">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong>Дільниця${prefix}${p.name}</strong>
+                            <div style="display:flex; align-items:center;">
+                                ${warningIcon}
+                                <span class="badge" style="${badgeStyle}">${timeBadgeText}</span>
+                            </div>
+                        </div>
+                        <p style="font-size:0.9rem; color:#666; margin:10px 0;">${p.notes || '—'}</p>
+                        ${showReturnBtn ? `
+                            <button onclick="event.stopPropagation(); window.returnParcel('${p.id}', '${p.name}')" 
+                                style="background:#ff4757; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                                Здати
+                            </button>` : ''}
                     </div>
-                    <p style="font-size:0.9rem; color:#666; margin:10px 0;">${p.notes || "—"}</p>
-                    ${
-                      showReturnBtn
-                        ? `
-                        <button onclick="event.stopPropagation(); window.returnParcel('${p.id}', '${p.name}')" 
-                            style="background:#ff4757; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">
-                            Здати
-                        </button>`
-                        : ""
-                    }
-                </div>
-            `;
-          })
-          .join("");
+                `;
+            }).join('');
       }
 
       let currentTargetUserId = null;

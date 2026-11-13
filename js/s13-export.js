@@ -1,5 +1,5 @@
 // ============================================
-// ДОПОМІЖНЕ МОДАЛЬНЕ ВІКНО ВИБОРУ РОКУ
+// ДОПОМІЖНЕ МОДАЛЬНЕ ВІКНО ВИБОРУ ПЕРІОДУ (Службовий рік або Довільні дати)
 // ============================================
 function showYearSelectionModal() {
     return new Promise((resolve) => {
@@ -17,19 +17,41 @@ function showYearSelectionModal() {
             yearsOptions.push({ startYear: startY, label });
         }
 
+        const defaultStartDateStr = `${defaultStartYear}-09-01`;
+        const defaultEndDateStr = `${defaultStartYear + 1}-08-31`;
+
         const overlay = document.createElement('div');
         overlay.id = 's13-year-modal';
         overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10001; display:flex; align-items:center; justify-content:center; font-family:sans-serif;";
 
         overlay.innerHTML = `
-            <div style="background:white; padding:24px; border-radius:12px; min-width:320px; box-shadow:0 10px 25px rgba(0,0,0,0.3); text-align:center;">
-                <h3 style="margin-top:0; color:#333; font-size:18px;">Оберіть службовий рік</h3>
-                <p style="color:#666; font-size:13px; margin-bottom:15px;">Період: 1 вересня — 31 серпня</p>
+            <div style="background:white; padding:24px; border-radius:12px; min-width:340px; box-shadow:0 10px 25px rgba(0,0,0,0.3); text-align:center;">
+                <h3 style="margin-top:0; color:#333; font-size:18px;">Оберіть період звіту</h3>
                 
-                <div style="margin-bottom:20px;">
+                <!-- Перемикач режимів -->
+                <div style="display:flex; background:#f1f3f5; border-radius:8px; padding:3px; margin-bottom:15px;">
+                    <button id="s13-mode-year-btn" style="flex:1; padding:7px; border:none; border-radius:6px; background:white; font-weight:bold; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">Службовий рік</button>
+                    <button id="s13-mode-custom-btn" style="flex:1; padding:7px; border:none; border-radius:6px; background:transparent; color:#666; cursor:pointer; font-size:13px;">Вільний період</button>
+                </div>
+
+                <!-- Блок вибору службового року -->
+                <div id="s13-section-year" style="margin-bottom:20px;">
+                    <p style="color:#666; font-size:12px; margin:0 0 8px 0; text-align:left;">Період: 1 вересня — 31 серпня</p>
                     <select id="s13-year-select" style="width:100%; padding:10px; font-size:15px; border-radius:6px; border:1px solid #ccc; background:#f8f9fa; cursor:pointer;">
                         ${yearsOptions.map((opt, idx) => `<option value="${opt.startYear}" ${idx === 0 ? 'selected' : ''}>Службовий рік ${opt.label}</option>`).join('')}
                     </select>
+                </div>
+
+                <!-- Блок вибору довільних дат (прихований за замовчуванням) -->
+                <div id="s13-section-custom" style="display:none; margin-bottom:20px; text-align:left;">
+                    <div style="margin-bottom:10px;">
+                        <label style="font-size:12px; color:#444; font-weight:bold; display:block; margin-bottom:3px;">Дата початку:</label>
+                        <input type="date" id="s13-start-date" value="${defaultStartDateStr}" style="width:100%; padding:8px; font-size:14px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#444; font-weight:bold; display:block; margin-bottom:3px;">Дата кінця:</label>
+                        <input type="date" id="s13-end-date" value="${defaultEndDateStr}" style="width:100%; padding:8px; font-size:14px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
+                    </div>
                 </div>
 
                 <div style="display:flex; gap:10px; justify-content:center;">
@@ -41,20 +63,85 @@ function showYearSelectionModal() {
 
         document.body.appendChild(overlay);
 
+        const modeYearBtn = overlay.querySelector('#s13-mode-year-btn');
+        const modeCustomBtn = overlay.querySelector('#s13-mode-custom-btn');
+        const sectionYear = overlay.querySelector('#s13-section-year');
+        const sectionCustom = overlay.querySelector('#s13-section-custom');
+        
         const selectEl = overlay.querySelector('#s13-year-select');
+        const startDateInput = overlay.querySelector('#s13-start-date');
+        const endDateInput = overlay.querySelector('#s13-end-date');
         const confirmBtn = overlay.querySelector('#s13-confirm-btn');
         const cancelBtn = overlay.querySelector('#s13-cancel-btn');
 
-        confirmBtn.onclick = () => {
-            const selectedStartYear = parseInt(selectEl.value);
-            const rangeStart = new Date(selectedStartYear, 8, 1, 0, 0, 0, 0); 
-            const rangeEnd = new Date(selectedStartYear + 1, 7, 31, 23, 59, 59, 999); 
-            
-            const prevTheocraticStart = new Date(rangeStart);
-            prevTheocraticStart.setFullYear(prevTheocraticStart.getFullYear() - 1);
+        let currentMode = 'year'; // 'year' або 'custom'
 
-            const serviceYear = `${selectedStartYear}/${selectedStartYear + 1}`;
-            const serviceYearText = `${selectedStartYear}/${(selectedStartYear + 1).toString().slice(-2)}`;
+        modeYearBtn.onclick = () => {
+            currentMode = 'year';
+            modeYearBtn.style.background = 'white';
+            modeYearBtn.style.color = '#000';
+            modeYearBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            modeCustomBtn.style.background = 'transparent';
+            modeCustomBtn.style.color = '#666';
+            modeCustomBtn.style.boxShadow = 'none';
+            
+            sectionYear.style.display = 'block';
+            sectionCustom.style.display = 'none';
+        };
+
+        modeCustomBtn.onclick = () => {
+            currentMode = 'custom';
+            modeCustomBtn.style.background = 'white';
+            modeCustomBtn.style.color = '#000';
+            modeCustomBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            modeYearBtn.style.background = 'transparent';
+            modeYearBtn.style.color = '#666';
+            modeYearBtn.style.boxShadow = 'none';
+            
+            sectionYear.style.display = 'none';
+            sectionCustom.style.display = 'block';
+        };
+
+        confirmBtn.onclick = () => {
+            let rangeStart, rangeEnd, prevTheocraticStart, serviceYear, serviceYearText;
+
+            if (currentMode === 'year') {
+                const selectedStartYear = parseInt(selectEl.value);
+                rangeStart = new Date(selectedStartYear, 8, 1, 0, 0, 0, 0); 
+                rangeEnd = new Date(selectedStartYear + 1, 7, 31, 23, 59, 59, 999); 
+                
+                prevTheocraticStart = new Date(rangeStart);
+                prevTheocraticStart.setFullYear(prevTheocraticStart.getFullYear() - 1);
+
+                serviceYear = `${selectedStartYear}/${selectedStartYear + 1}`;
+                serviceYearText = `${selectedStartYear}/${(selectedStartYear + 1).toString().slice(-2)}`;
+            } else {
+                const startVal = startDateInput.value;
+                const endVal = endDateInput.value;
+
+                if (!startVal || !endVal) {
+                    alert('Будь ласка, оберіть обидві дати!');
+                    return;
+                }
+
+                rangeStart = new Date(startVal);
+                rangeStart.setHours(0, 0, 0, 0);
+
+                rangeEnd = new Date(endVal);
+                rangeEnd.setHours(23, 59, 59, 999);
+
+                if (rangeStart > rangeEnd) {
+                    alert('Дата початку не може бути більшою за дату кінця!');
+                    return;
+                }
+
+                prevTheocraticStart = new Date(rangeStart);
+                prevTheocraticStart.setFullYear(prevTheocraticStart.getFullYear() - 1);
+
+                const formatDateUA = (d) => d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                serviceYear = `${formatDateUA(rangeStart)} — ${formatDateUA(rangeEnd)}`;
+                serviceYearText = `${rangeStart.getFullYear()}-${rangeEnd.getFullYear()}`;
+            }
             
             overlay.remove();
             resolve({ rangeStart, rangeEnd, prevTheocraticStart, serviceYear, serviceYearText });
@@ -290,7 +377,7 @@ async function renderS13TableGrid(category = 'city') {
 }
 
 // ============================================
-// ФУНКЦІЯ ЕКСПОРТУ В PDF
+// ФУНКЦІЯ ЕКСПОРТУ В ЄДИНИЙ PDF (Місто + Села) за довільним періодом
 // ============================================
 async function exportS13FullPDF() {
     const periodConfig = await showYearSelectionModal();
@@ -320,15 +407,27 @@ async function exportS13FullPDF() {
         }
 
         const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        let pdfPageCounter = 0; 
 
-        async function generateS13PdfForCategory(categoryKey, categoryName, updateProgress) {
-            updateProgress(`🔍 Збір даних для "${categoryName}"...`);
-            const { items, rangeStart } = await fetchS13Data(categoryKey, periodConfig);
+        const tempContainer = document.createElement('div');
+        tempContainer.style = "position:absolute; left:-9999px; width:210mm;";
+        document.body.appendChild(tempContainer);
 
-            if (items.length === 0) {
-                updateProgress(`Немає дільниць для категорії "${categoryName}". Пропускаємо.`);
-                return;
-            }
+        const categories = [
+            { key: 'city', name: 'Місто' },
+            { key: 'village', name: 'Села' }
+        ];
+
+        const updateProgress = (message) => {
+            progressDiv.innerHTML = `<b>${message}</b>`;
+        };
+
+        for (const cat of categories) {
+            updateProgress(`🔍 Збір даних для "${cat.name}"...`);
+            const { items, rangeStart } = await fetchS13Data(cat.key, periodConfig);
+
+            if (items.length === 0) continue;
 
             function generateRowsHTML(itemsSlice) {
                 let html = '';
@@ -338,7 +437,7 @@ async function exportS13FullPDF() {
                         : '—';
 
                     let logCells = '';
-                    const logColumnsCount = (categoryName === 'Села') ? 3 : 4; 
+                    const logColumnsCount = (cat.name === 'Села') ? 3 : 4; 
 
                     for (let j = 0; j < logColumnsCount; j++) {
                         const s = sessions[j];
@@ -364,7 +463,7 @@ async function exportS13FullPDF() {
                             </td>`;
                     }
                     html += `<tr style="height:36px;">
-                        <td style="border:1.5px solid black; text-align:center; font-size:9pt; width:${categoryName === 'Села' ? '75px' : '35px'};">${parcel.name}</td>
+                        <td style="border:1.5px solid black; text-align:center; font-size:9pt; width:${cat.name === 'Села' ? '75px' : '35px'};">${parcel.name}</td>
                         <td style="border:1.5px solid black; text-align:center; font-size:8.5pt; width:75px; background:#fffde7; ${lastProcessedText !== '—' ? 'color:red; font-weight:bold;' : ''}">
                             ${lastProcessedText}
                         </td>
@@ -376,44 +475,39 @@ async function exportS13FullPDF() {
 
             const firstPageLimit = 23; 
             const nextPageLimit = 25; 
-            let pages = [];
+            let catPages = [];
             let currentParcelIndex = 0;
 
             while (currentParcelIndex < items.length) {
-                const isFirst = pages.length === 0;
+                const isFirst = catPages.length === 0;
                 const count = isFirst ? firstPageLimit : nextPageLimit;
                 
-                pages.push({ 
+                catPages.push({ 
                     startIndex: currentParcelIndex, 
                     endIndex: Math.min(currentParcelIndex + count, items.length) 
                 });
                 currentParcelIndex += count;
             }
 
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const tempContainer = document.createElement('div');
-            tempContainer.style = "position:absolute; left:-9999px; width:210mm;";
-            document.body.appendChild(tempContainer);
-
-            for (let i = 0; i < pages.length; i++) {
-                updateProgress(`📄 Генерація "${categoryName}" PDF: сторінка ${i + 1} з ${pages.length}...`);
-                const pageConfig = pages[i];
+            for (let i = 0; i < catPages.length; i++) {
+                updateProgress(`📄 Генерація "${cat.name}" PDF: сторінка ${i + 1} з ${catPages.length}...`);
+                const pageConfig = catPages[i];
                 const itemsForPage = items.slice(pageConfig.startIndex, pageConfig.endIndex);
                 const pagePaddingTop = i === 0 ? "8mm" : "13mm";
 
                 tempContainer.innerHTML = `
                     <div id="page-render" style="padding:${pagePaddingTop} 10mm 10mm 10mm; background:white; width:210mm; min-height:297mm; display:block; box-sizing:border-box; font-family:Arial, sans-serif;">
                         ${i === 0 ? `
-                            <div style="text-align:center; font-size:17pt; font-weight:bold; margin-bottom:15px;">ЗАПИСИ ПРО ОПРАЦЮВАННЯ ТЕРИТОРІЙ ${categoryName.toUpperCase()}</div>
-                            <div style="font-size:13pt; font-weight:bold; margin-bottom:15px; margin-left:5mm;">Службовий рік: <span style="border-bottom:1px solid black; padding:0 20px;">${serviceYear}</span></div>
+                            <div style="text-align:center; font-size:17pt; font-weight:bold; margin-bottom:10px;">ЗАПИСИ ПРО ОПРАЦЮВАННЯ ТЕРИТОРІЙ ${cat.name.toUpperCase()}</div>
+                            <div style="font-size:11pt; font-weight:bold; margin-bottom:15px; margin-left:5mm; text-align:center;">Період: <span style="border-bottom:1px solid black; padding:0 15px;">${serviceYear}</span></div>
                         ` : ''}
                         <table style="width:100%; border-collapse:collapse; border:2.5px solid black; table-layout:fixed;">
                             <thead>
                                 <tr style="background:#eeeeee; height:46px;">
-                                    <th style="border:1.5px solid black; width:${categoryName === 'Села' ? '75px' : '35px'}; font-size:8pt; padding:2px; text-align:center;">${categoryName === 'Села' ? 'Назва тер.' : '№ тер.'}</th>
+                                    <th style="border:1.5px solid black; width:${cat.name === 'Села' ? '75px' : '35px'}; font-size:8pt; padding:2px; text-align:center;">${cat.name === 'Села' ? 'Назва тер.' : '№ тер.'}</th>
                                     <th style="border:1.5px solid black; width:75px; font-size:8pt; padding:2px; text-align:center;">Остання дата<br>опрацювання*</th>
                                     
-                                    ${Array.from({ length: categoryName === 'Села' ? 3 : 4 }).map((_, k) => `
+                                    ${Array.from({ length: cat.name === 'Села' ? 3 : 4 }).map((_, k) => `
                                         <th style="border:1.5px solid black; width:135px; padding:0; text-align:center;">
                                             <div style="font-size:10pt; height:18px; border-bottom:1.5px solid black; line-height:18px;">Вісник</div>
                                             <div style="display:flex; font-size:7pt; height:26px; line-height:9pt;">
@@ -433,7 +527,7 @@ async function exportS13FullPDF() {
                                     <span>Конгрес</span>
                                 </div>
                                 <div style="display:flex; align-items:center; gap:4px;">
-                                    <div style="width:12px; height:12px; background:#FFCDB2;"></div>
+                                    <div style="width:12px; history:hidden; width:12px; height:12px; background:#FFCDB2;"></div>
                                     <span>Спец. кампанія</span>
                                 </div>
                                 <div style="display:flex; align-items:center; gap:4px;">
@@ -449,23 +543,27 @@ async function exportS13FullPDF() {
                     scale: 2, useCORS: true, windowWidth: 794 
                 });
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                if (i > 0) pdf.addPage();
+
+                pdfPageCounter++;
+                if (pdfPageCounter > 1) {
+                    pdf.addPage();
+                }
                 pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
             }
-
-            pdf.save(`S-13_${categoryName}_${serviceYear.replace('/', '-')}.pdf`);
-            tempContainer.remove();
         }
 
-        const updateProgress = (message) => {
-            progressDiv.innerHTML = `<b>${message}</b>`;
-        };
+        tempContainer.remove();
 
-        await generateS13PdfForCategory('city', 'Місто', updateProgress);
-        await generateS13PdfForCategory('village', 'Села', updateProgress);
-        
-        progressDiv.style.background = "#28a745";
-        progressDiv.innerHTML = "✅ Всі PDF успішно створено!";
+        if (pdfPageCounter > 0) {
+            pdf.save(`S-13_Звіт_за_період.pdf`);
+            progressDiv.style.background = "#28a745";
+            progressDiv.innerHTML = "✅ PDF-звіт за період успішно створено!";
+        } else {
+            progressDiv.style.background = "#ffc107";
+            progressDiv.style.color = "#000";
+            progressDiv.innerHTML = "⚠️ Немає даних для генерації за цей період!";
+        }
+
         setTimeout(() => progressDiv.remove(), 2500);
 
     } catch (err) {
@@ -483,7 +581,8 @@ async function exportS13Excel() {
     const periodConfig = await showYearSelectionModal();
     if (!periodConfig) return;
 
-    const { serviceYearText } = periodConfig;
+    // serviceYear зберігає або "2024/2025" (для року), або "01.09.2024 — 31.08.2025" (для вільного періоду)
+    const { serviceYear, serviceYearText } = periodConfig;
 
     let statusDiv = document.getElementById('excel-export-status');
     if (!statusDiv) {
@@ -538,13 +637,16 @@ async function exportS13Excel() {
 
             sheet.mergeCells(`A1:${lastColLetter}1`);
             const titleCell = sheet.getCell('A1');
-            titleCell.value = `ЗАПИСИ ПРО ОПРАЦЮВАННЯ ТЕРИТОРІЙ (${sheetName})`;
-            titleCell.font = { bold: true, size: 16 };
+            titleCell.value = `ЗАПИСИ ПРО ОПРАЦЮВАННЯ ТЕРИТОРІЙ (${sheetName.toUpperCase()})`;
+            titleCell.font = { bold: true, size: 14 };
             titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-            sheet.mergeCells('A2:C2');
-            sheet.getCell('A2').value = `Службовий рік: ${serviceYearText}`;
-            sheet.getCell('A2').font = { bold: true };
+            // Визначаємо текст для рядка періоду (як у PDF)
+            const isCustomPeriod = serviceYear.includes('—');
+            sheet.mergeCells('A2:D2');
+            sheet.getCell('A2').value = isCustomPeriod ? `Період: ${serviceYear}` : `Службовий рік: ${serviceYear}`;
+            sheet.getCell('A2').font = { bold: true, size: 11 };
+            sheet.getCell('A2').alignment = { horizontal: 'left', vertical: 'middle' };
 
             const legendData = ['Легенда:', ''];
             ['Конгрес', '', 'Спец. кампанія', '', 'Спомин', ''].forEach(val => legendData.push(val));
@@ -689,7 +791,7 @@ async function exportS13Excel() {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `S-13_Export_${serviceYearText.replace('/','-')}.xlsx`;
+        a.download = `S-13_Export_${serviceYearText.replace(/[\/\s—]+/g, '-')}.xlsx`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
